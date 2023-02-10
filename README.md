@@ -1,6 +1,6 @@
-# graph-lib (a c++ library for different graph based tasks)
+# graph-lib: A c++ library for different graph based tasks
 
-## Description of the newest .bin format for saving graphs
+## Description of the format for saving graphs (.bgfs for graphs with less than 2^32 edges .bgf else)
 
 |  Parameter Type  |             Description              |
 |:----------------:|:------------------------------------:|
@@ -34,5 +34,9 @@
 |                  |      **Repeat for every edge**       |
 |    **double**    |           *edge_feature_i*           |
 |                  |                                      |
+
+
+##Hops
+
 
 
