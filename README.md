@@ -1,6 +1,6 @@
 # graph-lib: A c++ library for different graph based tasks
 
-## Description of the format for saving graphs (.bgfs for graphs with less than 2^32 edges .bgf else)
+## Graph Format (.bgfs for graphs with less than 2^32 edges .bgf else)
 
 |  Parameter Type  |             Description              |
 |:----------------:|:------------------------------------:|
@@ -36,7 +36,7 @@
 |                  |                                      |
 
 
-##Hops
+## Hops
 
 
 
