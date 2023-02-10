@@ -1,0 +1,127 @@
+//
+// Created by florian on 23.01.23.
+//
+
+#ifndef TESTGRAPHLIB_UNITTEST_LOAD_SAVE_H
+#define TESTGRAPHLIB_UNITTEST_LOAD_SAVE_H
+
+
+#include <string>
+
+#include "load_save.h"
+#include "../include/DataClasses.h"
+#include "../include/io/StaticFunctions.h"
+
+bool TestLoadGraphsFromPath(const std::string& graph_path, const std::string& label_path, const std::string& extension) {
+
+    std::vector<GraphStruct> graphs;
+    GraphStruct::LoadGraphsFromPath(graph_path, label_path, graphs, extension);
+    return graphs.size() > 0;
+}
+
+void LoadSpeedTest(){
+    auto start = std::chrono::high_resolution_clock::now();
+    GraphStruct graphStruct = GraphStruct("../../../GraphData/Hops/com-lj.ungraph.bgfs");
+    auto end = std::chrono::high_resolution_clock::now();
+    INDEX size = graphStruct.nodes();
+    INDEX edges = graphStruct.edges();
+    std::cout << "Loaded " << size << " nodes " << " and " << edges << " edges " << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()/1000.0 << "s" << std::endl;
+}
+
+bool LoadSaveTest(){
+    DDataGraph dataGraph = DDataGraph("../test/TestData/DGraph.edges", true, true,"../test/TestData/DGraph.data");
+    dataGraph.Save({"../test/TestData/", "DGraph"});
+    DDataGraph loadGraph = DDataGraph("../test/TestData/DGraph.bgf");
+    auto graphData = GraphData<DDataGraph>("../test/TestData/DGraph.bgf");
+    bool x = (dataGraph == loadGraph);
+    x = x && (dataGraph == graphData.graphData[0]);
+
+    graphData.Save({"../test/TestData/", "XGraph"});
+    loadGraph = DDataGraph("../test/TestData/DGraph.bgf");
+    x = x && (dataGraph == loadGraph);
+
+    DGraphStruct dgraphStruct = DGraphStruct("../test/TestData/DGraph.bgf");
+    auto dgraphData = GraphData<DGraphStruct>("../test/TestData/DGraph.bgf");
+    x = x && (dgraphStruct == dgraphData.graphData[0]);
+    dgraphStruct.Save({"../test/TestData/", "DGraph", GraphFormat::BGF});
+    dgraphStruct.Save({"../test/TestData/", "DGraph", GraphFormat::BGFS});
+
+    DGraphStruct dbgf = DGraphStruct("../test/TestData/DGraph.bgf");
+    DGraphStruct dbgfs = DGraphStruct("../test/TestData/DGraph.bgfs");
+
+    x = x && (dgraphStruct == dbgf);
+    x = x && (dbgf == dbgfs);
+
+    dgraphData.Save({"../test/TestData/", "DGraph", GraphFormat::BGF});
+
+    dbgf = DGraphStruct("../test/TestData/DGraph.bgf");
+
+    x = x && (dgraphData.graphData[0] == dbgf);
+
+    GraphStruct graphStruct = GraphStruct("../test/TestData/DGraph.bgf");
+    graphStruct.Save({"../test/TestData/", "DGraph", GraphFormat::BGF});
+    graphStruct.Save({"../test/TestData/", "DGraph", GraphFormat::BGFS});
+
+    GraphStruct bgf = GraphStruct("../test/TestData/DGraph.bgf");
+    GraphStruct bgfs = GraphStruct("../test/TestData/DGraph.bgfs");
+
+
+    x = x && (graphStruct == bgf);
+    x = x && (bgf == bgfs);
+
+    dgraphStruct = DGraphStruct("../test/TestData/DGraph.bgf");
+    dgraphStruct.Save({"../test/TestData/", "DGraph", GraphFormat::BGF});
+    dgraphStruct.Save({"../test/TestData/", "DGraph", GraphFormat::BGFS});
+
+    dbgf = DGraphStruct("../test/TestData/DGraph.bgf");
+    dbgfs = DGraphStruct("../test/TestData/DGraph.bgfs");
+
+    x = x && (dgraphStruct == dbgf);
+    x = x && (dbgf == dbgfs);
+
+    dataGraph = DDataGraph("../test/TestData/DGraph.edges", true, true,"../test/TestData/DGraph.data");
+    dataGraph.Save({"../test/TestData/", "DGraph"});
+    loadGraph = DDataGraph("../test/TestData/DGraph.bgf");
+    x = x || (dataGraph == loadGraph);
+
+    graphStruct = GraphStruct("../test/TestData/DGraph.bgf");
+    graphStruct.Save({"../test/TestData/", "DGraph", GraphFormat::BGF});
+    graphStruct.Save({"../test/TestData/", "DGraph", GraphFormat::BGFS});
+
+    bgf = GraphStruct("../test/TestData/DGraph.bgf");
+    bgfs = GraphStruct("../test/TestData/DGraph.bgfs");
+
+
+    x = x && (graphStruct == bgf);
+    x = x && (bgf == bgfs);
+
+    return x;
+}
+
+bool LoadSaveTest2(){
+    for (int i = 3; i < 5; ++i) {
+        GraphData graphData = GraphData<GraphStruct>();
+        graphData.Load("../../../GraphData/Hops/patterns/size" + std::to_string(i) + ".bgf");
+        graphData.add("../../../GraphData/Hops/patterns/size" + std::to_string(i) + "/", "", "", ".txt");
+        graphData.Save({"../../../GraphData/Hops/patterns/", "size" + std::to_string(i)});
+        graphData.Load("../../../GraphData/Hops/patterns/size" + std::to_string(i) + "/size" + std::to_string(i) + ".bgf");
+        int x = graphData.size();
+    }
+}
+
+
+bool LoadCSV(){
+    std::vector<std::vector<std::string>> out;
+    StaticFunctionsLib::load_csv("../../../GraphData/Hops/patterns/automorphisms_3.csv", out);
+    std::vector<int> automorphisms;
+    int counter = 0;
+    for (auto &x : out) {
+        if (counter > 0) {
+            automorphisms.emplace_back(std::stoi(x[3]));
+        }
+        ++counter;
+    }
+    return true;
+}
+
+#endif //TESTGRAPHLIB_UNITTEST_LOAD_SAVE_H

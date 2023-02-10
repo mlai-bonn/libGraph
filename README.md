@@ -1,0 +1,38 @@
+# graph-lib (a c++ library for different graph based tasks)
+
+## Description of the newest .bin format for saving graphs
+
+|  Parameter Type  |             Description              |
+|:----------------:|:------------------------------------:|
+|     **int**      |    *compatibility_format_version*    |
+|     **int**      |            *graph_number*            |
+|                  |      **Repeat for each graph**       |
+| **unsigned int** |    string length of *graph_name*     |
+|    **string**    |             *graph_name*             |
+|     **enum**     |             *graph_type*             |
+|    **size_t**    |            *node_number*             |
+| **unsigned int** |           *node_features*            |
+|                  |                                      |
+|                  |  **Repeat for every node feature**   |
+| **unsigned int** | string length of *node_feature_name* |
+|    **string**    |         *node_feature_name*          |
+|                  |                                      |
+|    **size_t**    |            *edge_number*             |
+| **unsigned int** |           *edge_features*            |
+|                  |                                      |
+|                  |  **Repeat for every node feature**   |
+| **unsigned int** | string length of *edge_feature_name* |
+|    **string**    |         *edge_feature_name*          |
+|                  |                                      |
+|                  |      **Repeat for each graph**       |
+|                  |                                      |
+|                  |      **Repeat for every node**       |
+|    **double**    |           *node_feature_i*           |
+|                  |                                      |
+|    **size_t**    |             *edge_head*              |
+|    **size_t**    |             *edge_tail*              |
+|                  |      **Repeat for every edge**       |
+|    **double**    |           *edge_feature_i*           |
+|                  |                                      |
+
+
