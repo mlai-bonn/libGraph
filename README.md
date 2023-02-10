@@ -35,8 +35,19 @@
 |    **double**    |           *edge_feature_i*           |
 |                  |                                      |
 
+## Graph classes
+
+GraphStruct: undirected (labeled) graph
+DGraphStruct: directed (labeled) graph
+DDGraphStruct: directed graph with node and edge features
+
+GraphData<T>: collection of graphs from the above classes
+
+### Algorithms
 
 ## Hops
+
+
 
 
 
