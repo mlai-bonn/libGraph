@@ -15,6 +15,7 @@
 #include "HopsParameters.h"
 #include "../GraphStaticFunctions.h"
 #include "../io/StaticFunctions.h"
+#include "../io/FileEvaluation.h"
 
 
 class Evaluation {
@@ -107,20 +108,35 @@ public:
     };
 
     void save(const std::string& Path){
-        bool newFile = std::filesystem::exists(Path);
-        fs.open(Path, std::ios_base::app);
-        // write the file headers
-        if(!newFile) {
-            fs << ",Graphs" << "," << "GraphSize" << "," << "GraphEdgeNum" << "," << "Patterns" << "," << "PatternSize" << "," << "PatternEdgeNum" <<"," << "Iterations" << "," << "Estimation" <<"," << "Snapshots" <<"," << "SnapshotErrors" <<"," << "NonZeroIterations"
-               << "," << "ZeroIterations" << "," << "Runtime" << "," <<"Iterations/second" << "," << "NonZeroIterations/second" << ","
-               << "PreprocessingTime" << "," <<"EvaluationRuntime" << "," << "Threads" << "\n";
-        }
-        std::string EstimationString;
-        fs << std::fixed << "," << graph->GetName() << "," << graph->nodes() << "," << graph->edges() << "," << pattern->GetName() << "," << pattern->nodes() << "," << pattern->edges() << "," << hopsIterations << "," << hopsEstimation << "," << StaticFunctionsLib::vectorToString(snapshots) << "," << StaticFunctionsLib::vectorToString(snapShotErrors) << "," << hopsIterations - hopsZeroIterations << "," << hopsZeroIterations << "," << (double) hopsRuntime.count() / 1000000 << "," << (double) hopsIterations / ((double) hopsRuntime.count() / 1000000) << "," << (hopsIterations - hopsZeroIterations) / ((double) hopsRuntime.count() / 1000000) << "," << preprocessingTime.count() / 1000000 << "," << evaluationRuntime.count() / 1000000 << "," << parameters.thread_num << "\n";
-        fs << std::scientific;
-        fs.close();
+        FileEvaluation fileEvaluation = FileEvaluation(Path, this->graph->GetName(), ".hops");
+        double hopsTime = (double) hopsRuntime.count() / 1000000;
+        fileEvaluation.headerValueInsert({"Graph", "Size", "Edges", "PatternName", "PatternSize",
+                                          "PatternEdges", "IsPatternTree", "Threads", "HopsTime",
+                                          "HopsCount", "HopsIterations", "Zero", "NonZero",
+                                          "HopsIterations/second","Zero/second", "NonZero/second", "PreprocessingTime", "EvaluationTime",
+                                          "Snapshots", "SnapshotErrors"},
+                                         {graph->GetName(), std::to_string(graph->nodes()), std::to_string(graph->edges()), pattern->GetName(), std::to_string(pattern->nodes()),
+                                          std::to_string(pattern->edges()),std::to_string(pattern->IsTree()), std::to_string(threads), std::to_string(hopsTime),
+                                          std::to_string(hopsEstimation), std::to_string(hopsIterations), std::to_string(hopsZeroIterations), std::to_string(hopsIterations - hopsZeroIterations),
+                                          std::to_string((double) hopsIterations/hopsTime), std::to_string((double ) hopsZeroIterations/hopsTime), std::to_string((double)(hopsIterations - hopsZeroIterations)/hopsTime),
+                                          std::to_string(preprocessingTime.count() / 1000000), std::to_string(evaluationRuntime.count() / 1000000 ),
+                                          StaticFunctionsLib::vectorToString(snapshots), StaticFunctionsLib::vectorToString(snapShotErrors)});
+        fileEvaluation.save();
+
+//        bool newFile = std::filesystem::exists(Path);
+//        fs.open(Path, std::ios_base::app);
+//        // write the file headers
+//        if(!newFile) {
+//            fs << ",Graphs" << "," << "GraphSize" << "," << "GraphEdgeNum" << "," << "Patterns" << "," << "PatternSize" << "," << "PatternEdgeNum" <<"," << "Iterations" << "," << "Estimation" <<"," << "Snapshots" <<"," << "SnapshotErrors" <<"," << "NonZeroIterations"
+//               << "," << "ZeroIterations" << "," << "Runtime" << "," <<"Iterations/second" << "," << "NonZeroIterations/second" << ","
+//               << "PreprocessingTime" << "," <<"EvaluationRuntime" << "," << "Threads" << "\n";
+//        }
+//        std::string EstimationString;
+//        fs << std::fixed << "," << graph->GetName() << "," << graph->nodes() << "," << graph->edges() << "," << pattern->GetName() << "," << pattern->nodes() << "," << pattern->edges() << "," << hopsIterations << "," << hopsEstimation << "," << StaticFunctionsLib::vectorToString(snapshots) << "," << StaticFunctionsLib::vectorToString(snapShotErrors) << "," << hopsIterations - hopsZeroIterations << "," << hopsZeroIterations << "," << (double) hopsRuntime.count() / 1000000 << "," << (double) hopsIterations / ((double) hopsRuntime.count() / 1000000) << "," << (hopsIterations - hopsZeroIterations) / ((double) hopsRuntime.count() / 1000000) << "," << preprocessingTime.count() / 1000000 << "," << evaluationRuntime.count() / 1000000 << "," << parameters.thread_num << "\n";
+//        fs << std::scientific;
+//        fs.close();
    };
 
 
 };
-#endif //HOPS_EVALUATION_H
+#endif //HOPS_EVALUATIO

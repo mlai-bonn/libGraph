@@ -84,6 +84,8 @@ public:
 
     template<class T1>
     static std::string vectorToString(std::vector<T1> &inputVector);
+    template<class T1>
+    static void stringToVector(std::vector<T1>& out, std::string& string);
 
     template<class T1>
     static void print(std::vector<T1> &inputVector);
@@ -425,6 +427,23 @@ inline void StaticFunctionsLib::saveValuesToFile(const std::string& path, const 
     fs.close();
 }
 
+template<class T1>
+void StaticFunctionsLib::stringToVector(std::vector<T1>& out, std::string &string) {
+    string.erase(remove(string.begin(), string.end(), '['), string.end());
+    string.erase(remove(string.begin(), string.end(), ']'), string.end());
+
+    std::stringstream ss(string);
+    std::string segment;
+    std::vector<std::string> list;
+
+    while(std::getline(ss, segment, ' '))
+    {
+        list.emplace_back(segment);
+    }
+    for (const auto& x : list) {
+        out.emplace_back((T1)x);
+    }
+}
 
 
 #endif //IOLIB_STATICFUNCTIONS_H

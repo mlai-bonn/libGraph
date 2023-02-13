@@ -43,9 +43,11 @@ DDGraphStruct: directed graph with node and edge features
 
 GraphData<T>: collection of graphs from the above classes
 
-### Algorithms
+## Algorithms
 
-## Hops
+### Hops
+1. Construct class: ```Hops(GraphData, Parameters)```
+2. Run hops: ```Hops::Run(int graphId, GraphStruct pattern, RunParameters)```
 
 
 

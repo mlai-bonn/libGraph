@@ -27,27 +27,23 @@ struct Parameters{
 };
 
 struct RunParameters{
-    /// parameters for a run of the hops algorithm
+    /// parameters for one run (one pattern count estimation) of the hops algorithm
     LABEL_TYPE labelType = LABEL_TYPE::UNLABELED;
     double runtime = 30;
     int thread_num = -1;
     int iteration_per_thread = 0;
     int seed = 0;
     bool print = true;
+    bool save = false;
     bool single_number = true;
     int snapshot_time = -1;
 
     HOPS_TYPE hops_type = HOPS_TYPE::ESTIMATION;
     RUN_TYPE run_type = RUN_TYPE::VECTOR;
 
-    std::string run_type_string;
-
-    std::set<int> pattern_sizes = {4};
-    int pattern_num = 1;
 
     DGraphStruct spanningTree = DGraphStruct();
-    INDEX spanningTreeRootNode = std::numeric_limits<INDEX>::max();
-
+    NodeId spanningTreeRootNode = std::numeric_limits<NodeId>::max();
 
 };
 

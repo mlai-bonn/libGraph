@@ -18,6 +18,7 @@
 #include <list>
 #include <unordered_set>
 #include "../Enums.h"
+#include "../io/FileEvaluation.h"
 
 
 class Hops {
@@ -27,7 +28,13 @@ public:
     /// Constructor which gets the graph data and some parameters for running the approximation
     /// @param graphs input graphs
     /// @param parameters input parameters such as Save path etc.
-    explicit Hops(GraphData<GraphStruct>& graphs, Parameters  parameters = Parameters()) : graphs(graphs), parameters(std::move(parameters)) {};
+    explicit Hops(GraphData<GraphStruct>& graphs) : graphs(graphs) {};
+    /// Constructor which gets the graph data and some parameters for running the approximation
+    /// @param graphs input graphs
+    /// @param parameters input parameters such as Save path etc.
+    explicit Hops(const std::string& in_path, const std::string& out_path) : out_path(out_path) {
+        this->graphs = GraphData<GraphStruct>(in_path);
+    };
 
     /// Main function of the hops class runs the hops algorithm with different run parameters
     /// @param graphId id of the graph used for estimation
@@ -91,7 +98,7 @@ private:
     int currentGraphMaxDegree = 0;
     bool currentPatternIsTree = false;
     std::vector<UInt64> preComputedLogValues;
-    Parameters parameters;
+    std::string out_path;
     RunParameters runParameters;
 public:
 
@@ -151,6 +158,7 @@ public:
     void CheckEstimationFinished(RunProps &props, UInt64 OverallIterations) const;
 
     void MergeEstimationValues(RunProps& runProps, std::vector<UInt64>& estimations, std::vector<long double>& snapShotEstimation) const;
+
 
 };
 
@@ -321,6 +329,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
             }
             this->preComputedLogValues[i] = (UInt64) (Value * this->logValueMultiplier);
         }
+
     }
     this->spanningTreeRootNode = this->runParameters.spanningTreeRootNode;
     //Preprocess the pattern graph
@@ -399,7 +408,9 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
                     }
                     ++OverallIterations;
                     SaveEstimationSnapshot(runProps, accumulatedEstimation, OverallIterations);
+
                     CheckEstimationFinished(runProps, OverallIterations);
+
                     break;
                     //TODO add graph edit distance algorithm
                 case HOPS_TYPE::GRAPH_EDIT_DISTANCE:
@@ -466,7 +477,6 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
             Hops::EvaluateResult(accumulatedApproximatedGED, HOPS_TYPE::GRAPH_EDIT_DISTANCE);
             break;
     }
-
 }
 
 inline void Hops::SaveEstimationSnapshot(RunProps& runProps, long double accumulatedEstimation, UInt64 OverallIterations) const {
@@ -478,10 +488,12 @@ inline void Hops::SaveEstimationSnapshot(RunProps& runProps, long double accumul
 }
 
 inline void Hops::CheckEstimationFinished(Hops::RunProps &runProps, UInt64 OverallIterations) const {
-    runProps.currentTime = std::chrono::high_resolution_clock::now();
     if (this->runParameters.runtime != 0) {
-        if(runProps.endTime < runProps.currentTime) {
-            runProps.runAlgorithm = false;
+        if (OverallIterations % 1000 == 0) {
+            runProps.currentTime = std::chrono::high_resolution_clock::now();
+            if (runProps.endTime < runProps.currentTime) {
+                runProps.runAlgorithm = false;
+            }
         }
     } else if (OverallIterations >= this->runParameters.iteration_per_thread) {
         runProps.runAlgorithm = false;
@@ -522,8 +534,8 @@ inline void Hops::EvaluateResult(std::vector<long double>& snapshots) {
     if (this->runParameters.print){
         this->hopsEvaluation.print();
     }
-    if(!this->parameters.out_path.empty()){
-        this->hopsEvaluation.save(this->parameters.out_path);
+    if(!this->out_path.empty()){
+        this->hopsEvaluation.save(this->out_path);
     }
 }
 
@@ -569,8 +581,8 @@ inline void Hops::EvaluateResult(std::vector<UInt64>& estimations, std::vector<l
     if (this->runParameters.print){
         this->hopsEvaluation.print();
     }
-    if(!this->parameters.out_path.empty()){
-        this->hopsEvaluation.save(parameters.out_path);
+    if(runParameters.save && !this->out_path.empty()){
+        this->hopsEvaluation.save(this->out_path);
     }
 }
 inline void Hops::EvaluateResult(int approximatedGED, HOPS_TYPE hopsType) {
@@ -579,8 +591,8 @@ inline void Hops::EvaluateResult(int approximatedGED, HOPS_TYPE hopsType) {
         this->hopsEvaluation.hopsEstimation = approximatedGED;
         this->hopsEvaluation.print(hopsType);
     }
-    if(!this->parameters.out_path.empty()){
-        this->hopsEvaluation.save(parameters.out_path);
+    if(!this->out_path.empty()){
+        this->hopsEvaluation.save(this->out_path);
     }
 }
 
@@ -922,6 +934,7 @@ inline bool Hops::CheckValidGraphEmbedding(const Nodes &nodes, const RunProps& r
             for (auto &[source, target]: this->nonTreeEdges[this->rootedPattern.GetBFSOrderIndexByNodeId(nodeId)]) {
                 sourceId = runProps.treeGraphMap[source];
                 targetId = runProps.treeGraphMap[target];
+
                 const Nodes &sourceNeighbors = this->currentGraph->neighbors(sourceId);
                 const Nodes &targetNeighbors = this->currentGraph->neighbors(targetId);
 
@@ -1016,7 +1029,8 @@ inline bool Hops::RunProps::VisitNeighbor(unsigned int Id, NodeId neighborNodeId
 
 inline void Hops::RunProps::swapNeighbors(unsigned int idx_a, unsigned int idx_b) {
     std::swap(randomNeighbors[idx_a], randomNeighbors[idx_b]);
-    randomNeighborsSwapPairs[swapCount]={idx_a, idx_b};
+    randomNeighborsSwapPairs[swapCount].first=idx_a;
+    randomNeighborsSwapPairs[swapCount].second=idx_b;
     ++swapCount;
 }
 

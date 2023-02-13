@@ -14,12 +14,12 @@ int main() {
     //HopsRealWorldTest();
     //HopsSimplePatternsTest();
     //ConversionTest();
-    //HopsTimeTest();
+    HopsTimeTest();
     //HopsPatternTest();
-    HopsParallelizationTest();
+    //HopsParallelizationTest();
     //TestLoadGraphsFromPath("../../../cyclic_hops_cpp/data/patterns/size3","", ".txt");
     //DijkstraTest();
     //GraphData g_patterns = GraphData("../../../cyclic_hops_cpp/data/patterns/size4/", "", "", ".txt");
-    GraphData graphs = GraphData<GraphStruct>("../../../GraphData/Hops/", "", "cit-hepPh", ".bgfs");
+    GraphData graphs = GraphData<GraphStruct>("../../GraphData/Hops/", "", "cit-hepPh", ".bgfs");
     int x=0;
 }

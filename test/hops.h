@@ -19,8 +19,8 @@ void HopsTest(){
 
 void HopsAutomorphismTest(){
     for (int size = 2; size < 10; ++size) {
-        GraphData<GraphStruct> graphData = GraphData<GraphStruct>("../../../GraphData/Hops/patterns/size" + std::to_string(size) + ".bgfs");
-        Hops hops = Hops(graphData,{});
+        GraphData<GraphStruct> graphData = GraphData<GraphStruct>("../../GraphData/Hops/patterns/size" + std::to_string(size) + ".bgfs");
+        Hops hops = Hops(graphData);
         FileEvaluation fileEvaluation = FileEvaluation("../test/Results/", "automorphisms_" + std::to_string(size));
         for (int i = 0; i < graphData.size(); ++i) {
             hops.Automorphisms(i, {LABEL_TYPE::UNLABELED,30});
@@ -33,20 +33,15 @@ void HopsAutomorphismTest(){
 
 void HopsTimeTest(){
     GraphStruct triangle = SimplePatterns::Triangle();
-    GraphStruct graph1 = GraphStruct("../../../GraphData/Hops/com-amazon.ungraph.bgfs");
-    GraphData graph_data = GraphData<GraphStruct>();
-    graph_data.add(graph1);
-    Hops hops = Hops(graph_data);
-    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,0,1, 100000000});
+    Hops hops = Hops("../../GraphData/Hops/com-amazon.ungraph.bgfs", "../test/Results/time_test_");
+    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,0,1, 100000000, 0});
 }
 
 void HopsPatternTest(){
     std::cout << " Counting patterns for " << "amazon" << std::endl;
-    FileEvaluation fileEvaluation = FileEvaluation("../results/", "evaluation_results");
-
     for (auto size : {2,3,4,5,6}) {
         std::vector<std::vector<std::string>> out;
-        StaticFunctionsLib::load_csv("../../../GraphData/Hops/patterns/automorphisms_" + std::to_string(size) + ".csv", out);
+        StaticFunctionsLib::load_csv("../../GraphData/Hops/patterns/automorphisms_" + std::to_string(size) + ".csv", out);
         std::vector<int> automorphisms;
         int counter = 0;
         for (auto &x : out) {
@@ -56,67 +51,44 @@ void HopsPatternTest(){
             ++counter;
         }
 
-        GraphData graphs = GraphData<GraphStruct>("../../../GraphData/Hops/com-amazon.ungraph.bgfs");
-        Hops hops = Hops(graphs);
+        Hops hops = Hops("../../GraphData/Hops/com-amazon.ungraph.bgfs", "../test/Results/pattern_test_");
 
         std::cout << std::endl << "Counting patterns of size " << size << std::endl;
-        GraphData g_patterns = GraphData<GraphStruct>("../../../GraphData/Hops/patterns/size" + std::to_string(size)+ ".bgfs");
+        GraphData g_patterns = GraphData<GraphStruct>("../../GraphData/Hops/patterns/size" + std::to_string(size)+ ".bgfs");
         for (auto& pattern : g_patterns.graphData) {
-            RunParameters runParameters = {LABEL_TYPE::UNLABELED, 1, -1, 0, 0, false};
+            RunParameters runParameters = {LABEL_TYPE::UNLABELED, 5, -1, 0, 0, true, true, true, 1};
             hops.Run(0, pattern, runParameters);
-            unsigned long hopsCount = lround(hops.hopsEvaluation.hopsEstimation);
-            std::cout << std::fixed << "Hops" << ": " << hopsCount << " in " << hops.hopsEvaluation.HopsRuntime() << "s " << hops.hopsEvaluation.hopsIterations << "(" << hops.hopsEvaluation.hopsZeroIterations << ")" << "Iterations" << std::endl;
-            fileEvaluation.headerValueInsert({"Graph", "PatternSize", "PatternName","HopsTime", "HopsCount"},
-                                             {hops.GetGraphs().graphData[0].GetName(), std::to_string(pattern.nodes()), pattern.GetName(), std::to_string(hops.hopsEvaluation.HopsRuntime()), std::to_string(hopsCount)});
         }
-
-        fileEvaluation.save();
     }
 
 }
 
 void HopsParallelizationTest(){
     GraphStruct triangle = SimplePatterns::Triangle();
-    GraphStruct graph1 = GraphStruct("../../../GraphData/Hops/com-amazon.ungraph.bgfs");
-    GraphData graph_data = GraphData<GraphStruct>();
-    graph_data.add(graph1);
 
-
-
-    Hops hops = Hops(graph_data, Parameters());
-
-    FileEvaluation evaluation = FileEvaluation("../test/Results/","hops_runtime");
+    Hops hops = Hops("../../GraphData/Hops/com-amazon.ungraph.bgfs", "../test/Results/");
     int max_threads = omp_get_max_threads();
     for (int i = 1; i <= max_threads; ++i) {
-        RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 30, i, 0, 0, true, true};
+        RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 30, i, 0, 0, true, true, true, 1};
         hops.Run(0, triangle, unlabeledRun);
-        evaluation.headerValueInsert({"Threads", "Time", "Iterations", "Estimation"}, {std::to_string(hops.hopsEvaluation.threads),
-                                                                                       std::to_string(hops.hopsEvaluation.hopsRuntime.count() / 1000000),
-                                                                                       std::to_string(hops.hopsEvaluation.hopsIterations),
-                                                                                       std::to_string((int) (hops.hopsEvaluation.hopsEstimation / 6.0 + 0.5))});
     }
     for (int i = 1; i <= max_threads; ++i) {
-        RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 0, i, 100000000/i, 0, true, true};
+        RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 0, i, 100000000/i, 0, true, true, true, 1};
         hops.Run(0, triangle, unlabeledRun);
-        evaluation.headerValueInsert({"Threads", "Time", "Iterations", "Estimation"}, {std::to_string(hops.hopsEvaluation.threads),
-                                                                                       std::to_string(hops.hopsEvaluation.hopsRuntime.count() / 1000000),
-                                                                                       std::to_string(hops.hopsEvaluation.hopsIterations),
-                                                                                       std::to_string((int) (hops.hopsEvaluation.hopsEstimation / 6.0 + 0.5))});
     }
 
-    evaluation.save(false, true,std::ios_base::out);
 }
 
 void HopsRealWorldTest() {
     GraphStruct triangle = SimplePatterns::Triangle();
-    GraphStruct graph1 = GraphStruct("../../../GraphData/Hops/com-amazon.ungraph.bgfs");
-    GraphStruct graph2 = GraphStruct("../../../GraphData/Hops/com-youtube.ungraph.bgfs");
+    GraphStruct graph1 = GraphStruct("../../GraphData/Hops/com-amazon.ungraph.bgfs");
+    GraphStruct graph2 = GraphStruct("../../GraphData/Hops/com-youtube.ungraph.bgfs");
     GraphData graph_data = GraphData<GraphStruct>();
     graph_data.add({graph1, graph2});
     RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 60, -1, 0, 0, true, true};
 
 
-    Hops hops = Hops(graph_data, Parameters());
+    Hops hops = Hops(graph_data);
     hops.Run(0, triangle, unlabeledRun);
     hops.Run(1, triangle, unlabeledRun);
 }
@@ -152,7 +124,7 @@ void HopsSimplePatternsTest(){
     RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 1, 1, 0, 0, true, false};
 
 
-    Hops hops = Hops(graph_data,Parameters());
+    Hops hops = Hops(graph_data);
     hops.Run(0, triangle, labeledRun);
     hops.Run(0, triangle, unlabeledRun);
     hops.Run(1, triangle, labeledRun);
