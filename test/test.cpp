@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
             HopsParallelizationTest();
         }
         if (std::strcmp(argv[i], "--load_graphs") == 0 || std::strcmp(argv[i], "--all") == 0) {
-            TestLoadGraphsFromPath("../../../cyclic_hops_cpp/data/patterns/size3","", ".txt");
+            TestLoadGraphsFromPath("../../../cyclic_hops_cpp/data/patterns/size3", "", ".txt");
         }
         if (std::strcmp(argv[i], "--dijkstra") == 0 || std::strcmp(argv[i], "--all") == 0) {
             DijkstraTest();
@@ -58,5 +58,6 @@ int main(int argc, char *argv[]) {
         if (std::strcmp(argv[i], "--load_graph") == 0 || std::strcmp(argv[i], "--all") == 0) {
             GraphData graphs = GraphData<GraphStruct>("../../GraphData/Hops/", "", "cit-hepPh", ".bgfs");
         }
+    }
     int x=0;
 }
