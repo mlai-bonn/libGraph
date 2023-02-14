@@ -41,8 +41,9 @@ void HopsTimeTest(){
 
 void Hops60s(){
     GraphStruct triangle = SimplePatterns::Triangle();
-    Hops hops = Hops("../../../../GraphData/Hops/com-amazon.ungraph.bgfs", "../Results/time_test_");
-    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,60,1, 0, 0});
+    GraphData graphs = GraphData<GraphStruct>("../../../../GraphData/Hops/com-amazon.ungraph.bgfs");
+    Hops hops = Hops(graphs);
+    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,60,1, 0, 0,true});
 }
 
 void HopsPatternTest(){
