@@ -36,6 +36,9 @@ int main(int argc, char *argv[]) {
         if (std::strcmp(argv[i], "--hops_time") == 0 || std::strcmp(argv[i], "--all") == 0) {
             HopsTimeTest();
         }
+        if (std::strcmp(argv[i], "--hops_60s") == 0 || std::strcmp(argv[i], "--all") == 0) {
+            Hops60s();
+        }
         if (std::strcmp(argv[i], "--hops_pattern") == 0 || std::strcmp(argv[i], "--all") == 0) {
             HopsPatternTest();
         }

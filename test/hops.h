@@ -39,6 +39,12 @@ void HopsTimeTest(){
     hops.Run(0, five_clique, {LABEL_TYPE::UNLABELED,0,1, 100000000, 0});
 }
 
+void Hops60s(){
+    GraphStruct triangle = SimplePatterns::Triangle();
+    Hops hops = Hops("../../../../GraphData/Hops/com-amazon.ungraph.bgfs", "../Results/time_test_");
+    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,60,1, 0, 0});
+}
+
 void HopsPatternTest(){
     std::cout << " Counting patterns for " << "amazon" << std::endl;
     for (auto size : {2,3,4,5,6}) {
