@@ -43,7 +43,7 @@ void Hops60s(){
     GraphStruct triangle = SimplePatterns::Triangle();
     GraphData graphs = GraphData<GraphStruct>("../../../../GraphData/Hops/com-amazon.ungraph.bgfs");
     Hops hops = Hops(graphs);
-    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,60,1, 0, 0,true});
+    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,60,-1, 0, 0,true});
 }
 
 void HopsPatternTest(){
