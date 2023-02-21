@@ -75,14 +75,14 @@ void HopsPatternTest(){
 void HopsParallelizationTest(){
     GraphStruct triangle = SimplePatterns::Triangle();
 
-    Hops hops = Hops("../../../GraphData/Hops/com-amazon.ungraph.bgfs", "../test/Results/");
+    Hops hops = Hops("../../../../GraphData/Hops/com-amazon.ungraph.bgfs", "../test/Results/");
     int max_threads = omp_get_max_threads();
     for (int i = 1; i <= max_threads; ++i) {
-        RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 30, i, 0, 0, true, true, true, 1};
+        RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 30, i, 0, 0, true, true, true};
         hops.Run(0, triangle, unlabeledRun);
     }
     for (int i = 1; i <= max_threads; ++i) {
-        RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 0, i, 100000000/i, 0, true, true, true, 1};
+        RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 0, i, 100000000/i, 0, true, true, true};
         hops.Run(0, triangle, unlabeledRun);
     }
 
