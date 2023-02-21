@@ -76,7 +76,8 @@ void HopsParallelizationTest(){
     GraphStruct triangle = SimplePatterns::Triangle();
 
     for (auto graph : {"dblp", "amazon", "youtube", "orkut", "lj"}) {
-        Hops hops = Hops("../../../../GraphData/Hops/com-" + graph + ".ungraph.bgfs", "../test/Results/");
+        auto path = "../../../../GraphData/Hops/com-" + graph + ".ungraph.bgfs";
+        Hops hops = Hops(path, "../test/Results/");
         int max_threads = omp_get_max_threads();
         for (int i = 1; i <= max_threads; ++i) {
             RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 30, i, 0, 0, true, true, true};
