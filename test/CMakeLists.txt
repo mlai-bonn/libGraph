@@ -14,4 +14,4 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-add_executable(Test test.cpp load_save.h graph_functions.h ../../include/libGraph.h ../../include/Hops/Hops.h ../../include/Hops/RootedPattern.h hops.h ../../include/io/FileEvaluation.h ../../include/io/io.h ../../include/io/io.txx ../../include/io/StaticFunctions.h)
+add_executable(Test test.cpp load_save.h graph_functions.h ../../include/libGraph.h)

@@ -58,6 +58,9 @@ int main(int argc, char *argv[]) {
         if (std::strcmp(argv[i], "--load_graph") == 0 || std::strcmp(argv[i], "--all") == 0) {
             GraphData graphs = GraphData<GraphStruct>("../../GraphData/Hops/", "", "cit-hepPh", ".bgfs");
         }
+        if (std::strcmp(argv[i], "--erdos_renyi") == 0 || std::strcmp(argv[i], "--all") == 0) {
+            ErdosRenyi();
+        }
     }
     int x=0;
 }

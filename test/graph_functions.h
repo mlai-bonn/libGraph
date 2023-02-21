@@ -5,6 +5,8 @@
 #ifndef TESTGRAPHLIB_GRAPHFUNCTIONS_H
 #define TESTGRAPHLIB_GRAPHFUNCTIONS_H
 
+#include "../include/SimplePatterns.h"
+
 bool ConversionTest(){
     for(std::string name : {"amazon", "dblp", "lj", "orkut", "youtube"}) {
         GraphStruct::Convert("../../../GraphData/Hops/com-" + name + ".ungraph.bin", "", GraphFormat::BGFS);
@@ -32,6 +34,18 @@ bool DijkstraTest() {
     double length;
     bool found_path = DDataGraph::dijkstra(dGraph, 2, 4, &edge_weight, path, distances, length);
     return connected && found_path;
+}
+
+bool ErdosRenyi(){
+    int nodes = 20, edges = 100;
+    int num = 10;
+    GraphData<GraphStruct> graphData;
+    for (int i = 0; i < num; ++i) {
+        GraphStruct graphStruct = SimplePatterns::ErdosRenyi(nodes,edges,i);
+        graphData.add(graphStruct);
+    }
+    graphData.Save({"../../../GraphData/ErdosRenyi/","er_" + std::to_string(nodes) + "_" + std::to_string(edges), GraphFormat::BGFS});
+    return true;
 }
 
 

@@ -121,14 +121,14 @@ inline GraphStruct SimplePatterns::StarGraph(int size, const Labels *labels, int
 inline GraphStruct SimplePatterns::ErdosRenyi(int size, int edges, int seed) {
     std::mt19937_64 gen(seed);
     GraphStruct G = GraphStruct(size, Labels());
-    int num_edges = 0;
-    while(num_edges < edges){
+    while(G.edges() < edges){
         int src = std::uniform_int_distribution<int>(0, size - 1)(gen);
         int dst = std::uniform_int_distribution<int>(0, size - 1)(gen);
-        if (src != dst && !G.add_edge(src, dst)){
-
+        if (src != dst){
+            G.add_edge(src, dst);
         }
     }
+    return G;
 }
 
 
