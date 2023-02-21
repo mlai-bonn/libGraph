@@ -75,7 +75,7 @@ void HopsPatternTest(){
 void HopsParallelizationTest(){
     GraphStruct triangle = SimplePatterns::Triangle();
 
-    for (auto graph : {"dblp", "amazon", "youtube", "orkut", "lj"}) {
+    for (std::string graph : {"dblp", "amazon", "youtube", "orkut", "lj"}) {
         auto path = "../../../../GraphData/Hops/com-" + graph + ".ungraph.bgfs";
         Hops hops = Hops(path, "../test/Results/");
         int max_threads = omp_get_max_threads();
