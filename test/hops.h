@@ -77,7 +77,7 @@ void HopsParallelizationTest(){
 
     for (std::string graph : {"dblp", "amazon", "youtube", "orkut", "lj"}) {
         auto path = "../../../../GraphData/Hops/com-" + graph + ".ungraph.bgfs";
-        Hops hops = Hops(path, "../test/Results/");
+        Hops hops = Hops(path, "../Results/");
         int max_threads = omp_get_max_threads();
         for (int i = 1; i <= max_threads; ++i) {
             RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 30, i, 0, 0, true, true, true};
