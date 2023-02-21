@@ -145,9 +145,9 @@ public:
         std::vector<UInt64> privateEstimations;
         std::vector<long double> privateSnapshots;
 
-        std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>> currentTime;
-        std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>> endTime;
-        std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>> lastSnapShotTime;
+        std::chrono::time_point<std::chrono::high_resolution_clock , std::chrono::duration<double>> currentTime;
+        std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::duration<double>> endTime;
+        std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::duration<double>> lastSnapShotTime;
         bool runAlgorithm = false;
 
 
@@ -342,7 +342,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
 
     //start clock for hops runtime measure
     start = std::chrono::high_resolution_clock::now();
-    runProps.endTime = start + std::chrono::microseconds ((int) (this->runParameters.runtime*1000000));
+    runProps.endTime = start + std::chrono::microseconds ((std::size_t) (this->runParameters.runtime*1000000));
 
     //TODO check this (splitting this->possibleGraphImagesOfPatternRoot into thread many pieces should decrease variance)
 
