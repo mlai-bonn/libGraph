@@ -116,6 +116,8 @@ public:
     static bool IsConnected(const GraphStruct& graph);
     static bool ReachableNodes(const GraphStruct &graph, NodeId root, std::vector<INDEX> & reachability, INDEX Id, INDEX& number);
 
+    static void DFS(const GraphStruct &graph, GraphStruct &tree, Nodes& nodeOrder, NodeId rootNodeId = -1, int seed = 0);
+
     //Static functions
     //compare the given labeled degree vector with the labeled degree vector of the node with Id:nodeId of this graph
     bool isBigger(const std::vector<INDEX>& labeledDegree, NodeId nodeId);
@@ -2743,7 +2745,45 @@ void GraphStruct::WriteEdges(std::ofstream& Out, const SaveParams &saveParams) {
     }
 }
 
-
+void GraphStruct::DFS(const GraphStruct &graph, GraphStruct &tree, Nodes &nodeOrder, NodeId rootNodeId, int seed) {
+    std::mt19937_64 gen(seed);
+    if (rootNodeId == -1) {
+        rootNodeId = std::uniform_int_distribution<INDEX>(0, graph.nodes() - 1)(gen);
+    }
+    std::deque<std::pair<INDEX, INDEX>> swappedIds;
+    std::vector<NodeId> neighborIds = std::vector<NodeId>(graph.maxDegree, 0);
+    std::iota(neighborIds.begin(), neighborIds.end(),0);
+    for (int i=0; i<graph.nodes(); ++i) {
+        tree.add_node();
+    }
+    tree.graphType = GraphType::TREE;
+    std::unordered_set<INDEX> visitedNodes = {rootNodeId};
+    std::vector<NodeId> CurrentNodes;
+    CurrentNodes.emplace_back(rootNodeId);
+    nodeOrder.emplace_back(rootNodeId);
+    while (!CurrentNodes.empty()){
+        NodeId NextNodeId = CurrentNodes.back();
+        CurrentNodes.pop_back();
+        INDEX degree = graph.get_neighbors(NextNodeId).size();
+        for (INDEX i = 0; i < degree; ++i) {
+            //Get random neighbor
+            INDEX idx = std::uniform_int_distribution<INDEX>(i, degree - 1)(gen);
+            NodeId NeighborNodeId = graph.get_neighbors(NextNodeId)[neighborIds[idx]];
+            std::swap(neighborIds[idx], neighborIds[i]);
+            swappedIds.push_front(std::pair<int, int>{idx, i});
+            if (visitedNodes.find(NeighborNodeId) == visitedNodes.end()){
+                CurrentNodes.emplace_back(NeighborNodeId);
+                nodeOrder.emplace_back(NeighborNodeId);
+                tree.add_edge(NextNodeId, NeighborNodeId);
+                visitedNodes.insert(NeighborNodeId);
+            }
+        }
+        for (auto const & [a, b] : swappedIds) {
+            std::swap(neighborIds[b], neighborIds[a]);
+        }
+        swappedIds.clear();
+    }
+}
 
 
 #endif //HOPS_DATACLASSES_H

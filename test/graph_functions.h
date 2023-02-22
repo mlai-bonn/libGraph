@@ -48,5 +48,13 @@ bool ErdosRenyi(){
     return true;
 }
 
+bool DFS(){
+    GraphStruct graph = GraphStruct("../../../GraphData/Hops/com-amazon.ungraph.bgfs");
+    GraphStruct tree;
+    Nodes order;
+    GraphStruct::DFS(graph, tree, order);
+    int x = 0;
+}
+
 
 #endif //TESTGRAPHLIB_GRAPHFUNCTIONS_H

@@ -348,27 +348,6 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
 
     std::vector<Nodes> possibleImagesChunked;
 
-//    unsigned int max_val = 0;
-//    if (this->possibleGraphImagesOfPatternRoot.size() > this->runParameters.thread_num) {
-//        int chunkSize = (int) (this->possibleGraphImagesOfPatternRoot.size() + this->runParameters.thread_num) /
-//                        this->runParameters.thread_num;
-//        int counter = 0;
-//        for (int i = 0; i < this->runParameters.thread_num; ++i) {
-//            possibleImagesChunked.reserve(chunkSize);
-//            possibleImagesChunked.emplace_back();
-//            for (int j = 0; j < chunkSize; ++j) {
-//                if (counter < this->possibleGraphImagesOfPatternRoot.size()) {
-//                    unsigned int val = this->possibleGraphImagesOfPatternRoot[counter];
-//                    max_val = std::max(val, max_val);
-//                    possibleImagesChunked.back().emplace_back(val);
-//                }
-//                else{
-//                    break;
-//                }
-//                ++counter;
-//            }
-//        }
-//    }
 
     //run the estimation in parallel mode
 #pragma omp parallel default(none) firstprivate(runProps, approximatedGED) shared(estimations, snapShotEstimation, accumulatedApproximatedGED, possibleImagesChunked) reduction(+: accumulatedEstimation, OverallIterations, OverallZeroIterations)
@@ -845,9 +824,6 @@ inline bool Hops::PickRandomNeighbors(unsigned int id, unsigned int sourceSize, 
             }
             else{
                 NeighborNodeId = currentNodeNeighbors[runProps.randomNeighbors[rand_number]];
-                if (NeighborNodeId >= this->currentGraph->nodes()){
-                    continue;
-                }
             }
             if (runProps.VisitNeighbor(id, NeighborNodeId)) {
                 //Random neighbor is not mapped yet
