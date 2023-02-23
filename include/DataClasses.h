@@ -69,6 +69,7 @@ public:
     const std::vector<Nodes>& graph() const {return _graph;};
     INDEX nodes() const;
     INDEX edges() const;
+    void set_graph(const std::vector<Nodes>& nodes);
     void set_edges(INDEX edges){_edges=edges;};
     INDEX degree(NodeId nodeId) const;
     INDEX degree(NodeId nodeId, Label label);
@@ -88,6 +89,14 @@ public:
     const Nodes& operator[](NodeId nodeId){return _graph[nodeId];};
     void sortNeighborIds();
     bool has_neighbor_label(NodeId nodeId, Label label);
+
+    bool comp_degree(NodeId i, NodeId j) const{
+        return this->degree(i) < this->degree(j);
+    };
+
+    void degree_sort(Nodes& nodes){
+        std::sort(nodes.begin(), nodes.end(), [this](NodeId l,NodeId r){return comp_degree(l,r);});
+    }
 
     static bool ReadBGF(const std::string& extension, std::ifstream& In, int& saveVersion, int& graphNumber, std::vector<std::string>& graphsNames,
                          std::vector<GraphType>& graphsTypes,
@@ -117,6 +126,8 @@ public:
     static bool ReachableNodes(const GraphStruct &graph, NodeId root, std::vector<INDEX> & reachability, INDEX Id, INDEX& number);
 
     static void DFS(const GraphStruct &graph, GraphStruct &tree, Nodes& nodeOrder, NodeId rootNodeId = -1, int seed = 0);
+    static void OptOrdering(const GraphStruct &graph, Nodes& nodeOrder);
+    static void ReorderGraph(GraphStruct &graph, const Nodes& nodeOrder);
 
     //Static functions
     //compare the given labeled degree vector with the labeled degree vector of the node with Id:nodeId of this graph
@@ -602,6 +613,8 @@ inline INDEX GraphStruct::edges() const {
     return _edges;
 }
 
+
+
 /// Check if a graph contains some edge
 /// \param source
 /// \param destination
@@ -658,6 +671,20 @@ inline bool GraphStruct::add_edge(NodeId source, NodeId destination) {
         return true;
     }
     return false;
+}
+
+void GraphStruct::set_graph(const std::vector<Nodes> &nodes) {
+    this->_nodes = nodes.size();
+    this->_edges = 0;
+    this->_graph = nodes;
+    this->_degrees.resize(_nodes);
+    for (NodeId i = 0; i < _nodes; ++i) {
+        const Nodes& neighbors = nodes[i];
+        this->_degrees[i] = neighbors.size();
+        this->_edges += neighbors.size();
+    }
+    this->_edges /= 2;
+    this->sortNeighborIds();
 }
 
 /// Get labels of the graph nodes
@@ -2747,16 +2774,58 @@ void GraphStruct::WriteEdges(std::ofstream& Out, const SaveParams &saveParams) {
 
 void GraphStruct::DFS(const GraphStruct &graph, GraphStruct &tree, Nodes &nodeOrder, NodeId rootNodeId, int seed) {
     std::mt19937_64 gen(seed);
-    if (rootNodeId == -1) {
+    NodeId max = -1;
+    if (rootNodeId == max) {
         rootNodeId = std::uniform_int_distribution<INDEX>(0, graph.nodes() - 1)(gen);
     }
     std::deque<std::pair<INDEX, INDEX>> swappedIds;
     std::vector<NodeId> neighborIds = std::vector<NodeId>(graph.maxDegree, 0);
-    std::iota(neighborIds.begin(), neighborIds.end(),0);
-    for (int i=0; i<graph.nodes(); ++i) {
+    std::iota(neighborIds.begin(), neighborIds.end(), 0);
+    for (int i = 0; i < graph.nodes(); ++i) {
         tree.add_node();
     }
     tree.graphType = GraphType::TREE;
+    std::unordered_set<INDEX> visitedNodes;
+    std::vector<NodeId> CurrentNodes;
+    CurrentNodes.emplace_back(rootNodeId);
+    nodeOrder.emplace_back(rootNodeId);
+    while (!CurrentNodes.empty()) {
+        NodeId NextNodeId = CurrentNodes.back();
+        CurrentNodes.pop_back();
+        if (visitedNodes.find(NextNodeId) == visitedNodes.end()) {
+            visitedNodes.insert(NextNodeId);
+            nodeOrder.emplace_back(NextNodeId);
+            INDEX degree = graph.get_neighbors(NextNodeId).size();
+            for (INDEX i = 0; i < degree; ++i) {
+                //Get random neighbor
+                INDEX idx = std::uniform_int_distribution<INDEX>(i, degree - 1)(gen);
+                NodeId NeighborNodeId = graph.get_neighbors(NextNodeId)[neighborIds[idx]];
+                std::swap(neighborIds[idx], neighborIds[i]);
+                swappedIds.push_front(std::pair<int, int>{idx, i});
+                if (visitedNodes.find(NeighborNodeId) == visitedNodes.end()) {
+                    CurrentNodes.emplace_back(NeighborNodeId);
+                    nodeOrder.emplace_back(NeighborNodeId);
+                    visitedNodes.insert(NeighborNodeId);
+                }
+            }
+            tree.add_edge(NextNodeId, CurrentNodes.back());
+            for (auto const &[a, b]: swappedIds) {
+                std::swap(neighborIds[b], neighborIds[a]);
+            }
+            swappedIds.clear();
+        }
+    }
+}
+
+void GraphStruct::OptOrdering(const GraphStruct &graph, Nodes &nodeOrder) {
+    NodeId rootNodeId;
+    NodeId max_degree = 0;
+    for (int i = 0; i < graph.nodes(); ++i) {
+        if (graph.degree(i) > max_degree){
+            max_degree = graph.degree(i);
+            rootNodeId = i;
+        }
+    }
     std::unordered_set<INDEX> visitedNodes = {rootNodeId};
     std::vector<NodeId> CurrentNodes;
     CurrentNodes.emplace_back(rootNodeId);
@@ -2764,26 +2833,40 @@ void GraphStruct::DFS(const GraphStruct &graph, GraphStruct &tree, Nodes &nodeOr
     while (!CurrentNodes.empty()){
         NodeId NextNodeId = CurrentNodes.back();
         CurrentNodes.pop_back();
-        INDEX degree = graph.get_neighbors(NextNodeId).size();
-        for (INDEX i = 0; i < degree; ++i) {
-            //Get random neighbor
-            INDEX idx = std::uniform_int_distribution<INDEX>(i, degree - 1)(gen);
-            NodeId NeighborNodeId = graph.get_neighbors(NextNodeId)[neighborIds[idx]];
-            std::swap(neighborIds[idx], neighborIds[i]);
-            swappedIds.push_front(std::pair<int, int>{idx, i});
+        Nodes neighbors = graph.get_neighbors(NextNodeId);
+        //std::sort(neighbors.begin(), neighbors.end(), [graph](NodeId l, NodeId r){return graph.comp_degree(l, r);});
+        for (auto NeighborNodeId : graph.get_neighbors(NextNodeId)) {
             if (visitedNodes.find(NeighborNodeId) == visitedNodes.end()){
                 CurrentNodes.emplace_back(NeighborNodeId);
                 nodeOrder.emplace_back(NeighborNodeId);
-                tree.add_edge(NextNodeId, NeighborNodeId);
                 visitedNodes.insert(NeighborNodeId);
             }
         }
-        for (auto const & [a, b] : swappedIds) {
-            std::swap(neighborIds[b], neighborIds[a]);
-        }
-        swappedIds.clear();
     }
 }
+
+void GraphStruct::ReorderGraph(GraphStruct &graph, const Nodes &nodeOrder) {
+
+    std::unordered_map<NodeId, NodeId> nodeMap;
+    int counter = 0;
+    for (auto node : nodeOrder) {
+        nodeMap.insert({node, counter});
+        ++counter;
+    }
+    std::vector<Nodes> newNodes = std::vector<Nodes>(graph.nodes());
+    counter = 0;
+    for (auto node : nodeOrder) {
+        const Nodes& neighbors = graph.get_neighbors(node);
+        for (auto n : neighbors) {
+            newNodes[counter].emplace_back(nodeMap[n]);
+        }
+        ++counter;
+    }
+    graph.set_graph(newNodes);
+
+}
+
+
 
 
 #endif //HOPS_DATACLASSES_H

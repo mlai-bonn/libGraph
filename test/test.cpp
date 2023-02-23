@@ -5,7 +5,13 @@
 
 int main(int argc, char *argv[]) {
 
+    int threads = -1;
+
     for (int i = 0; i < argc; ++i) {
+        std::string str = argv[i];
+        if (std::strcmp(argv[i], "--threads") == 0 || std::strcmp(argv[i], "--all")==0){
+            threads = std::stoi(argv[i+1]);
+        }
         if (std::strcmp(argv[i], "--load_speed") == 0 || std::strcmp(argv[i], "--all") == 0) {
             LoadSpeedTest();
         }
@@ -37,7 +43,7 @@ int main(int argc, char *argv[]) {
             HopsTimeTest();
         }
         if (std::strcmp(argv[i], "--hops_30s") == 0 || std::strcmp(argv[i], "--all") == 0) {
-            Hops30s();
+            Hops30s(threads);
         }
         if (std::strcmp(argv[i], "--hops_pattern") == 0 || std::strcmp(argv[i], "--all") == 0) {
             HopsPatternTest();
@@ -63,6 +69,9 @@ int main(int argc, char *argv[]) {
         }
         if (std::strcmp(argv[i], "--dfs") == 0 || std::strcmp(argv[i], "--all") == 0) {
             DFS();
+        }
+        if (std::strcmp(argv[i], "--reorder") == 0 || std::strcmp(argv[i], "--all") == 0) {
+            MapGraph();
         }
     }
     int x=0;

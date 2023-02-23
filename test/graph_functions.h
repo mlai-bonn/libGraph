@@ -49,10 +49,44 @@ bool ErdosRenyi(){
 }
 
 bool DFS(){
-    GraphStruct graph = GraphStruct("../../../GraphData/Hops/com-amazon.ungraph.bgfs");
+    GraphStruct graph = GraphStruct("../../../../GraphData/Hops/com-amazon.ungraph.bgfs");
     GraphStruct tree;
     Nodes order;
     GraphStruct::DFS(graph, tree, order);
+    int x = 0;
+}
+
+bool MapGraph(){
+
+    GraphStruct g(5,{});
+    g.add_edge(0,1);
+    g.add_edge(2,0);
+    g.add_edge(0, 3);
+    g.add_edge(3,2);
+    g.add_edge(4, 2);
+
+    GraphStruct t;
+    Nodes o;
+    GraphStruct::DFS(g, t, o);
+    GraphStruct::ReorderGraph(g, {4,2,0,1,3});
+
+
+    GraphStruct graph = GraphStruct("../../../../GraphData/Hops/com-amazon.ungraph.bgfs");
+    Nodes order;
+    GraphStruct tree;
+    GraphStruct::DFS(graph, tree, order);
+    Nodes newOrder = Nodes(order.size());
+    int i = 0;
+    for (auto o : order) {
+        newOrder[o] = i;
+        ++i;
+    }
+    GraphStruct newGraph(graph);
+    GraphStruct::ReorderGraph(newGraph, order);
+    GraphStruct::ReorderGraph(newGraph, newOrder);
+
+    bool y = newGraph == graph;
+
     int x = 0;
 }
 

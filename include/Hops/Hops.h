@@ -56,7 +56,7 @@ private:
     /// @param pattern_seed seed for some randomness of the spanning tree of the pattern
     LABEL_TYPE PatternPreprocessing(const DGraphStruct & spanTree, int pattern_seed = 0);
 
-    static void InitializeEstimation(unsigned int& id, RunProps& runProps, const std::vector<NodeId>& PatternRootImages);
+    static void InitializeEstimation(unsigned int& id, RunProps& runProps, const std::vector<NodeId>& PatternRootImages, bool random = true);
     /// Main function for the estimation of how often an unlabeled pattern occurs in the big graph
     /// @param id id of the estimation
     /// @param accumulatedEstimation accumulated estimation number for all estimations up to now
@@ -313,7 +313,6 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
     std::vector<UInt64> estimations;
     std::vector<long double> snapShotEstimation;
 
-
     //Preprocess the graph information, i.e. precompute the possible combination values by considering the max degree in the graph
     if (this->currentGraph != &graphs[graphId]) {
         this->currentGraph = &graphs[graphId];
@@ -342,12 +341,36 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
 
     //start clock for hops runtime measure
     start = std::chrono::high_resolution_clock::now();
-    runProps.endTime = start + std::chrono::microseconds ((std::size_t) (this->runParameters.runtime*1000000));
+
+    //Get random order of graph (use this for iteration later)
+
 
     //TODO check this (splitting this->possibleGraphImagesOfPatternRoot into thread many pieces should decrease variance)
-
     std::vector<Nodes> possibleImagesChunked;
 
+    unsigned int max_val = 0;
+    if (this->possibleGraphImagesOfPatternRoot.size() > this->runParameters.thread_num) {
+        int chunkSize = (int) (this->possibleGraphImagesOfPatternRoot.size() + this->runParameters.thread_num) /
+                        this->runParameters.thread_num;
+        int counter = 0;
+        for (int i = 0; i < this->runParameters.thread_num; ++i) {
+            possibleImagesChunked.reserve(chunkSize);
+            possibleImagesChunked.emplace_back();
+            for (int j = 0; j < chunkSize; ++j) {
+                if (counter < this->possibleGraphImagesOfPatternRoot.size()) {
+                    unsigned int val = this->possibleGraphImagesOfPatternRoot[counter];
+                    max_val = std::max(val, max_val);
+                    possibleImagesChunked.back().emplace_back(val);
+                }
+                else{
+                    break;
+                }
+                ++counter;
+            }
+        }
+    }
+
+    runProps.endTime = start + std::chrono::microseconds ((std::size_t) (this->runParameters.runtime*1000000));
 
     //run the estimation in parallel mode
 #pragma omp parallel default(none) firstprivate(runProps, approximatedGED) shared(estimations, snapShotEstimation, accumulatedApproximatedGED, possibleImagesChunked) reduction(+: accumulatedEstimation, OverallIterations, OverallZeroIterations)
@@ -370,7 +393,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
         LABEL_TYPE lType = runProps.labelType;
         while (runProps.runAlgorithm) {
             //get estimation of one embedding
-            InitializeEstimation(Id, runProps, possibleRootImages);
+            InitializeEstimation(Id, runProps, possibleRootImages, false);
             switch (runParameters.hops_type) {
                 //Hops embedding algorithm
                 case HOPS_TYPE::ESTIMATION:
@@ -576,7 +599,7 @@ inline void Hops::EvaluateResult(int approximatedGED, HOPS_TYPE hopsType) {
 }
 
 
-inline void Hops::InitializeEstimation(unsigned int& id, Hops::RunProps &runProps, const std::vector<NodeId>& PatternRootImages) {
+inline void Hops::InitializeEstimation(unsigned int& id, Hops::RunProps &runProps, const std::vector<NodeId>& PatternRootImages, bool random) {
     //Check if Id reaches integer limits, if so reset Id and all values for visited neighbors to 0
     if (id == std::numeric_limits<unsigned int>::max()){
         id = 0;
@@ -586,9 +609,14 @@ inline void Hops::InitializeEstimation(unsigned int& id, Hops::RunProps &runProp
     }
     ++id;
     NodeId GraphInitialImage;
-    //Determine the initial graph image of the pattern root node
-    NodeId rand = std::uniform_int_distribution<NodeId>(0, (NodeId) PatternRootImages.size() - 1)(runProps.gen);
-    GraphInitialImage = PatternRootImages[rand];
+    if (random) {
+        //Determine the initial graph image of the pattern root node
+        NodeId rand = std::uniform_int_distribution<NodeId>(0, (NodeId) PatternRootImages.size() - 1)(runProps.gen);
+        GraphInitialImage = PatternRootImages[rand];
+    }
+    else{
+        GraphInitialImage = PatternRootImages[id % PatternRootImages.size()];
+    }
 
     //Assign Initial Image
     runProps.treeGraphMap[0] = GraphInitialImage;
