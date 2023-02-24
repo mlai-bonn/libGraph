@@ -46,6 +46,7 @@ void Hops30s(int threads){
     GraphStruct tree;
     //GraphStruct::DFS(graphs[0], tree, order, -1, 0);
     GraphStruct::OptOrdering(graphs[0], order);
+    //int size = order.size();
     GraphStruct::ReorderGraph(graphs[0], order);
     Hops hops = Hops(graphs);
     if (threads == -1){

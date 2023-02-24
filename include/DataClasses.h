@@ -2804,8 +2804,6 @@ void GraphStruct::DFS(const GraphStruct &graph, GraphStruct &tree, Nodes &nodeOr
                 swappedIds.push_front(std::pair<int, int>{idx, i});
                 if (visitedNodes.find(NeighborNodeId) == visitedNodes.end()) {
                     CurrentNodes.emplace_back(NeighborNodeId);
-                    nodeOrder.emplace_back(NeighborNodeId);
-                    visitedNodes.insert(NeighborNodeId);
                 }
             }
             tree.add_edge(NextNodeId, CurrentNodes.back());
@@ -2833,13 +2831,19 @@ void GraphStruct::OptOrdering(const GraphStruct &graph, Nodes &nodeOrder) {
     while (!CurrentNodes.empty()){
         NodeId NextNodeId = CurrentNodes.back();
         CurrentNodes.pop_back();
-        Nodes neighbors = graph.get_neighbors(NextNodeId);
-        //std::sort(neighbors.begin(), neighbors.end(), [graph](NodeId l, NodeId r){return graph.comp_degree(l, r);});
-        for (auto NeighborNodeId : graph.get_neighbors(NextNodeId)) {
-            if (visitedNodes.find(NeighborNodeId) == visitedNodes.end()){
-                CurrentNodes.emplace_back(NeighborNodeId);
-                nodeOrder.emplace_back(NeighborNodeId);
-                visitedNodes.insert(NeighborNodeId);
+        std::vector<std::pair<NodeId, INDEX>> node_degrees;
+        for(auto n : graph.get_neighbors(NextNodeId)){
+            node_degrees.emplace_back(n, graph.degree(n));
+        }
+        std::sort(node_degrees.begin(), node_degrees.end(), [&](const auto& a, const auto& b)
+        {
+            return a.second > b.second;
+        });
+        for (auto [n, d] : node_degrees) {
+            if (visitedNodes.find(n) == visitedNodes.end()){
+                CurrentNodes.emplace_back(n);
+                nodeOrder.emplace_back(n);
+                visitedNodes.insert(n);
             }
         }
     }
