@@ -39,19 +39,24 @@ void HopsTimeTest(){
     hops.Run(0, five_clique, {LABEL_TYPE::UNLABELED,0,1, 100000000, 0});
 }
 
-void Hops30s(int threads){
+void Hops100Iter(int threads){
     GraphStruct triangle = SimplePatterns::Triangle();
     GraphData graphs = GraphData<GraphStruct>("../../../../GraphData/Hops/com-amazon.ungraph.bgfs");
-    Nodes order;
-    GraphStruct tree;
-    //GraphStruct::DFS(graphs[0], tree, order, -1, 0);
-    GraphStruct::OptOrdering(graphs[0], order);
-    GraphStruct::ReorderGraph(graphs[0], order);
     Hops hops = Hops(graphs);
     if (threads == -1){
         threads = omp_get_max_threads();
     }
-    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,0,threads, (unsigned int) (hops.GetGraphs().graphData[0].nodes()/threads * 100 ), 0,true});
+    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,0,threads, 100, 0,true});
+}
+
+void Hops10s(int threads){
+    GraphStruct triangle = SimplePatterns::Triangle();
+    GraphData graphs = GraphData<GraphStruct>("../../../../GraphData/Hops/com-amazon.ungraph.bgfs");
+    Hops hops = Hops(graphs);
+    if (threads == -1){
+        threads = omp_get_max_threads();
+    }
+    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,10,threads, 0, 0,true});
 }
 
 void HopsPatternTest(){
@@ -87,12 +92,13 @@ void HopsParallelizationTest(){
         auto path = "../../../../GraphData/Hops/com-" + graph + ".ungraph.bgfs";
         Hops hops = Hops(path, "../Results/");
         int max_threads = omp_get_max_threads();
+        unsigned int graph_size = hops.GetGraphs().graphData[0].nodes();
         for (unsigned int i = 1; i <= max_threads; ++i) {
-            RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 30, i, 0, 0, true, true, true};
+            RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 30, (int) i, 0, 0, true, true, true};
             hops.Run(0, triangle, unlabeledRun);
         }
         for (unsigned int i = 1; i <= max_threads; ++i) {
-            RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 0, i, 100000000/i, 0, true, true, true};
+            RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 0, (int) i, 1000, 0, true, true, true};
             hops.Run(0, triangle, unlabeledRun);
         }
     }

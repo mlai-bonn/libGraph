@@ -28,12 +28,25 @@ public:
     /// Constructor which gets the graph data and some parameters for running the approximation
     /// @param graphs input graphs
     /// @param parameters input parameters such as Save path etc.
-    explicit Hops(GraphData<GraphStruct>& graphs) : graphs(graphs) {};
+    explicit Hops(GraphData<GraphStruct>& graphs) : graphs(graphs) {
+        for (auto & graph : this->graphs.graphData) {
+            Nodes order;
+            GraphStruct tree;
+            GraphStruct::OptOrdering(graph, order);
+            GraphStruct::ReorderGraph(graph, order);
+        }
+    };
     /// Constructor which gets the graph data and some parameters for running the approximation
     /// @param graphs input graphs
     /// @param parameters input parameters such as Save path etc.
     explicit Hops(const std::string& in_path, const std::string& out_path) : out_path(out_path) {
         this->graphs = GraphData<GraphStruct>(in_path);
+        for (auto & graph : this->graphs.graphData) {
+            Nodes order;
+            GraphStruct tree;
+            GraphStruct::OptOrdering(graph, order);
+            GraphStruct::ReorderGraph(graph, order);
+        }
     };
 
     /// Main function of the hops class runs the hops algorithm with different run parameters
@@ -56,7 +69,7 @@ private:
     /// @param pattern_seed seed for some randomness of the spanning tree of the pattern
     LABEL_TYPE PatternPreprocessing(const DGraphStruct & spanTree, int pattern_seed = 0);
 
-    static void InitializeEstimation(unsigned int& id, RunProps& runProps, const std::vector<NodeId>& PatternRootImages, bool random = true);
+    void InitializeEstimation(unsigned int& id, RunProps& runProps, const std::vector<NodeId>& PatternRootImages, bool random = true);
     /// Main function for the estimation of how often an unlabeled pattern occurs in the big graph
     /// @param id id of the estimation
     /// @param accumulatedEstimation accumulated estimation number for all estimations up to now
@@ -124,6 +137,13 @@ public:
 
         bool VisitNeighbor(unsigned int Id, NodeId neighborNodeId);
 
+        INDEX currentRootNode;
+        INDEX currentNodeIteration = 0;
+        bool first_run = true;
+        std::chrono::time_point<std::chrono::high_resolution_clock> first_run_start;
+        double first_run_time = 0.0;
+        INDEX counter = 0;
+
         Nodes treeGraphMap;
         std::vector<NodeId> NewImagePositions;
         std::vector<NodeId> randomNeighbors;
@@ -151,11 +171,12 @@ public:
         bool runAlgorithm = false;
 
 
+
     };
 
     void SaveEstimationSnapshot(RunProps& runProps, long double accumulatedEstimation, UInt64 OverallIterations) const;
 
-    void CheckEstimationFinished(RunProps &props, UInt64 OverallIterations) const;
+    void CheckEstimationFinished(RunProps &props, UInt64 OverallIterations, const Nodes& possibleRootImages);
 
     void MergeEstimationValues(RunProps& runProps, std::vector<UInt64>& estimations, std::vector<long double>& snapShotEstimation) const;
 
@@ -349,7 +370,9 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
     std::vector<Nodes> possibleImagesChunked;
 
     unsigned int max_val = 0;
-    if (this->possibleGraphImagesOfPatternRoot.size() > this->runParameters.thread_num) {
+    INDEX possible_roots = this->possibleGraphImagesOfPatternRoot.size();
+    if (possible_roots > this->runParameters.thread_num) {
+
         int chunkSize = (int) (this->possibleGraphImagesOfPatternRoot.size() + this->runParameters.thread_num) /
                         this->runParameters.thread_num;
         int counter = 0;
@@ -388,6 +411,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
         runProps.runAlgorithm = true;
         runProps.currentTime = std::chrono::high_resolution_clock::now();
         runProps.lastSnapShotTime = std::chrono::high_resolution_clock::now() - std::chrono::hours(1);
+        runProps.currentRootNode = 0;
         //set run id, this will be used to determine the visited nodes by comparing ids
         unsigned int Id = 0;
         LABEL_TYPE lType = runProps.labelType;
@@ -411,7 +435,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
                     ++OverallIterations;
                     SaveEstimationSnapshot(runProps, accumulatedEstimation, OverallIterations);
 
-                    CheckEstimationFinished(runProps, OverallIterations);
+                    CheckEstimationFinished(runProps, OverallIterations, possibleRootImages);
 
                     break;
                     //TODO add graph edit distance algorithm
@@ -436,9 +460,8 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
                     if (approxGED == 0){
                         runProps.runAlgorithm = false;
                     }
-
                     else {
-                        CheckEstimationFinished(runProps, OverallIterations);
+                        CheckEstimationFinished(runProps, OverallIterations, possibleRootImages);
                     }
                     break;
             }
@@ -489,16 +512,36 @@ inline void Hops::SaveEstimationSnapshot(RunProps& runProps, long double accumul
     }
 }
 
-inline void Hops::CheckEstimationFinished(Hops::RunProps &runProps, UInt64 OverallIterations) const {
-    if (this->runParameters.runtime != 0) {
-        if (OverallIterations % 1000 == 0) {
-            runProps.currentTime = std::chrono::high_resolution_clock::now();
-            if (runProps.endTime < runProps.currentTime) {
+inline void Hops::CheckEstimationFinished(Hops::RunProps &runProps, UInt64 OverallIterations, const Nodes& possibleRootImages)  {
+    if (this->runParameters.runtime != 0 && runProps.first_run) {
+        if (runProps.first_run && runProps.currentRootNode >= possibleRootImages.size() - 1){
+            auto count =  std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - runProps.first_run_start).count();
+            runProps.first_run_time = (double) count/1e6;
+            std::cout << runProps.first_run_time << std::endl;
+            this->runParameters.iteration_per_node = (int) (this->runParameters.runtime / runProps.first_run_time*2);
+            std::cout << this->runParameters.iteration_per_node << std::endl;
+            if (this->runParameters.iteration_per_node <= 0){
                 runProps.runAlgorithm = false;
             }
+            runProps.currentRootNode = 0;
+            runProps.currentNodeIteration = 0;
+            runProps.first_run = false;
         }
-    } else if (OverallIterations >= this->runParameters.iteration_per_thread) {
-        runProps.runAlgorithm = false;
+        else{
+            ++runProps.currentRootNode;
+        }
+//        if (OverallIterations % 1000 == 0) {
+//            runProps.currentTime = std::chrono::high_resolution_clock::now();
+//            if (runProps.endTime < runProps.currentTime) {
+//                runProps.runAlgorithm = false;
+//            }
+//        }
+    }
+    else{
+        INDEX size = possibleRootImages.size();
+        if (runProps.counter == size * this->runParameters.iteration_per_node){
+            runProps.runAlgorithm = false;
+        }
     }
 }
 
@@ -600,6 +643,9 @@ inline void Hops::EvaluateResult(int approximatedGED, HOPS_TYPE hopsType) {
 
 
 inline void Hops::InitializeEstimation(unsigned int& id, Hops::RunProps &runProps, const std::vector<NodeId>& PatternRootImages, bool random) {
+    if (runProps.first_run && runProps.currentRootNode == 0){
+        runProps.first_run_start = std::chrono::high_resolution_clock::now();
+    }
     //Check if Id reaches integer limits, if so reset Id and all values for visited neighbors to 0
     if (id == std::numeric_limits<unsigned int>::max()){
         id = 0;
@@ -608,25 +654,37 @@ inline void Hops::InitializeEstimation(unsigned int& id, Hops::RunProps &runProp
         }
     }
     ++id;
-    NodeId GraphInitialImage;
     if (random) {
         //Determine the initial graph image of the pattern root node
         NodeId rand = std::uniform_int_distribution<NodeId>(0, (NodeId) PatternRootImages.size() - 1)(runProps.gen);
-        GraphInitialImage = PatternRootImages[rand];
+        //Assign Initial Image
+        runProps.treeGraphMap[0] = PatternRootImages[rand];
+        ++runProps.currentNodeIteration;
     }
     else{
-        GraphInitialImage = PatternRootImages[id % PatternRootImages.size()];
+        //std::cout << this->runParameters.iteration_per_node << std::endl;
+        //std::cout << runProps.currentRootNode << " (" << runProps.currentNodeIteration << "/" << this->runParameters.iteration_per_node << ")" << std::endl;
+        //Assign Initial Image
+        if (runProps.currentNodeIteration == this->runParameters.iteration_per_node){
+            ++runProps.currentRootNode;
+            runProps.currentNodeIteration = 0;
+        }
+        if (PatternRootImages.size() - 1 < runProps.currentRootNode){
+            runProps.currentRootNode = 0;
+            runProps.currentNodeIteration = 0;
+        }
+        runProps.treeGraphMap[0] = PatternRootImages[runProps.currentRootNode];
+        ++runProps.currentNodeIteration;
+        ++runProps.counter;
     }
 
-    //Assign Initial Image
-    runProps.treeGraphMap[0] = GraphInitialImage;
+
     if (runProps.runType == RUN_TYPE::UNORDERED_SET) {
         runProps.graphImages.clear();
-        runProps.graphImages.emplace(GraphInitialImage);
+        runProps.graphImages.emplace(runProps.treeGraphMap[0]);
     }
     else if(runProps.runType == RUN_TYPE::VECTOR){
-
-        runProps.savedNeighbors[GraphInitialImage] = id;
+        runProps.savedNeighbors[runProps.treeGraphMap[0]] = id;
     }
 }
 
@@ -942,7 +1000,7 @@ inline bool Hops::CheckValidGraphEmbedding(const Nodes &nodes, const RunProps& r
                 const Nodes &sourceNeighbors = this->currentGraph->neighbors(sourceId);
                 const Nodes &targetNeighbors = this->currentGraph->neighbors(targetId);
 
-                if (sourceNeighbors.size() < targetNeighbors.size()) {
+                if (sourceNeighbors.size() <= targetNeighbors.size()) {
 //                    if(!std::binary_search(sourceNeighbors.begin(), sourceNeighbors.end(), targetId)){
 //                        return false;
 //                    }

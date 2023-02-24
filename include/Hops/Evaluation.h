@@ -21,7 +21,7 @@
 class Evaluation {
 public:
     Evaluation() = default;
-    Evaluation(GraphStruct& graph, GraphStruct& pattern, RunParameters runParameters) : graph(&graph), pattern(&pattern), parameters(std::move(runParameters)), threads(runParameters.thread_num){};
+    Evaluation(GraphStruct& graph, GraphStruct& pattern, RunParameters& runParameters) : graph(&graph), pattern(&pattern), parameters(runParameters), threads(runParameters.thread_num){};
     double HopsRuntime() const{return (double)(hopsRuntime.count())/1000000.0;};
     long double hopsEstimation = 0;
     int threads = 0;
@@ -59,7 +59,8 @@ public:
                     std::cout << "\t" << "Unlabeled embedding" << std::endl;
                 }
                 std::cout << "\t" << "Estimation: " << hopsEstimation << std::endl;
-                std::cout << "\t" << "Iterations: " << hopsIterations << std::endl;
+                std::cout << "\t" << "Iterations per Node: " << parameters.iteration_per_node << std::endl;
+                std::cout << "\t" << "Overall Iterations: " << hopsIterations << std::endl;
                 std::cout << "\t" << "NonZeroIterations: " << hopsIterations - hopsZeroIterations << std::endl;
                 std::cout << "\t" << "ZeroIterations: " << hopsZeroIterations << std::endl;
                 std::cout << "---Parallelization---" << std::endl;

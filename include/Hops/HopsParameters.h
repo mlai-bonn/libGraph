@@ -31,7 +31,7 @@ struct RunParameters{
     LABEL_TYPE labelType = LABEL_TYPE::UNLABELED;
     double runtime = 30;
     int thread_num = -1;
-    unsigned int iteration_per_thread = 0;
+    int iteration_per_node = 0;
     int seed = 0;
     bool print = true;
     bool save = false;
@@ -44,7 +44,6 @@ struct RunParameters{
 
     DGraphStruct spanningTree = DGraphStruct();
     NodeId spanningTreeRootNode = std::numeric_limits<NodeId>::max();
-
 };
 
 

@@ -42,8 +42,11 @@ int main(int argc, char *argv[]) {
         if (std::strcmp(argv[i], "--hops_time") == 0 || std::strcmp(argv[i], "--all") == 0) {
             HopsTimeTest();
         }
-        if (std::strcmp(argv[i], "--hops_30s") == 0 || std::strcmp(argv[i], "--all") == 0) {
-            Hops30s(threads);
+        if (std::strcmp(argv[i], "--hops_10s") == 0 || std::strcmp(argv[i], "--all") == 0) {
+            Hops10s(threads);
+        }
+        if (std::strcmp(argv[i], "--hops_100iter") == 0 || std::strcmp(argv[i], "--all") == 0) {
+            Hops100Iter(threads);
         }
         if (std::strcmp(argv[i], "--hops_pattern") == 0 || std::strcmp(argv[i], "--all") == 0) {
             HopsPatternTest();
