@@ -87,15 +87,12 @@ void HopsPatternTest(){
 
 void HopsParallelizationTest(){
     GraphStruct triangle = SimplePatterns::Triangle();
-
     for (std::string graph : {"dblp", "amazon", "youtube", "orkut", "lj"}) {
         auto path = "../../../../GraphData/Hops/com-" + graph + ".ungraph.bgfs";
         Hops hops = Hops(path, "../Results/");
         int max_threads = omp_get_max_threads();
-        int size = (int) hops.GetGraphs().graphData[0].nodes();
-        int num_iter = 100000000/size;
         for (unsigned int i = 1; i <= max_threads; ++i) {
-            RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 0, (int) i, num_iter, 0, true, true, true};
+            RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 0, (int) i, 1000, 0, true, true, true};
             hops.Run(0, triangle, unlabeledRun);
         }
     }
