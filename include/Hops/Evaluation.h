@@ -36,10 +36,13 @@ public:
     std::chrono::microseconds preprocessingTime{};
     std::chrono::microseconds hopsRuntime{};
     std::chrono::microseconds evaluationRuntime{};
+
+    //Run parameters
+    RunParameters parameters;
 private:
     GraphStruct* graph = nullptr;
     GraphStruct* pattern = nullptr;
-    RunParameters parameters;
+
     std::ofstream fs;
 
 

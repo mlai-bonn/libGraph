@@ -46,7 +46,7 @@ void Hops100Iter(int threads){
     if (threads == -1){
         threads = omp_get_max_threads();
     }
-    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,0,threads, 100, 0,true});
+    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,0,threads, 325, 0,true});
 }
 
 void Hops10s(int threads){

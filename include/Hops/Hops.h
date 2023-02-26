@@ -70,6 +70,7 @@ private:
     LABEL_TYPE PatternPreprocessing(const DGraphStruct & spanTree, int pattern_seed = 0);
 
     void InitializeEstimation(unsigned int& id, RunProps& runProps, const std::vector<NodeId>& PatternRootImages, bool random = true);
+    void InitEstimation(unsigned int& id, RunProps& runProps, const std::vector<NodeId>& PatternRootImages, bool random = true);
     /// Main function for the estimation of how often an unlabeled pattern occurs in the big graph
     /// @param id id of the estimation
     /// @param accumulatedEstimation accumulated estimation number for all estimations up to now
@@ -395,7 +396,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
 
     runProps.endTime = start + std::chrono::microseconds ((std::size_t) (this->runParameters.runtime*1000000));
 
-    //run the estimation in parallel mode
+////run the estimation in parallel mode
 #pragma omp parallel default(none) firstprivate(runProps, approximatedGED) shared(estimations, snapShotEstimation, accumulatedApproximatedGED, possibleImagesChunked) reduction(+: accumulatedEstimation, OverallIterations, OverallZeroIterations)
     {
         int thread_num = omp_get_thread_num();
@@ -411,61 +412,59 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
         runProps.runAlgorithm = true;
         runProps.currentTime = std::chrono::high_resolution_clock::now();
         runProps.lastSnapShotTime = std::chrono::high_resolution_clock::now() - std::chrono::hours(1);
-        runProps.currentRootNode = 0;
         //set run id, this will be used to determine the visited nodes by comparing ids
         unsigned int Id = 0;
         LABEL_TYPE lType = runProps.labelType;
-        while (runProps.runAlgorithm) {
-            //get estimation of one embedding
-            InitializeEstimation(Id, runProps, possibleRootImages, false);
-            switch (runParameters.hops_type) {
-                //Hops embedding algorithm
-                case HOPS_TYPE::ESTIMATION:
-                    //Start the embedding
-                    //Unlabeled Case
-                    if (runProps.labelType == LABEL_TYPE::UNLABELED) {
-                        Hops::UnlabeledEmbedding(Id, accumulatedEstimation, runProps.privateEstimations,
-                                           OverallZeroIterations, runProps);
-                    }
-                        //Labeled Case
-                    else {
-                        Hops::LabeledEmbeddings(Id, accumulatedEstimation, runProps.privateEstimations, OverallZeroIterations,
-                                          runProps);
-                    }
-                    ++OverallIterations;
-                    SaveEstimationSnapshot(runProps, accumulatedEstimation, OverallIterations);
+        for (auto currentNode : possibleRootImages) {
+            runProps.currentRootNode = currentNode;
+            for (int iter = 0; iter < this->runParameters.iteration_per_node; ++iter) {
+                //get estimation of one embedding
+                InitEstimation(Id, runProps, possibleRootImages, false);
+                switch (runParameters.hops_type) {
+                    //Hops embedding algorithm
+                    case HOPS_TYPE::ESTIMATION:
+                        //Start the embedding
+                        //Unlabeled Case
+                        if (runProps.labelType == LABEL_TYPE::UNLABELED) {
+                            Hops::UnlabeledEmbedding(Id, accumulatedEstimation, runProps.privateEstimations,
+                                                     OverallZeroIterations, runProps);
+                        }
+                            //Labeled Case
+                        else {
+                            Hops::LabeledEmbeddings(Id, accumulatedEstimation, runProps.privateEstimations, OverallZeroIterations,
+                                                    runProps);
+                        }
+                        ++OverallIterations;
+                        SaveEstimationSnapshot(runProps, accumulatedEstimation, OverallIterations);
+                        break;
+                        //TODO add graph edit distance algorithm
+                    case HOPS_TYPE::GRAPH_EDIT_DISTANCE:
+                        unsigned int approxGED = static_cast<int>(this->currentPattern->nodes() + this->currentPattern->edges());
 
-                    CheckEstimationFinished(runProps, OverallIterations, possibleRootImages);
-
-                    break;
-                    //TODO add graph edit distance algorithm
-                case HOPS_TYPE::GRAPH_EDIT_DISTANCE:
-                    unsigned int approxGED = static_cast<int>(this->currentPattern->nodes() + this->currentPattern->edges());
-
-                    runProps.labelType = LABEL_TYPE::UNLABELED;
-                    UnlabeledGraphEditDistance(Id, approxGED, runProps);
-                    if (lType != LABEL_TYPE::UNLABELED) {
-                        for (int i = 0; i < runProps.treeGraphMap.size(); ++i) {
-                            int TreeNode = i;
-                            NodeId GraphNode = runProps.treeGraphMap[i];
-                            if(GraphNode >= 0){
-                                if(this->currentPattern->label(TreeNode) != this->currentGraph->label(GraphNode)){
-                                    ++approxGED;
+                        runProps.labelType = LABEL_TYPE::UNLABELED;
+                        UnlabeledGraphEditDistance(Id, approxGED, runProps);
+                        if (lType != LABEL_TYPE::UNLABELED) {
+                            for (int i = 0; i < runProps.treeGraphMap.size(); ++i) {
+                                int TreeNode = i;
+                                NodeId GraphNode = runProps.treeGraphMap[i];
+                                if(GraphNode >= 0){
+                                    if(this->currentPattern->label(TreeNode) != this->currentGraph->label(GraphNode)){
+                                        ++approxGED;
+                                    }
                                 }
                             }
                         }
-                    }
-                    ++OverallIterations;
-                    approximatedGED = std::min(approximatedGED, approxGED);
-                    if (approxGED == 0){
-                        runProps.runAlgorithm = false;
-                    }
-                    else {
-                        CheckEstimationFinished(runProps, OverallIterations, possibleRootImages);
-                    }
-                    break;
+                        ++OverallIterations;
+                        approximatedGED = std::min(approximatedGED, approxGED);
+                        if (approxGED == 0){
+                            runProps.runAlgorithm = false;
+                        }
+                        else {
+                            CheckEstimationFinished(runProps, OverallIterations, possibleRootImages);
+                        }
+                        break;
+                }
             }
-
         }
         if (this->runParameters.snapshot_time != -1) {
             runProps.privateSnapshots.emplace_back((double) accumulatedEstimation / (double) OverallIterations);
@@ -518,7 +517,8 @@ inline void Hops::CheckEstimationFinished(Hops::RunProps &runProps, UInt64 Overa
             auto count =  std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - runProps.first_run_start).count();
             runProps.first_run_time = (double) count/1e6;
             std::cout << runProps.first_run_time << std::endl;
-            this->runParameters.iteration_per_node = (int) (this->runParameters.runtime / runProps.first_run_time*2);
+            this->runParameters.iteration_per_node = (int) (this->runParameters.runtime / runProps.first_run_time*1.5);
+            this->hopsEvaluation.parameters.iteration_per_node = this->runParameters.iteration_per_node + 1;
             std::cout << this->runParameters.iteration_per_node << std::endl;
             if (this->runParameters.iteration_per_node <= 0){
                 runProps.runAlgorithm = false;
@@ -676,6 +676,38 @@ inline void Hops::InitializeEstimation(unsigned int& id, Hops::RunProps &runProp
         runProps.treeGraphMap[0] = PatternRootImages[runProps.currentRootNode];
         ++runProps.currentNodeIteration;
         ++runProps.counter;
+    }
+
+
+    if (runProps.runType == RUN_TYPE::UNORDERED_SET) {
+        runProps.graphImages.clear();
+        runProps.graphImages.emplace(runProps.treeGraphMap[0]);
+    }
+    else if(runProps.runType == RUN_TYPE::VECTOR){
+        runProps.savedNeighbors[runProps.treeGraphMap[0]] = id;
+    }
+}
+
+inline void Hops::InitEstimation(unsigned int& id, Hops::RunProps &runProps, const std::vector<NodeId>& PatternRootImages, bool random) {
+    if (runProps.first_run && runProps.currentRootNode == 0){
+        runProps.first_run_start = std::chrono::high_resolution_clock::now();
+    }
+    //Check if Id reaches integer limits, if so reset Id and all values for visited neighbors to 0
+    if (id == std::numeric_limits<unsigned int>::max()){
+        id = 0;
+        for(NodeId& nodeId : runProps.savedNeighbors){
+            nodeId = 0;
+        }
+    }
+    ++id;
+    if (random) {
+        //Determine the initial graph image of the pattern root node
+        NodeId rand = std::uniform_int_distribution<NodeId>(0, (NodeId) PatternRootImages.size() - 1)(runProps.gen);
+        //Assign Initial Image
+        runProps.treeGraphMap[0] = PatternRootImages[rand];
+    }
+    else{
+        runProps.treeGraphMap[0] = runProps.currentRootNode;
     }
 
 
