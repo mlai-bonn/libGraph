@@ -68,8 +68,6 @@ private:
     /// @param spanTree id of the graph used for estimation
     /// @param pattern_seed seed for some randomness of the spanning tree of the pattern
     LABEL_TYPE PatternPreprocessing(const DGraphStruct & spanTree, int pattern_seed = 0);
-
-    void InitializeEstimation(unsigned int& id, RunProps& runProps, const std::vector<NodeId>& PatternRootImages, bool random = true);
     void InitEstimation(unsigned int& id, RunProps& runProps, const std::vector<NodeId>& PatternRootImages, bool random = true);
     /// Main function for the estimation of how often an unlabeled pattern occurs in the big graph
     /// @param id id of the estimation
@@ -144,6 +142,7 @@ public:
         std::chrono::time_point<std::chrono::high_resolution_clock> first_run_start;
         double first_run_time = 0.0;
         INDEX counter = 0;
+        bool seed_stable = true;
 
         Nodes treeGraphMap;
         std::vector<NodeId> NewImagePositions;
@@ -407,8 +406,9 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
         else {
             possibleRootImages = possibleImagesChunked[thread_num];
         }
-        //set seed for algorithm
-        runProps.gen.seed(runProps.seed + thread_num);
+        if (!runProps.seed_stable) {
+            runProps.gen.seed(runProps.seed);
+        }
         runProps.runAlgorithm = true;
         runProps.currentTime = std::chrono::high_resolution_clock::now();
         runProps.lastSnapShotTime = std::chrono::high_resolution_clock::now() - std::chrono::hours(1);
@@ -416,7 +416,11 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
         unsigned int Id = 0;
         LABEL_TYPE lType = runProps.labelType;
         for (auto currentNode : possibleRootImages) {
-            runProps.currentRootNode = currentNode;
+            if (runProps.seed_stable) {
+                //set seed for algorithm
+                runProps.gen.seed(runProps.seed + currentNode);
+                runProps.currentRootNode = currentNode;
+            }
             for (int iter = 0; iter < this->runParameters.iteration_per_node; ++iter) {
                 //get estimation of one embedding
                 InitEstimation(Id, runProps, possibleRootImages, false);
@@ -638,53 +642,6 @@ inline void Hops::EvaluateResult(int approximatedGED, HOPS_TYPE hopsType) {
     }
     if(!this->out_path.empty()){
         this->hopsEvaluation.save(this->out_path);
-    }
-}
-
-
-inline void Hops::InitializeEstimation(unsigned int& id, Hops::RunProps &runProps, const std::vector<NodeId>& PatternRootImages, bool random) {
-    if (runProps.first_run && runProps.currentRootNode == 0){
-        runProps.first_run_start = std::chrono::high_resolution_clock::now();
-    }
-    //Check if Id reaches integer limits, if so reset Id and all values for visited neighbors to 0
-    if (id == std::numeric_limits<unsigned int>::max()){
-        id = 0;
-        for(NodeId& nodeId : runProps.savedNeighbors){
-            nodeId = 0;
-        }
-    }
-    ++id;
-    if (random) {
-        //Determine the initial graph image of the pattern root node
-        NodeId rand = std::uniform_int_distribution<NodeId>(0, (NodeId) PatternRootImages.size() - 1)(runProps.gen);
-        //Assign Initial Image
-        runProps.treeGraphMap[0] = PatternRootImages[rand];
-        ++runProps.currentNodeIteration;
-    }
-    else{
-        //std::cout << this->runParameters.iteration_per_node << std::endl;
-        //std::cout << runProps.currentRootNode << " (" << runProps.currentNodeIteration << "/" << this->runParameters.iteration_per_node << ")" << std::endl;
-        //Assign Initial Image
-        if (runProps.currentNodeIteration == this->runParameters.iteration_per_node){
-            ++runProps.currentRootNode;
-            runProps.currentNodeIteration = 0;
-        }
-        if (PatternRootImages.size() - 1 < runProps.currentRootNode){
-            runProps.currentRootNode = 0;
-            runProps.currentNodeIteration = 0;
-        }
-        runProps.treeGraphMap[0] = PatternRootImages[runProps.currentRootNode];
-        ++runProps.currentNodeIteration;
-        ++runProps.counter;
-    }
-
-
-    if (runProps.runType == RUN_TYPE::UNORDERED_SET) {
-        runProps.graphImages.clear();
-        runProps.graphImages.emplace(runProps.treeGraphMap[0]);
-    }
-    else if(runProps.runType == RUN_TYPE::VECTOR){
-        runProps.savedNeighbors[runProps.treeGraphMap[0]] = id;
     }
 }
 
