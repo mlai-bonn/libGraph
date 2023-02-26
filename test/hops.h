@@ -92,11 +92,6 @@ void HopsParallelizationTest(){
         auto path = "../../../../GraphData/Hops/com-" + graph + ".ungraph.bgfs";
         Hops hops = Hops(path, "../Results/");
         int max_threads = omp_get_max_threads();
-        unsigned int graph_size = hops.GetGraphs().graphData[0].nodes();
-        for (unsigned int i = 1; i <= max_threads; ++i) {
-            RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 30, (int) i, 0, 0, true, true, true};
-            hops.Run(0, triangle, unlabeledRun);
-        }
         for (unsigned int i = 1; i <= max_threads; ++i) {
             RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 0, (int) i, 325, 0, true, true, true};
             hops.Run(0, triangle, unlabeledRun);
