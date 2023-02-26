@@ -98,7 +98,7 @@ void HopsParallelizationTest(){
             hops.Run(0, triangle, unlabeledRun);
         }
         for (unsigned int i = 1; i <= max_threads; ++i) {
-            RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 0, (int) i, 1000, 0, true, true, true};
+            RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 0, (int) i, 325, 0, true, true, true};
             hops.Run(0, triangle, unlabeledRun);
         }
     }
