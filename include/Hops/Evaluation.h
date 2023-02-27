@@ -21,10 +21,11 @@
 class Evaluation {
 public:
     Evaluation() = default;
-    Evaluation(GraphStruct& graph, GraphStruct& pattern, RunParameters& runParameters) : graph(&graph), pattern(&pattern), parameters(runParameters), threads(runParameters.thread_num){};
+    Evaluation(GraphStruct& graph, GraphStruct& pattern, RunParameters& runParameters) : graph(&graph), pattern(&pattern), parameters(runParameters), threads(runParameters.thread_num), seed(runParameters.seed){};
     double HopsRuntime() const{return (double)(hopsRuntime.count())/1000000.0;};
     long double hopsEstimation = 0;
     int threads = 0;
+    int seed = 0;
     std::map<size_t, size_t> estimationMap;
     std::vector<long double> snapshots;
     std::vector<long double> snapShotErrors;
