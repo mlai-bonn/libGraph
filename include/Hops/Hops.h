@@ -366,56 +366,50 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
     //Get random order of graph (use this for iteration later)
 
 
-    //TODO check this (splitting this->possibleGraphImagesOfPatternRoot into thread many pieces should decrease variance)
-    std::vector<Nodes> possibleImagesChunked;
-
-    unsigned int max_val = 0;
-    INDEX possible_roots = this->possibleGraphImagesOfPatternRoot.size();
-    if (possible_roots > this->runParameters.thread_num) {
-
-        int chunkSize = (int) (this->possibleGraphImagesOfPatternRoot.size() + this->runParameters.thread_num) /
-                        this->runParameters.thread_num;
-        int counter = 0;
-        for (int i = 0; i < this->runParameters.thread_num; ++i) {
-            possibleImagesChunked.reserve(chunkSize);
-            possibleImagesChunked.emplace_back();
-            for (int j = 0; j < chunkSize; ++j) {
-                if (counter < this->possibleGraphImagesOfPatternRoot.size()) {
-                    unsigned int val = this->possibleGraphImagesOfPatternRoot[counter];
-                    max_val = std::max(val, max_val);
-                    possibleImagesChunked.back().emplace_back(val);
-                }
-                else{
-                    break;
-                }
-                ++counter;
-            }
-        }
-    }
+//    //TODO check this (splitting this->possibleGraphImagesOfPatternRoot into thread many pieces should decrease variance)
+//    std::vector<Nodes> possibleImagesChunked;
+//
+//    unsigned int max_val = 0;
+//    INDEX possible_roots = this->possibleGraphImagesOfPatternRoot.size();
+//    if (possible_roots > this->runParameters.thread_num) {
+//
+//        int chunkSize = (int) (this->possibleGraphImagesOfPatternRoot.size() + this->runParameters.thread_num) /
+//                        this->runParameters.thread_num;
+//        int counter = 0;
+//        for (int i = 0; i < this->runParameters.thread_num; ++i) {
+//            possibleImagesChunked.reserve(chunkSize);
+//            possibleImagesChunked.emplace_back();
+//            for (int j = 0; j < chunkSize; ++j) {
+//                if (counter < this->possibleGraphImagesOfPatternRoot.size()) {
+//                    unsigned int val = this->possibleGraphImagesOfPatternRoot[counter];
+//                    max_val = std::max(val, max_val);
+//                    possibleImagesChunked.back().emplace_back(val);
+//                }
+//                else{
+//                    break;
+//                }
+//                ++counter;
+//            }
+//        }
+//    }
 
     runProps.endTime = start + std::chrono::microseconds ((std::size_t) (this->runParameters.runtime*1000000));
 
+    //set run id, this will be used to determine the visited nodes by comparing ids
+    unsigned int Id = 0;
 ////run the estimation in parallel mode
-#pragma omp parallel default(none) firstprivate(runProps, approximatedGED) shared(estimations, snapShotEstimation, accumulatedApproximatedGED, possibleImagesChunked) reduction(+: accumulatedEstimation, OverallIterations, OverallZeroIterations)
+#pragma omp parallel default(none) firstprivate(runProps, approximatedGED, Id) shared(estimations, snapShotEstimation, accumulatedApproximatedGED, possibleGraphImagesOfPatternRoot) reduction(+: accumulatedEstimation, OverallIterations, OverallZeroIterations)
     {
         int thread_num = omp_get_thread_num();
-        Nodes possibleRootImages;
-        if (possibleImagesChunked.empty()){
-            possibleRootImages = this->possibleGraphImagesOfPatternRoot;
-        }
-        else {
-            possibleRootImages = possibleImagesChunked[thread_num];
-        }
         if (!runProps.seed_stable) {
-            runProps.gen.seed(runProps.seed);
+            runProps.gen.seed(runProps.seed + thread_num);
         }
         runProps.runAlgorithm = true;
         runProps.currentTime = std::chrono::high_resolution_clock::now();
         runProps.lastSnapShotTime = std::chrono::high_resolution_clock::now() - std::chrono::hours(1);
-        //set run id, this will be used to determine the visited nodes by comparing ids
-        unsigned int Id = 0;
-        LABEL_TYPE lType = runProps.labelType;
-        for (auto currentNode : possibleRootImages) {
+
+        #pragma omp for schedule(guided)
+        for (auto currentNode : possibleGraphImagesOfPatternRoot) {
             if (runProps.seed_stable) {
                 //set seed for algorithm
                 runProps.gen.seed(runProps.seed + currentNode);
@@ -423,7 +417,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
             }
             for (int iter = 0; iter < this->runParameters.iteration_per_node; ++iter) {
                 //get estimation of one embedding
-                InitEstimation(Id, runProps, possibleRootImages, false);
+                InitEstimation(Id, runProps, possibleGraphImagesOfPatternRoot, false);
                 switch (runParameters.hops_type) {
                     //Hops embedding algorithm
                     case HOPS_TYPE::ESTIMATION:
@@ -447,7 +441,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
 
                         runProps.labelType = LABEL_TYPE::UNLABELED;
                         UnlabeledGraphEditDistance(Id, approxGED, runProps);
-                        if (lType != LABEL_TYPE::UNLABELED) {
+                        if (runProps.labelType != LABEL_TYPE::UNLABELED) {
                             for (int i = 0; i < runProps.treeGraphMap.size(); ++i) {
                                 int TreeNode = i;
                                 NodeId GraphNode = runProps.treeGraphMap[i];
@@ -464,7 +458,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
                             runProps.runAlgorithm = false;
                         }
                         else {
-                            CheckEstimationFinished(runProps, OverallIterations, possibleRootImages);
+                            CheckEstimationFinished(runProps, OverallIterations, possibleGraphImagesOfPatternRoot);
                         }
                         break;
                 }
