@@ -378,7 +378,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
         runProps.currentTime = std::chrono::high_resolution_clock::now();
         runProps.lastSnapShotTime = std::chrono::high_resolution_clock::now() - std::chrono::hours(1);
 
-        #pragma omp for schedule(dynamic)
+        #pragma omp for schedule(guided)
         for (auto currentNode : possibleGraphImagesOfPatternRoot) {
             if (runProps.seed_stable) {
                 //set seed for algorithm
