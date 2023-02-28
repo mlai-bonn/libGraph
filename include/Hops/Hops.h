@@ -32,7 +32,7 @@ public:
         for (auto & graph : this->graphs.graphData) {
             Nodes order;
             GraphStruct tree;
-            GraphStruct::OptOrdering(graph, order);
+            GraphStruct::DFS(graph, tree, order);
             GraphStruct::ReorderGraph(graph, order);
         }
     };
@@ -44,7 +44,7 @@ public:
         for (auto & graph : this->graphs.graphData) {
             Nodes order;
             GraphStruct tree;
-            GraphStruct::OptOrdering(graph, order);
+            GraphStruct::DFS(graph, tree, order);
             GraphStruct::ReorderGraph(graph, order);
         }
     };
@@ -378,7 +378,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
         runProps.currentTime = std::chrono::high_resolution_clock::now();
         runProps.lastSnapShotTime = std::chrono::high_resolution_clock::now() - std::chrono::hours(1);
 
-        #pragma omp for schedule(guided)
+        #pragma omp for schedule(dynamic)
         for (auto currentNode : possibleGraphImagesOfPatternRoot) {
             if (runProps.seed_stable) {
                 //set seed for algorithm
