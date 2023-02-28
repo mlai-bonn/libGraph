@@ -363,36 +363,6 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
     //start clock for hops runtime measure
     start = std::chrono::high_resolution_clock::now();
 
-    //Get random order of graph (use this for iteration later)
-
-
-//    //TODO check this (splitting this->possibleGraphImagesOfPatternRoot into thread many pieces should decrease variance)
-//    std::vector<Nodes> possibleImagesChunked;
-//
-//    unsigned int max_val = 0;
-//    INDEX possible_roots = this->possibleGraphImagesOfPatternRoot.size();
-//    if (possible_roots > this->runParameters.thread_num) {
-//
-//        int chunkSize = (int) (this->possibleGraphImagesOfPatternRoot.size() + this->runParameters.thread_num) /
-//                        this->runParameters.thread_num;
-//        int counter = 0;
-//        for (int i = 0; i < this->runParameters.thread_num; ++i) {
-//            possibleImagesChunked.reserve(chunkSize);
-//            possibleImagesChunked.emplace_back();
-//            for (int j = 0; j < chunkSize; ++j) {
-//                if (counter < this->possibleGraphImagesOfPatternRoot.size()) {
-//                    unsigned int val = this->possibleGraphImagesOfPatternRoot[counter];
-//                    max_val = std::max(val, max_val);
-//                    possibleImagesChunked.back().emplace_back(val);
-//                }
-//                else{
-//                    break;
-//                }
-//                ++counter;
-//            }
-//        }
-//    }
-
     runProps.endTime = start + std::chrono::microseconds ((std::size_t) (this->runParameters.runtime*1000000));
 
     //set run id, this will be used to determine the visited nodes by comparing ids
