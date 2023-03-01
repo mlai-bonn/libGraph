@@ -826,7 +826,7 @@ inline void GraphStruct::Save(const SaveParams& saveParams) {
     std::string saveName;
     if (saveParams.graphPath.empty()) {
         if (!this->_path.empty()) {
-            saveName = this->_path + this->_name;
+            saveName = this->_path;
         } else {
             return;
         }
@@ -835,7 +835,10 @@ inline void GraphStruct::Save(const SaveParams& saveParams) {
         saveName = saveParams.graphPath + this->_name;
     }
     if (!saveParams.Name.empty()) {
-        saveName = saveParams.graphPath + saveParams.Name;
+        saveName += saveParams.Name;
+    }
+    else{
+        saveName += this->_name;
     }
     switch (saveParams.Format) {
         case GraphFormat::BGF: {
@@ -1545,6 +1548,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                 }
             }
             _nodes = graphNodeIds.size();
+            NodeId num_edges = graphEdges.size();
             this->_degrees.resize(_nodes);
             this->_graph.resize(_nodes);
             INDEX nodeCounter = 0;
@@ -1552,9 +1556,17 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                 originalIdsToNodeIds.insert({x,nodeCounter});
                 ++nodeCounter;
             }
+            int num_edges_duplicates;
             for (auto edge : graphEdges) {
-                GraphStruct::add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second]);
+                if (!GraphStruct::add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])){
+                    std::cout << "Edge: " << originalIdsToNodeIds[edge.first] << " " << originalIdsToNodeIds[edge.second] << " has not been added because: " << std::endl;
+                    if (this->edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])){
+                        std::cout << "It already exists!" << std::endl;
+                        ++num_edges_duplicates;
+                    }
+                }
             }
+            std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!" << std::endl;
             if (!labelPath.empty() && withLabels) {
                 std::string label_extension = std::filesystem::path(labelPath).extension().string();
                 std::ifstream label_file(labelPath);

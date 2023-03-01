@@ -65,7 +65,10 @@ int main(int argc, char *argv[]) {
                                                           ".txt");
         }
         if (std::strcmp(argv[i], "--load_graph") == 0 || std::strcmp(argv[i], "--all") == 0) {
-            GraphData graphs = GraphData<GraphStruct>("../../GraphData/Hops/", "", "cit-hepPh", ".bgfs");
+            GraphData graphs = GraphData<GraphStruct>("../../../../GraphData/Hops/", "", "cit-hepPh", ".bgfs");
+            GraphStruct g = GraphStruct("../../../../GraphData/Hops/Cit-HepPh.txt");
+            g.Save({"", "test"});
+            GraphStruct t = GraphStruct("../../../../GraphData/Hops/Test.bgfs");
         }
         if (std::strcmp(argv[i], "--erdos_renyi") == 0 || std::strcmp(argv[i], "--all") == 0) {
             ErdosRenyi();

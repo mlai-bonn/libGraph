@@ -445,5 +445,4 @@ void StaticFunctionsLib::stringToVector(std::vector<T1>& out, std::string &strin
     }
 }
 
-
 #endif //IOLIB_STATICFUNCTIONS_H
