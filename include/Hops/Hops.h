@@ -136,13 +136,14 @@ public:
 
         bool VisitNeighbor(unsigned int Id, NodeId neighborNodeId);
 
-        INDEX currentRootNode;
+        INDEX currentRootNode = 0;
         INDEX currentNodeIteration = 0;
         bool first_run = true;
         std::chrono::time_point<std::chrono::high_resolution_clock> first_run_start;
         double first_run_time = 0.0;
         INDEX counter = 0;
-        bool seed_stable = true;
+        int current_iteration_step = 0;
+        std::vector<long double> estimation_snapshots;
 
         Nodes treeGraphMap;
         std::vector<NodeId> NewImagePositions;
@@ -321,9 +322,12 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
     auto start = std::chrono::high_resolution_clock::now();
     this->currentPattern = &pattern;
 
-    //Value of overall estimation and counters for overall (zero) iterations
+    //Value of accumulated estimation and counters for overall (zero) iterations
     long double accumulatedEstimation = 0;
+    long double nodeEstimation = 0;
+    //Counter of overall iterations
     UInt64 OverallIterations = 0;
+    //Counter for overall zero iterations
     UInt64 OverallZeroIterations = 0;
 
     //For GED approximation
@@ -363,29 +367,31 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
     //start clock for hops runtime measure
     start = std::chrono::high_resolution_clock::now();
 
-    runProps.endTime = start + std::chrono::microseconds ((std::size_t) (this->runParameters.runtime*1000000));
+    runProps.endTime = start + std::chrono::microseconds ((std::size_t) (this->runParameters.runtime*1e6));
 
     //set run id, this will be used to determine the visited nodes by comparing ids
     unsigned int Id = 0;
+    snapShotEstimation.resize(this->runParameters.iteration_per_node.size());
+
 ////run the estimation in parallel mode
-#pragma omp parallel default(none) firstprivate(runProps, approximatedGED, Id) shared(estimations, snapShotEstimation, accumulatedApproximatedGED, possibleGraphImagesOfPatternRoot) reduction(+: accumulatedEstimation, OverallIterations, OverallZeroIterations)
+#pragma omp parallel default(none) firstprivate(runProps, approximatedGED, nodeEstimation, Id) shared(estimations, snapShotEstimation, accumulatedApproximatedGED, possibleGraphImagesOfPatternRoot) reduction(+: accumulatedEstimation, OverallIterations, OverallZeroIterations)
     {
         int thread_num = omp_get_thread_num();
-        if (!runProps.seed_stable) {
-            runProps.gen.seed(runProps.seed + thread_num);
-        }
         runProps.runAlgorithm = true;
         runProps.currentTime = std::chrono::high_resolution_clock::now();
         runProps.lastSnapShotTime = std::chrono::high_resolution_clock::now() - std::chrono::hours(1);
+        runProps.estimation_snapshots.resize(this->runParameters.iteration_per_node.size());
 
         #pragma omp for schedule(dynamic)
         for (auto currentNode : possibleGraphImagesOfPatternRoot) {
-            if (runProps.seed_stable) {
-                //set seed for algorithm
-                runProps.gen.seed(runProps.seed + currentNode);
-                runProps.currentRootNode = currentNode;
-            }
-            for (int iter = 0; iter < this->runParameters.iteration_per_node; ++iter) {
+            //set current node
+            runProps.currentRootNode = currentNode;
+            nodeEstimation = 0;
+            //reset iteration to zero for the
+            runProps.current_iteration_step = 0;
+            //set the seed for this node
+            runProps.gen.seed(runProps.seed + currentNode);
+            for (int iter = 0; iter < this->runParameters.iteration_per_node.back(); ++iter) {
                 //get estimation of one embedding
                 InitEstimation(Id, runProps, possibleGraphImagesOfPatternRoot, false);
                 switch (runParameters.hops_type) {
@@ -394,12 +400,12 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
                         //Start the embedding
                         //Unlabeled Case
                         if (runProps.labelType == LABEL_TYPE::UNLABELED) {
-                            Hops::UnlabeledEmbedding(Id, accumulatedEstimation, runProps.privateEstimations,
+                            Hops::UnlabeledEmbedding(Id, nodeEstimation, runProps.privateEstimations,
                                                      OverallZeroIterations, runProps);
                         }
                             //Labeled Case
                         else {
-                            Hops::LabeledEmbeddings(Id, accumulatedEstimation, runProps.privateEstimations, OverallZeroIterations,
+                            Hops::LabeledEmbeddings(Id, nodeEstimation, runProps.privateEstimations, OverallZeroIterations,
                                                     runProps);
                         }
                         ++OverallIterations;
@@ -408,7 +414,6 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
                         //TODO add graph edit distance algorithm
                     case HOPS_TYPE::GRAPH_EDIT_DISTANCE:
                         unsigned int approxGED = static_cast<int>(this->currentPattern->nodes() + this->currentPattern->edges());
-
                         runProps.labelType = LABEL_TYPE::UNLABELED;
                         UnlabeledGraphEditDistance(Id, approxGED, runProps);
                         if (runProps.labelType != LABEL_TYPE::UNLABELED) {
@@ -432,12 +437,35 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
                         }
                         break;
                 }
+                //Collect on the fly results
+                if (iter == this->runParameters.iteration_per_node[runProps.current_iteration_step] - 1){
+                    runProps.estimation_snapshots[runProps.current_iteration_step] += nodeEstimation;
+                    ++runProps.current_iteration_step;
+                }
+            }
+            accumulatedEstimation += nodeEstimation;
+        }
+
+        if (this->runParameters.iteration_per_node.size() > 1){
+            for (int i = 0; i < runProps.estimation_snapshots.size(); ++i) {
+                runProps.estimation_snapshots[i] /= (this->possibleGraphImagesOfPatternRoot.size() * this->runParameters.iteration_per_node[i]);
             }
         }
+
         if (this->runParameters.snapshot_time != -1) {
             runProps.privateSnapshots.emplace_back((double) accumulatedEstimation / (double) OverallIterations);
         }
+
         //merge evaluation values from different threads in one large vector if needed (do this only with one thread)
+        if (this->runParameters.iteration_per_node.size() > 1) {
+#pragma omp critical
+            {
+                for (int i = 0; i < snapShotEstimation.size(); ++i) {
+                    snapShotEstimation[i] += runProps.estimation_snapshots[i];
+                }
+            }
+        }
+
         if (!this->runParameters.single_number || this->runParameters.snapshot_time != -1) {
 #pragma omp critical
             {
@@ -452,8 +480,12 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
             }
         }
     }
+
+    //measure hops time
     this->hopsEvaluation.hopsRuntime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
     this->hopsEvaluation.hopsIterations = OverallIterations;
+
+    //evaluate the estimation result of hops
     switch (runParameters.hops_type) {
         case HOPS_TYPE::ESTIMATION:
             //save hops runtime and estimation values and evaluate
@@ -485,10 +517,10 @@ inline void Hops::CheckEstimationFinished(Hops::RunProps &runProps, UInt64 Overa
             auto count =  std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - runProps.first_run_start).count();
             runProps.first_run_time = (double) count/1e6;
             std::cout << runProps.first_run_time << std::endl;
-            this->runParameters.iteration_per_node = (int) (this->runParameters.runtime / runProps.first_run_time*1.5);
-            this->hopsEvaluation.parameters.iteration_per_node = this->runParameters.iteration_per_node + 1;
-            std::cout << this->runParameters.iteration_per_node << std::endl;
-            if (this->runParameters.iteration_per_node <= 0){
+            this->runParameters.iteration_per_node.back() = (int) (this->runParameters.runtime / runProps.first_run_time*1.5);
+            this->hopsEvaluation.parameters.iteration_per_node.back() = this->runParameters.iteration_per_node.back() + 1;
+            std::cout << this->runParameters.iteration_per_node.back() << std::endl;
+            if (this->runParameters.iteration_per_node.back() <= 0){
                 runProps.runAlgorithm = false;
             }
             runProps.currentRootNode = 0;
@@ -507,7 +539,7 @@ inline void Hops::CheckEstimationFinished(Hops::RunProps &runProps, UInt64 Overa
     }
     else{
         INDEX size = possibleRootImages.size();
-        if (runProps.counter == size * this->runParameters.iteration_per_node){
+        if (runProps.counter == size * this->runParameters.iteration_per_node.back()){
             runProps.runAlgorithm = false;
         }
     }
@@ -705,7 +737,7 @@ inline bool Hops::UnlabeledEmbedding(unsigned int id, long double& accumulatedEs
 inline bool Hops::UnlabeledGraphEditDistance(unsigned int id, unsigned int &currentEditDistance, Hops::RunProps &runProps) {
     NodeId CurrentGraphImageId;
     unsigned int SourceSize, TargetSize;
-    unsigned int Error = static_cast<unsigned int>(this->currentPattern->nodes() + this->currentPattern->edges());
+    auto Error = static_cast<unsigned int>(this->currentPattern->nodes() + this->currentPattern->edges());
     unsigned int embeddedNodes = 1;
     unsigned int embeddedEdges = 0;
     for (auto const & [parentNode, childrenNodes] : this->rootedPattern.BFSOrder) {

@@ -31,7 +31,7 @@ struct RunParameters{
     LABEL_TYPE labelType = LABEL_TYPE::UNLABELED;
     double runtime = 30;
     int thread_num = -1;
-    int iteration_per_node = 0;
+    std::vector<int> iteration_per_node = {0};
     int seed = 0;
     bool print = true;
     bool save = false;
