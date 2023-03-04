@@ -175,8 +175,6 @@ public:
 
     };
 
-    void SaveEstimationSnapshot(RunProps& runProps, long double accumulatedEstimation, UInt64 OverallIterations) const;
-
     void CheckEstimationFinished(RunProps &props, UInt64 OverallIterations, const Nodes& possibleRootImages);
 
     void MergeEstimationValues(RunProps& runProps, std::vector<UInt64>& estimations, std::vector<long double>& snapShotEstimation) const;
@@ -409,7 +407,6 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
                                                     runProps);
                         }
                         ++OverallIterations;
-                        SaveEstimationSnapshot(runProps, accumulatedEstimation, OverallIterations);
                         break;
                         //TODO add graph edit distance algorithm
                     case HOPS_TYPE::GRAPH_EDIT_DISTANCE:
@@ -500,14 +497,6 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
         case HOPS_TYPE::GRAPH_EDIT_DISTANCE:
             Hops::EvaluateResult(accumulatedApproximatedGED, HOPS_TYPE::GRAPH_EDIT_DISTANCE);
             break;
-    }
-}
-
-inline void Hops::SaveEstimationSnapshot(RunProps& runProps, long double accumulatedEstimation, UInt64 OverallIterations) const {
-    if (this->runParameters.snapshot_time != -1 &&
-        std::chrono::duration_cast<std::chrono::seconds>(runProps.currentTime - runProps.lastSnapShotTime).count() > this->runParameters.snapshot_time) {
-        runProps.lastSnapShotTime = runProps.currentTime;
-        runProps.privateSnapshots.emplace_back( accumulatedEstimation / (long double) OverallIterations);
     }
 }
 

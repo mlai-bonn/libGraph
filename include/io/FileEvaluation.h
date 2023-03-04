@@ -33,6 +33,7 @@ public:
 
 inline void FileEvaluation::save(bool summary, bool both, std::_Ios_Openmode mode) {
     if (!out_path.empty()) {
+        std::filesystem::create_directory(out_path);
         if (summary && both) {
             save(false, false, mode);
         }

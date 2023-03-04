@@ -79,6 +79,9 @@ int main(int argc, char *argv[]) {
         if (std::strcmp(argv[i], "--reorder") == 0 || std::strcmp(argv[i], "--all") == 0) {
             MapGraph();
         }
+        if (std::strcmp(argv[i], "--load_dimacs") == 0 || std::strcmp(argv[i], "--all") == 0) {
+            ConvertDimacs();
+        }
     }
     int x=0;
 }

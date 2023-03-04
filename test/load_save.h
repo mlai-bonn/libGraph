@@ -19,6 +19,24 @@ bool TestLoadGraphsFromPath(const std::string& graph_path, const std::string& la
     return graphs.size() > 0;
 }
 
+void ConvertDimacs(){
+    for (const auto& e1: std::filesystem::directory_iterator("../../../../GraphData/Hops/Automorphisms/")) {
+        if (is_directory(std::filesystem::path(e1))) {
+            GraphData graphData = GraphData<GraphStruct>();
+            std::string stem = std::filesystem::path(e1).stem().string();
+            for (const auto &e2: std::filesystem::recursive_directory_iterator(e1.path())) {
+                std::string path = e2.path().string();
+                std::cout << path << std::endl;
+                GraphStruct g = GraphStruct(path, true, false, "", "dimacs");
+                graphData.add(g);
+            }
+            graphData.Save({"../../../../GraphData/Hops/Automorphisms/", stem, GraphFormat::BGFS});
+            //GraphData g = GraphData<GraphStruct>("../../../../GraphData/Hops/Automorphisms/cfi-rigid-d3.bgfs");
+            //int num = g.graphData.size();
+        }
+    }
+}
+
 void LoadSpeedTest(){
     auto start = std::chrono::high_resolution_clock::now();
     GraphStruct graphStruct = GraphStruct("../../../GraphData/Hops/com-lj.ungraph.bgfs");

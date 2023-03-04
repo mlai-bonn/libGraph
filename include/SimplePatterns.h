@@ -6,6 +6,7 @@
 #define HOPS_SIMPLEPATTERNS_H
 
 
+#include <list>
 #include "DataClasses.h"
 
 class SimplePatterns {

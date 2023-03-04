@@ -42,10 +42,10 @@ struct SaveParams{
 struct GraphStruct{
 public:
     GraphStruct()= default;
-    explicit GraphStruct(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "");
+    explicit GraphStruct(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "", const std::string& formate = "");
     GraphStruct(NodeId size, const Labels& labels);
 
-    virtual void Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath);
+    void Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format = "");
     virtual void Save(const SaveParams& saveParams);
 
     virtual void Init(const std::string& name, int size, int edges, int nodeFeatures, int edgeFeatures, const std::vector<std::string>& nodeFeatureNames, const std::vector<std::string>& edgeFeatureNames);
@@ -287,7 +287,7 @@ struct DGraphStruct : public GraphStruct{
     explicit DGraphStruct(INDEX size, const Labels& labels);
 
     //Load and save
-    void Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath) override;
+    void Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format = "");
     void Save(const SaveParams& saveParams) override;
 
     void Init(const std::string& name, int size, int edges, int nodeFeatures, int edgeFeatures, const std::vector<std::string>& nodeFeatureNames, const std::vector<std::string>& edgeFeatureNames) override;
@@ -326,7 +326,7 @@ struct DDataGraph : public DGraphStruct{
 public:
     DDataGraph();
     explicit DDataGraph(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "");
-    void Load(const std::string & graphPath, bool relabeling, bool withLabels, const std::string& labelPath) override;
+    void Load(const std::string & graphPath, bool relabeling, bool withLabels, const std::string& labelPath, const std::string& format = "");
     void Save(const SaveParams& saveParams) override;
 
     void Init(const std::string& name, int size, int edges, int nodeFeatures, int edgeFeatures, const std::vector<std::string>& nodeFeatureNames, const std::vector<std::string>& edgeFeatureNames) override;
@@ -812,8 +812,8 @@ inline NodeId GraphStruct::random_neighbor_in_range(NodeId nodeId, INDEX minIdx,
 /// \param relabeling
 /// \param withLabels
 /// \param labelPath
-inline GraphStruct::GraphStruct(const std::string &graphPath,bool relabeling, bool withLabels, const std::string & labelPath) {
-Load(graphPath, relabeling, withLabels, labelPath);
+inline GraphStruct::GraphStruct(const std::string &graphPath,bool relabeling, bool withLabels, const std::string & labelPath, const std::string& format) {
+Load(graphPath, relabeling, withLabels, labelPath, format);
 }
 
 /// Save graph in certain path and format
@@ -1368,12 +1368,12 @@ void GraphStruct::Convert(const std::string &path, GraphFormat Format, const std
 
 }
 
-void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath) {
+void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format) {
     int graphId = 0;
     if (std::filesystem::is_regular_file(graphPath)) {
         this->_path = std::filesystem::path(graphPath).remove_filename().string();
         std::string extension = std::filesystem::path(graphPath).extension().string();
-        if (extension == ".bgf" || extension == ".bgfs"){
+        if (extension == ".bgf" || extension == ".bgfs") {
             int saveVersion = 1;
             int graphNumber;
             std::vector<std::string> graphsNames;
@@ -1384,12 +1384,13 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
             std::vector<std::vector<std::string>> graphsEdgeFeatureNames;
             std::ifstream In(graphPath, std::ios::in | std::ios::binary);
 
-            if(GraphStruct::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes, graphsNodeFeatureNames, graphsEdges, graphsEdgeFeatureNames))
-            {
+            if (GraphStruct::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes,
+                                     graphsNodeFeatureNames, graphsEdges, graphsEdgeFeatureNames)) {
                 for (int i = 0; i < graphNumber; ++i) {
                     //Create graph
                     if (i == graphId) {
-                        this->Init(graphsNames[i], (int) graphsSizes[i], (int) graphsEdges[i], (int) graphsNodeFeatureNames[i].size(), (int) graphsEdgeFeatureNames[i].size(),
+                        this->Init(graphsNames[i], (int) graphsSizes[i], (int) graphsEdges[i],
+                                   (int) graphsNodeFeatureNames[i].size(), (int) graphsEdgeFeatureNames[i].size(),
                                    graphsNodeFeatureNames[i], graphsEdgeFeatureNames[i]);
                     }
                     //Read the nodes
@@ -1398,8 +1399,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                             double val;
                             if (extension == ".bgf") {
                                 In.read((char *) (&val), sizeof(double));
-                            }
-                            else if (extension == ".bgfs"){
+                            } else if (extension == ".bgfs") {
                                 unsigned int int_val;
                                 In.read((char *) (&int_val), sizeof(unsigned int));
                                 val = int_val;
@@ -1418,8 +1418,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                         if (extension == ".bgf") {
                             In.read((char *) (&Src), sizeof(INDEX));
                             In.read((char *) (&Dst), sizeof(INDEX));
-                        }
-                        else if (extension == ".bgfs") {
+                        } else if (extension == ".bgfs") {
                             unsigned int int_Src;
                             unsigned int int_Dst;
                             In.read((char *) (&int_Src), sizeof(unsigned int));
@@ -1449,7 +1448,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
             }
             In.close();
         }
-        if (extension == ".bin") {
+        else if (extension == ".bin") {
             std::ifstream In(graphPath, std::ios::in | std::ios::binary);
             std::string Name;
             unsigned int stringLength;
@@ -1471,8 +1470,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                 if (this->_graph.size() > std::max(Src, Dst)) {
                     this->_graph[Src].emplace_back(Dst);
                     this->_graph[Dst].emplace_back(Src);
-                }
-                else{
+                } else {
                     INDEX x = std::max(Src, Dst);
                 }
             }
@@ -1523,7 +1521,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
             std::ifstream infile(graphPath);
             std::vector<std::pair<INDEX, INDEX>> graphEdges;
             std::set<INDEX> graphNodeIds;
-            std::unordered_map<INDEX,INDEX> originalIdsToNodeIds;
+            std::unordered_map<INDEX, INDEX> originalIdsToNodeIds;
             while (std::getline(infile, line)) {
                 std::istringstream iss(line);
                 iss >> a;
@@ -1552,38 +1550,39 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
             this->_degrees.resize(_nodes);
             this->_graph.resize(_nodes);
             INDEX nodeCounter = 0;
-            for (auto x : graphNodeIds) {
-                originalIdsToNodeIds.insert({x,nodeCounter});
+            for (auto x: graphNodeIds) {
+                originalIdsToNodeIds.insert({x, nodeCounter});
                 ++nodeCounter;
             }
             int num_edges_duplicates;
-            for (auto edge : graphEdges) {
-                if (!GraphStruct::add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])){
-                    std::cout << "Edge: " << originalIdsToNodeIds[edge.first] << " " << originalIdsToNodeIds[edge.second] << " has not been added because: " << std::endl;
-                    if (this->edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])){
+            for (auto edge: graphEdges) {
+                if (!GraphStruct::add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
+                    std::cout << "Edge: " << originalIdsToNodeIds[edge.first] << " "
+                              << originalIdsToNodeIds[edge.second] << " has not been added because: " << std::endl;
+                    if (this->edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
                         std::cout << "It already exists!" << std::endl;
                         ++num_edges_duplicates;
                     }
                 }
             }
-            std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!" << std::endl;
+            std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!"
+                      << std::endl;
             if (!labelPath.empty() && withLabels) {
                 std::string label_extension = std::filesystem::path(labelPath).extension().string();
                 std::ifstream label_file(labelPath);
-                if (label_extension == ".vertexids"){
+                if (label_extension == ".vertexids") {
                     std::string label_line;
                     _labels = Labels(nodes(), 0);
                     Label label = 0;
-                    while(std::getline(label_file, label_line)){
+                    while (std::getline(label_file, label_line)) {
                         std::istringstream iss(label_line);
                         std::string token;
-                        while (std::getline(iss, token, ' ')){
+                        while (std::getline(iss, token, ' ')) {
                             _labels[originalIdsToNodeIds[std::stoi(token)]] = label;
                         }
                         ++label;
                     }
-                }
-                else {
+                } else {
                     try {
                         NodeId id;
                         Label label;
@@ -1608,7 +1607,106 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                     //TODO throw exception
                 }
             }
-
+        } else if (format == "dimacs") {
+            std::string graph_name = std::filesystem::path(graphPath).stem().string();
+            this->_name = graph_name;
+            NodeId src;
+            NodeId dest;
+            std::string a, b;
+            std::string line;
+            std::ifstream infile(graphPath);
+            std::vector<std::pair<INDEX, INDEX>> graphEdges;
+            std::set<INDEX> graphNodeIds;
+            std::unordered_map<INDEX, INDEX> originalIdsToNodeIds;
+            while (std::getline(infile, line)) {
+                std::istringstream iss(line);
+                iss >> a;
+                if (a == "p") {
+                    continue;
+                }
+                iss >> a;
+                iss >> b;
+                // Check if file is of format
+                // num_nodes
+                // node_idA node_idB
+                // ...
+                if (b.empty()) {
+                    for (INDEX i = 0; i < std::stoull(a); ++i) {
+                        this->_graph.emplace_back();
+                    }
+                } else {
+                    src = std::stoull(a);
+                    dest = std::stoull(b);
+                    graphEdges.emplace_back(src, dest);
+                    graphNodeIds.emplace(src);
+                    graphNodeIds.emplace(dest);
+                }
+            }
+            _nodes = graphNodeIds.size();
+            NodeId num_edges = graphEdges.size();
+            this->_degrees.resize(_nodes);
+            this->_graph.resize(_nodes);
+            INDEX nodeCounter = 0;
+            for (auto x: graphNodeIds) {
+                originalIdsToNodeIds.insert({x, nodeCounter});
+                ++nodeCounter;
+            }
+            int num_edges_duplicates = 0;
+            for (auto edge: graphEdges) {
+                if (!GraphStruct::add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
+                    std::cout << "Edge: " << originalIdsToNodeIds[edge.first] << " "
+                              << originalIdsToNodeIds[edge.second] << " has not been added because: " << std::endl;
+                    if (this->edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
+                        std::cout << "It already exists!" << std::endl;
+                        ++num_edges_duplicates;
+                    }
+                }
+            }
+            if (num_edges_duplicates > 0) {
+                std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!"
+                          << std::endl;
+            }
+            if (!labelPath.empty() && withLabels) {
+                std::string label_extension = std::filesystem::path(labelPath).extension().string();
+                std::ifstream label_file(labelPath);
+                if (label_extension == ".vertexids") {
+                    std::string label_line;
+                    _labels = Labels(nodes(), 0);
+                    Label label = 0;
+                    while (std::getline(label_file, label_line)) {
+                        std::istringstream iss(label_line);
+                        std::string token;
+                        while (std::getline(iss, token, ' ')) {
+                            _labels[originalIdsToNodeIds[std::stoi(token)]] = label;
+                        }
+                        ++label;
+                    }
+                } else {
+                    try {
+                        NodeId id;
+                        Label label;
+                        while (label_file >> id >> label) {
+                            _labels.push_back(label);
+                        }
+                    }
+                    catch (...) {
+                    }
+                }
+                if (this->_labels.size() == this->_graph.size()) {
+                    labelMap = GraphFunctions::GetGraphLabelMap(_labels);
+                    labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
+                    this->_numLabels = (this->_numLabels == -1) ? static_cast<int>(labelMap.size())
+                                                                : this->_numLabels;
+                    if (this->_numLabels >= 10) {
+                        labelType = LABEL_TYPE::LABELED_DENSE;
+                    } else {
+                        labelType = LABEL_TYPE::LABELED_SPARSE;
+                    }
+                    UpdateGraphLabels(labelType);
+                } else {
+                    //TODO throw exception
+                }
+            }
         }
     }
 
@@ -1728,7 +1826,7 @@ inline DGraphStruct DGraphStruct::GetBFSTree(const GraphStruct &graph, NodeId ro
         return BFSTree;
 }
 
-void DGraphStruct::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath) {
+void DGraphStruct::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format) {
     if (std::filesystem::is_regular_file(graphPath)) {
         int Version = 1;
         int graphId = 0;
@@ -2027,7 +2125,7 @@ inline DDataGraph::DDataGraph(const std::string &graphPath, bool relabeling, boo
     DDataGraph::Load(graphPath, relabeling, withLabels,labelPath);
 }
 
-inline void DDataGraph::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath) {
+inline void DDataGraph::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format) {
     int Version = 1;
     int graphId = 0;
     if (std::filesystem::is_regular_file(graphPath)) {
