@@ -40,13 +40,13 @@ void HopsTimeTest(){
 }
 
 void Hops100Iter(int threads){
-    GraphStruct triangle = SimplePatterns::Triangle();
+    GraphStruct pattern = SimplePatterns::FullyConnected(6);
     GraphData graphs = GraphData<GraphStruct>("../../../../GraphData/Hops/com-amazon.ungraph.bgfs");
     Hops hops = Hops(graphs);
     if (threads == -1){
         threads = omp_get_max_threads();
     }
-    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,0,threads, {1, 2,3, 4, 100}, 0,true});
+    hops.Run(0, pattern, {LABEL_TYPE::UNLABELED,0,threads, {10000}, 0,true});
 }
 
 void Hops10s(int threads){

@@ -794,8 +794,7 @@ inline bool Hops::LabeledEmbeddings(unsigned int id, long double& accumulatedEst
                 }
 
                 //Calculate the Value for estimation Combinations in Log-Space
-                estimation += (this->preComputedLogValues[PossibleNeighborsSize] -
-                               this->preComputedLogValues[PossibleNeighborsSize - SourceSize]);
+                estimation += (this->preComputedLogValues[PossibleNeighborsSize] - this->preComputedLogValues[PossibleNeighborsSize - SourceSize]);
             }
         }
         else{
@@ -873,23 +872,32 @@ inline bool Hops::LabeledGraphEditDistance(unsigned int id, unsigned int &curren
 inline bool Hops::PickRandomNeighbors(unsigned int id, unsigned int sourceSize, unsigned int targetSize, NodeId currentNodeId, const Nodes& currentNodeNeighbors, unsigned int& possibleNeighbors, const  Nodes &orderNodes, RunProps& runProps, int label) const {
     possibleNeighbors = 0;
     unsigned int rand_number, Successes = 0;
-    NodeId NeighborNodeId;
-    int allowedFailures = targetSize - sourceSize;
+    NodeId graphImageNode;
+    long int allowedFailures = targetSize - sourceSize;
     unsigned int maxBound = targetSize - 1;
     for (int i = 0; i < targetSize; ++i) {
         if (Successes < sourceSize) {
             rand_number = std::uniform_int_distribution<unsigned int>(Successes, maxBound)(runProps.gen);
             if (runProps.labelType != LABEL_TYPE::UNLABELED) {
-                NeighborNodeId = this->currentGraph->neighbor(currentNodeId, runProps.randomNeighbors[rand_number], label);
+                graphImageNode = this->currentGraph->neighbor(currentNodeId, runProps.randomNeighbors[rand_number], label);
             }
             else{
-                NeighborNodeId = currentNodeNeighbors[runProps.randomNeighbors[rand_number]];
+                graphImageNode = currentNodeNeighbors[runProps.randomNeighbors[rand_number]];
             }
-            if (runProps.VisitNeighbor(id, NeighborNodeId)) {
+            if (runProps.VisitNeighbor(id, graphImageNode)) {
                 //Random neighbor is not mapped yet
                 runProps.swapNeighbors(rand_number, Successes);
-                runProps.treeGraphMap[this->rootedPattern.GetBFSOrderIndexByNodeId(orderNodes[Successes])] = NeighborNodeId;
-                ++Successes, ++possibleNeighbors;
+                NodeId patternVertex = this->rootedPattern.GetBFSOrderIndexByNodeId(orderNodes[Successes]);
+                if (this->currentPattern->degree(patternVertex) > this->currentGraph->degree(graphImageNode)){
+                    //Swap back vector for random neighbor assignment
+                    runProps.swapBackNeighbors();
+                    return false;
+                }
+                else{
+                    //Map patternVertex to graphImageNode
+                    runProps.treeGraphMap[patternVertex] = graphImageNode;
+                    ++Successes, ++possibleNeighbors;
+                }
             } else {
                 //Random neighbor is already mapped
                 --allowedFailures;
@@ -909,13 +917,13 @@ inline bool Hops::PickRandomNeighbors(unsigned int id, unsigned int sourceSize, 
     //Check if remaining neighbors could have been possible neighbors
     for (unsigned int i = Successes; i <= maxBound; ++i) {
         if (runProps.labelType != LABEL_TYPE::UNLABELED) {
-            NeighborNodeId = this->currentGraph->neighbor(currentNodeId, runProps.randomNeighbors[i],
+            graphImageNode = this->currentGraph->neighbor(currentNodeId, runProps.randomNeighbors[i],
                                                           label);
         }
         else{
-            NeighborNodeId = this->currentGraph->neighbor(currentNodeId, runProps.randomNeighbors[i]);
+            graphImageNode = this->currentGraph->neighbor(currentNodeId, runProps.randomNeighbors[i]);
         }
-        if(!runProps.IsNeighborVisited(id, NeighborNodeId)){
+        if(!runProps.IsNeighborVisited(id, graphImageNode)){
             ++possibleNeighbors;
         }
     }
