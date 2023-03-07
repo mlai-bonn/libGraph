@@ -888,16 +888,16 @@ inline bool Hops::PickRandomNeighbors(unsigned int id, unsigned int sourceSize, 
                 //Random neighbor is not mapped yet
                 runProps.swapNeighbors(rand_number, Successes);
                 NodeId patternVertex = this->rootedPattern.GetBFSOrderIndexByNodeId(orderNodes[Successes]);
-                if (this->currentPattern->degree(patternVertex) > this->currentGraph->degree(graphImageNode)){
-                    //Swap back vector for random neighbor assignment
-                    runProps.swapBackNeighbors();
-                    return false;
-                }
-                else{
+//                if (this->currentPattern->degree(patternVertex) > this->currentGraph->degree(graphImageNode)){
+//                    //Swap back vector for random neighbor assignment
+//                    runProps.swapBackNeighbors();
+//                    return false;
+//                }
+//                else{
                     //Map patternVertex to graphImageNode
                     runProps.treeGraphMap[patternVertex] = graphImageNode;
                     ++Successes, ++possibleNeighbors;
-                }
+                //}
             } else {
                 //Random neighbor is already mapped
                 --allowedFailures;
