@@ -35,17 +35,17 @@ struct DGraphStruct;
 struct SaveParams{
     std::string graphPath = "";
     std::string Name = "";
-    GraphFormat Format = GraphFormat::BGF;
+    GraphFormat Format = GraphFormat::BGFS;
     bool Labeled = false;
 };
 
 struct GraphStruct{
 public:
     GraphStruct()= default;
-    explicit GraphStruct(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "", const std::string& formate = "");
+    explicit GraphStruct(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "", const std::string& formate = "", const std::string& search_name = "");
     GraphStruct(NodeId size, const Labels& labels);
 
-    void Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format = "");
+    void Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format = "", const std::string& search_name = "");
     virtual void Save(const SaveParams& saveParams);
 
     virtual void Init(const std::string& name, int size, int edges, int nodeFeatures, int edgeFeatures, const std::vector<std::string>& nodeFeatureNames, const std::vector<std::string>& edgeFeatureNames);
@@ -812,8 +812,8 @@ inline NodeId GraphStruct::random_neighbor_in_range(NodeId nodeId, INDEX minIdx,
 /// \param relabeling
 /// \param withLabels
 /// \param labelPath
-inline GraphStruct::GraphStruct(const std::string &graphPath,bool relabeling, bool withLabels, const std::string & labelPath, const std::string& format) {
-Load(graphPath, relabeling, withLabels, labelPath, format);
+inline GraphStruct::GraphStruct(const std::string &graphPath,bool relabeling, bool withLabels, const std::string & labelPath, const std::string& format, const std::string& search_name) {
+Load(graphPath, relabeling, withLabels, labelPath, format, search_name);
 }
 
 /// Save graph in certain path and format
@@ -1261,6 +1261,8 @@ inline GraphData<T>::GraphData(const std::string& graphPath, const std::string& 
                 }
                 if (ext == ".bgf" || ext == ".bgfs"){
                     Load(path);
+                }else {
+                    add(graphPath, labelPath, searchName, ext, sort, graphSizes, patternNum);
                 }
             }
         }
@@ -1368,11 +1370,38 @@ void GraphStruct::Convert(const std::string &path, GraphFormat Format, const std
 
 }
 
-void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format) {
+void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format, const std::string& search_name) {
     int graphId = 0;
-    if (std::filesystem::is_regular_file(graphPath)) {
-        this->_path = std::filesystem::path(graphPath).remove_filename().string();
-        std::string extension = std::filesystem::path(graphPath).extension().string();
+    std::string path = graphPath;
+    if (!search_name.empty()) {
+        std::vector<std::string> possible_files;
+        std::vector<std::string> files;
+        for (const auto &entry: std::filesystem::directory_iterator(path)) {
+            if (entry.is_regular_file()) {
+                possible_files.emplace_back(entry.path().string());
+            }
+        }
+        for (const auto &p: possible_files) {
+            std::string lower_name = search_name;
+            std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(),
+                           [](unsigned char c) { return std::tolower(c); } // correct
+            );
+            std::string path_lower = p;
+            std::transform(path_lower.begin(), path_lower.end(), path_lower.begin(),
+                           [](unsigned char c) { return std::tolower(c); } // correct
+            );
+            if (path_lower.find(lower_name) != std::string::npos) {
+                files.emplace_back(p);
+            }
+        }
+        if (files.size() == 1){
+            path = files[0];
+        }
+    }
+
+    if (std::filesystem::is_regular_file(path)) {
+        this->_path = std::filesystem::path(path).remove_filename().string();
+        std::string extension = std::filesystem::path(path).extension().string();
         if (extension == ".bgf" || extension == ".bgfs") {
             int saveVersion = 1;
             int graphNumber;
@@ -1382,7 +1411,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
             std::vector<std::vector<std::string>> graphsNodeFeatureNames;
             std::vector<INDEX> graphsEdges;
             std::vector<std::vector<std::string>> graphsEdgeFeatureNames;
-            std::ifstream In(graphPath, std::ios::in | std::ios::binary);
+            std::ifstream In(path, std::ios::in | std::ios::binary);
 
             if (GraphStruct::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes,
                                      graphsNodeFeatureNames, graphsEdges, graphsEdgeFeatureNames)) {
@@ -1449,7 +1478,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
             In.close();
         }
         else if (extension == ".bin") {
-            std::ifstream In(graphPath, std::ios::in | std::ios::binary);
+            std::ifstream In(path, std::ios::in | std::ios::binary);
             std::string Name;
             unsigned int stringLength;
             In.read((char *) (&stringLength), sizeof(stringLength));
@@ -1512,13 +1541,13 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
             }
             In.close();
         } else if (extension == ".edges" || extension == ".txt") {
-            std::string graph_name = std::filesystem::path(graphPath).stem().string();
+            std::string graph_name = std::filesystem::path(path).stem().string();
             this->_name = graph_name;
             NodeId src;
             NodeId dest;
             std::string a, b;
             std::string line;
-            std::ifstream infile(graphPath);
+            std::ifstream infile(path);
             std::vector<std::pair<INDEX, INDEX>> graphEdges;
             std::set<INDEX> graphNodeIds;
             std::unordered_map<INDEX, INDEX> originalIdsToNodeIds;
@@ -1554,7 +1583,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                 originalIdsToNodeIds.insert({x, nodeCounter});
                 ++nodeCounter;
             }
-            int num_edges_duplicates;
+            unsigned int num_edges_duplicates = 0;
             for (auto edge: graphEdges) {
                 if (!GraphStruct::add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
                     std::cout << "Edge: " << originalIdsToNodeIds[edge.first] << " "
@@ -1567,6 +1596,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
             }
             std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!"
                       << std::endl;
+            std::cout << graphEdges.size() - num_edges_duplicates << " edges are remaining" << std::endl;
             if (!labelPath.empty() && withLabels) {
                 std::string label_extension = std::filesystem::path(labelPath).extension().string();
                 std::ifstream label_file(labelPath);
@@ -1608,13 +1638,13 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                 }
             }
         } else if (format == "dimacs") {
-            std::string graph_name = std::filesystem::path(graphPath).stem().string();
+            std::string graph_name = std::filesystem::path(path).stem().string();
             this->_name = graph_name;
             NodeId src;
             NodeId dest;
             std::string a, b;
             std::string line;
-            std::ifstream infile(graphPath);
+            std::ifstream infile(path);
             std::vector<std::pair<INDEX, INDEX>> graphEdges;
             std::set<INDEX> graphNodeIds;
             std::unordered_map<INDEX, INDEX> originalIdsToNodeIds;
