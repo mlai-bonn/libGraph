@@ -28,6 +28,8 @@ enum class GraphFormat{
     EDGES,
     PEREGRINE_DATA,
     PEREGRINE_SMALL,
+    DIMACS,
+    AIDS,
 };
 
 struct DGraphStruct;
@@ -391,8 +393,14 @@ class GraphData {
 public:
     GraphData()= default;
     explicit GraphData(const std::string& graphPath, const std::string& labelPath = "", const std::string& searchName = "", const std::string& extension = "", bool sort = true, std::set<int>* graphSizes = nullptr, int patternNum = -1);
+    explicit GraphData(GraphFormat graphFormat, const std::string& graphPath, const std::string& searchName = "");
 
     void Load(const std::string &graphPath);
+    void Load(std::vector<T>& graphs, const std::string &graphPath, GraphFormat graphFormat = GraphFormat::BGFS);
+
+    void LoadBGF(std::vector<T>& graphs, const std::string &graphPath, GraphFormat graphFormat);
+    void LoadAIDS(std::vector<T>& graphs, const std::string &graphPath);
+
     void Save(const SaveParams& saveParams = SaveParams());
 
     void add_graph(const std::string& graphPath, bool withLabels = false);
@@ -404,6 +412,248 @@ public:
     T& operator[](size_t index){return graphData[index];};
     [[nodiscard]] INDEX size() const{return static_cast<INDEX>(graphData.size());};
 };
+
+template<typename T>
+void GraphData<T>::LoadBGF(std::vector<T> &graphs, const std::string &graphPath, GraphFormat graphFormat) {
+    int saveVersion = 1;
+    int graphNumber;
+    std::vector<std::string> graphsNames;
+    std::vector<GraphType> graphsTypes;
+    std::vector<INDEX> graphsSizes;
+    std::vector<std::vector<std::string>> graphsNodeFeatureNames;
+    std::vector<INDEX> graphsEdges;
+    std::vector<std::vector<std::string>> graphsEdgeFeatureNames;
+    std::ifstream In(graphPath, std::ios::in | std::ios::binary);
+    std::string extension = ".bgf";
+    if (graphFormat == GraphFormat::BGFS){
+        extension = ".bgfs";
+    }
+
+    if (GraphStruct::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes,
+                             graphsNodeFeatureNames, graphsEdges, graphsEdgeFeatureNames)) {
+        for (int i = 0; i < graphNumber; ++i) {
+            graphs.emplace_back();
+            T& graph = graphs.back();
+            //Create graph
+            graph.Init(graphsNames[i], (int) graphsSizes[i], (int) graphsEdges[i],
+                       (int) graphsNodeFeatureNames[i].size(), (int) graphsEdgeFeatureNames[i].size(),
+                       graphsNodeFeatureNames[i], graphsEdgeFeatureNames[i]);
+            //Read the nodes
+            for (int j = 0; j < graphsSizes[i]; ++j) {
+                for (int k = 0; k < graphsNodeFeatureNames[i].size(); ++k) {
+                    double val = 0;
+                    if (extension == ".bgf") {
+                        In.read((char *) (&val), sizeof(double));
+                    } else if (extension == ".bgfs") {
+                        unsigned int int_val;
+                        In.read((char *) (&int_val), sizeof(unsigned int));
+                        val = int_val;
+                    }
+                    graph.ReadNodeFeatures(val, j, graphsNodeFeatureNames[i][k]);
+
+                }
+            }
+            //Read the edges
+            INDEX added_edges = 0;
+            INDEX original_edges = graph.edges();
+            for (INDEX j = 0; j < original_edges; ++j) {
+                INDEX Src = 0;
+                INDEX Dst = 0;
+                if (extension == ".bgf") {
+                    In.read((char *) (&Src), sizeof(INDEX));
+                    In.read((char *) (&Dst), sizeof(INDEX));
+                } else if (extension == ".bgfs") {
+                    unsigned int int_Src;
+                    unsigned int int_Dst;
+                    In.read((char *) (&int_Src), sizeof(unsigned int));
+                    In.read((char *) (&int_Dst), sizeof(unsigned int));
+                    Src = int_Src;
+                    Dst = int_Dst;
+                }
+
+                std::vector<double> edgeData;
+                for (int k = 0; k < graphsEdgeFeatureNames[i].size(); ++k) {
+                    double val;
+                    In.read((char *) (&val), sizeof(double));
+                    edgeData.emplace_back(val);
+                }
+                if (graph.ReadEdges(Src, Dst, edgeData)) {
+                    ++added_edges;
+                }
+            }
+            graph.set_edges(added_edges);
+            graph.InitLabels();
+        }
+    }
+    In.close();
+
+}
+
+template<typename T>
+void GraphData<T>::LoadAIDS(std::vector<T> &graphs, const std::string &graphPath) {
+
+    NodeId src;
+    NodeId dest;
+    std::string a, b, c;
+    std::string line;
+    std::ifstream infile(graphPath);
+    std::vector<std::pair<INDEX, INDEX>> graphEdges;
+    Labels edgeLabels;
+    std::set<INDEX> graphNodeIds;
+    std::unordered_map<INDEX, INDEX> originalIdsToNodeIds;
+    Labels nodeLabels;
+    unsigned int num_nodes = 0;
+    unsigned int num_edges = 0;
+    bool label_line = false;
+    bool edge_line = false;
+    int graph_counter = 0;
+    while (std::getline(infile, line)) {
+        std::istringstream iss(line);
+        if (edge_line){
+            iss >> a;
+            iss >> b;
+            iss >> c;
+            graphEdges.emplace_back(std::stoi(a), std::stoi(b));
+            graphNodeIds.emplace(std::stoi(a));
+            graphNodeIds.emplace(std::stoi(b));
+            edgeLabels.emplace_back(std::stoi(c));
+            ++num_edges;
+            edge_line = false;
+
+            graphs.emplace_back();
+            T& graph = graphs.back();
+            //Create graph
+            graph.Init(std::to_string(graph_counter), num_nodes, 0,1, 1,{"node_label"}, {"edge_label"});
+
+            INDEX nodeCounter = 0;
+            for (auto x: graphNodeIds) {
+                originalIdsToNodeIds.insert({x, nodeCounter});
+                ++nodeCounter;
+            }
+            unsigned int num_edges_duplicates = 0;
+            for (auto edge: graphEdges) {
+                if (!graph.add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
+                    std::cout << "Edge: " << originalIdsToNodeIds[edge.first] << " "
+                              << originalIdsToNodeIds[edge.second] << " has not been added because: " << std::endl;
+                    if (graph.edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
+                        std::cout << "It already exists!" << std::endl;
+                        ++num_edges_duplicates;
+                    }
+                }
+            }
+            if (num_edges_duplicates > 0) {
+                std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!"
+                          << std::endl;
+                std::cout << graphEdges.size() - num_edges_duplicates << " edges are remaining" << std::endl;
+            }
+
+            int max_label = *std::max(nodeLabels.begin(), nodeLabels.end());
+            graph.set_labels(&nodeLabels);
+            graph.InitLabels();
+
+            graphEdges.clear();
+            edgeLabels.clear();
+            graphNodeIds.clear();
+            originalIdsToNodeIds.clear();
+            nodeLabels.clear();
+            num_nodes = 0;
+            num_edges = 0;
+
+            ++graph_counter;
+            continue;
+        }
+        iss >> a;
+        if (a == "#" || a == "$") {
+            label_line = true;
+            continue;
+        }
+        if (label_line){
+            ++num_nodes;
+            nodeLabels.emplace_back(std::stoi(a));
+            while (iss >> a){
+                ++num_nodes;
+                nodeLabels.emplace_back(std::stoi(a));
+            }
+            label_line = false;
+            edge_line = true;
+            continue;
+        }
+
+        iss >> b;
+        // Check if file is of format
+        // num_nodes
+        // node_idA node_idB
+        // ...
+            src = std::stoull(a);
+            dest = std::stoull(b);
+            graphEdges.emplace_back(src, dest);
+            graphNodeIds.emplace(src);
+            graphNodeIds.emplace(dest);
+    }
+//    graph.nodes() = graphNodeIds.size();
+//    NodeId num_edges = graphEdges.size();
+//    this->_degrees.resize(graph.nodes());
+//    this->_graph.resize(graph.nodes());
+//    INDEX nodeCounter = 0;
+//    for (auto x: graphNodeIds) {
+//        originalIdsToNodeIds.insert({x, nodeCounter});
+//        ++nodeCounter;
+//    }
+//    unsigned int num_edges_duplicates = 0;
+//    for (auto edge: graphEdges) {
+//        if (!GraphStruct::add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
+//            std::cout << "Edge: " << originalIdsToNodeIds[edge.first] << " "
+//                      << originalIdsToNodeIds[edge.second] << " has not been added because: " << std::endl;
+//            if (this->edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
+//                std::cout << "It already exists!" << std::endl;
+//                ++num_edges_duplicates;
+//            }
+//        }
+//    }
+//    std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!"
+//              << std::endl;
+//    std::cout << graphEdges.size() - num_edges_duplicates << " edges are remaining" << std::endl;
+//    if (!labelPath.empty() && withLabels) {
+//        std::string label_extension = std::filesystem::path(labelPath).extension().string();
+//        std::ifstream label_file(labelPath);
+//        if (label_extension == ".vertexids") {
+//            std::string label_line;
+//            _labels = Labels(nodes(), 0);
+//            Label label = 0;
+//            while (std::getline(label_file, label_line)) {
+//                std::istringstream iss(label_line);
+//                std::string token;
+//                while (std::getline(iss, token, ' ')) {
+//                    _labels[originalIdsToNodeIds[std::stoi(token)]] = label;
+//                }
+//                ++label;
+//            }
+//        } else {
+//            try {
+//                NodeId id;
+//                Label label;
+//                while (label_file >> id >> label) {
+//                    _labels.push_back(label);
+//                }
+//            }
+//            catch (...) {
+//            }
+//        }
+//        if (this->_labels.size() == this->_graph.size()) {
+//            labelMap = GraphFunctions::GetGraphLabelMap(_labels);
+//            labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
+//            this->_numLabels = (this->_numLabels == -1) ? static_cast<int>(labelMap.size()) : this->_numLabels;
+//            if (this->_numLabels >= 10) {
+//                labelType = LABEL_TYPE::LABELED_DENSE;
+//            } else {
+//                labelType = LABEL_TYPE::LABELED_SPARSE;
+//            }
+//            UpdateGraphLabels(labelType);
+//        } else {
+//            //TODO throw exception
+//        }
+//    }
+}
 
 template<typename T>
 void GraphData<T>::Save(const SaveParams& saveParams) {
@@ -538,6 +788,31 @@ void GraphData<T>::Load(const std::string &graphPath) {
             }
             In.close();
         }
+    }
+}
+
+template<typename T>
+void GraphData<T>::Load(std::vector<T>& graphs, const std::string &graphPath, GraphFormat graphFormat) {
+    switch (graphFormat) {
+        case GraphFormat::BGF:
+            LoadBGF(graphs, graphPath, graphFormat);
+            break;
+        case GraphFormat::BGFS:
+            LoadBGF(graphs, graphPath, graphFormat);
+            break;
+        case GraphFormat::BINARY:
+            break;
+        case GraphFormat::EDGES:
+            break;
+        case GraphFormat::PEREGRINE_DATA:
+            break;
+        case GraphFormat::PEREGRINE_SMALL:
+            break;
+        case GraphFormat::DIMACS:
+            break;
+        case GraphFormat::AIDS:
+            LoadAIDS(graphs, graphPath);
+            break;
     }
 }
 
@@ -832,7 +1107,7 @@ inline void GraphStruct::Save(const SaveParams& saveParams) {
         }
     }
     else {
-        saveName = saveParams.graphPath + this->_name;
+        saveName = saveParams.graphPath;
     }
     if (!saveParams.Name.empty()) {
         saveName += saveParams.Name;
@@ -1279,6 +1554,35 @@ inline GraphData<T>::GraphData(const std::string& graphPath, const std::string& 
     }
 }
 
+/// Construct a graph database from a graph path with labels
+/// \param graphPath
+/// \param labelPath
+/// \param extension
+/// \param graphSizes
+/// \param patternNum
+template<typename T>
+inline GraphData<T>::GraphData(GraphFormat graphFormat, const std::string& graphPath, const std::string& searchName){
+    std::vector<std::string> files;
+    if (!is_regular_file(std::filesystem::path(graphPath))){
+        for (const auto &entry: std::filesystem::recursive_directory_iterator(graphPath)) {
+            if (entry.is_regular_file()) {
+                files.emplace_back(entry.path().string());
+            }
+        }
+    }
+    else{
+        files = {graphPath};
+    }
+    for (auto const & file : files) {
+        try {
+            Load(this->graphData, file, graphFormat);
+        }
+        catch(const std::domain_error& e) {
+            std::cerr << e.what();
+        }
+    }
+}
+
 /// Add a graph to a graph database
 /// \param graph
 template<typename T>
@@ -1638,6 +1942,106 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                 }
             }
         } else if (format == "dimacs") {
+            std::string graph_name = std::filesystem::path(path).stem().string();
+            this->_name = graph_name;
+            NodeId src;
+            NodeId dest;
+            std::string a, b;
+            std::string line;
+            std::ifstream infile(path);
+            std::vector<std::pair<INDEX, INDEX>> graphEdges;
+            std::set<INDEX> graphNodeIds;
+            std::unordered_map<INDEX, INDEX> originalIdsToNodeIds;
+            while (std::getline(infile, line)) {
+                std::istringstream iss(line);
+                iss >> a;
+                if (a == "p") {
+                    continue;
+                }
+                iss >> a;
+                iss >> b;
+                // Check if file is of format
+                // num_nodes
+                // node_idA node_idB
+                // ...
+                if (b.empty()) {
+                    for (INDEX i = 0; i < std::stoull(a); ++i) {
+                        this->_graph.emplace_back();
+                    }
+                } else {
+                    src = std::stoull(a);
+                    dest = std::stoull(b);
+                    graphEdges.emplace_back(src, dest);
+                    graphNodeIds.emplace(src);
+                    graphNodeIds.emplace(dest);
+                }
+            }
+            _nodes = graphNodeIds.size();
+            NodeId num_edges = graphEdges.size();
+            this->_degrees.resize(_nodes);
+            this->_graph.resize(_nodes);
+            INDEX nodeCounter = 0;
+            for (auto x: graphNodeIds) {
+                originalIdsToNodeIds.insert({x, nodeCounter});
+                ++nodeCounter;
+            }
+            int num_edges_duplicates = 0;
+            for (auto edge: graphEdges) {
+                if (!GraphStruct::add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
+                    std::cout << "Edge: " << originalIdsToNodeIds[edge.first] << " "
+                              << originalIdsToNodeIds[edge.second] << " has not been added because: " << std::endl;
+                    if (this->edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
+                        std::cout << "It already exists!" << std::endl;
+                        ++num_edges_duplicates;
+                    }
+                }
+            }
+            if (num_edges_duplicates > 0) {
+                std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!"
+                          << std::endl;
+            }
+            if (!labelPath.empty() && withLabels) {
+                std::string label_extension = std::filesystem::path(labelPath).extension().string();
+                std::ifstream label_file(labelPath);
+                if (label_extension == ".vertexids") {
+                    std::string label_line;
+                    _labels = Labels(nodes(), 0);
+                    Label label = 0;
+                    while (std::getline(label_file, label_line)) {
+                        std::istringstream iss(label_line);
+                        std::string token;
+                        while (std::getline(iss, token, ' ')) {
+                            _labels[originalIdsToNodeIds[std::stoi(token)]] = label;
+                        }
+                        ++label;
+                    }
+                } else {
+                    try {
+                        NodeId id;
+                        Label label;
+                        while (label_file >> id >> label) {
+                            _labels.push_back(label);
+                        }
+                    }
+                    catch (...) {
+                    }
+                }
+                if (this->_labels.size() == this->_graph.size()) {
+                    labelMap = GraphFunctions::GetGraphLabelMap(_labels);
+                    labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
+                    this->_numLabels = (this->_numLabels == -1) ? static_cast<int>(labelMap.size())
+                                                                : this->_numLabels;
+                    if (this->_numLabels >= 10) {
+                        labelType = LABEL_TYPE::LABELED_DENSE;
+                    } else {
+                        labelType = LABEL_TYPE::LABELED_SPARSE;
+                    }
+                    UpdateGraphLabels(labelType);
+                } else {
+                    //TODO throw exception
+                }
+            }
+        }else if (format == "aids") {
             std::string graph_name = std::filesystem::path(path).stem().string();
             this->_name = graph_name;
             NodeId src;

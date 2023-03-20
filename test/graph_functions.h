@@ -90,5 +90,15 @@ bool MapGraph(){
     int x = 0;
 }
 
+bool GenerateGraphs(){
+    for (int size : {100, 1000, 10000}) {
+        GraphStruct g = GraphStruct(SimplePatterns::FullyConnected(size));
+        g.Save({"../../../../GraphData/Hops/", "fc_" + std::to_string(size), GraphFormat::BGFS});
+  }
+    return true;
+}
+
+
+
 
 #endif //TESTGRAPHLIB_GRAPHFUNCTIONS_H

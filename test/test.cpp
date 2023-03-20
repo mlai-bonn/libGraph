@@ -82,6 +82,12 @@ int main(int argc, char *argv[]) {
         if (std::strcmp(argv[i], "--load_dimacs") == 0 || std::strcmp(argv[i], "--all") == 0) {
             ConvertDimacs();
         }
+        if (std::strcmp(argv[i], "--load_aids") == 0 || std::strcmp(argv[i], "--all") == 0) {
+            LoadAids();
+        }
+        if (std::strcmp(argv[i], "--generate_graphs") == 0 || std::strcmp(argv[i], "--all") == 0) {
+            GenerateGraphs();
+        }
     }
     int x=0;
 }

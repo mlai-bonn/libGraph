@@ -37,6 +37,11 @@ void ConvertDimacs(){
     }
 }
 
+void LoadAids(){
+    GraphData g = GraphData<GraphStruct>(GraphFormat::AIDS, "../../../../GraphData/Hops/patterns/labeled/tree_v5e1_levels/tree_v5e1_size2.graph");
+    return;
+}
+
 void LoadSpeedTest(){
     auto start = std::chrono::high_resolution_clock::now();
     GraphStruct graphStruct = GraphStruct("../../../GraphData/Hops/com-lj.ungraph.bgfs");
