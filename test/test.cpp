@@ -88,6 +88,11 @@ int main(int argc, char *argv[]) {
         if (std::strcmp(argv[i], "--generate_graphs") == 0 || std::strcmp(argv[i], "--all") == 0) {
             GenerateGraphs();
         }
+
+        if (std::strcmp(argv[i], "--high_degree_test") == 0 || std::strcmp(argv[i], "--all") == 0) {
+            HopsHighDegreeTest();
+        }
+
     }
     int x=0;
 }
