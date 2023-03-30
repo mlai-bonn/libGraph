@@ -6,6 +6,7 @@
 #define TESTGRAPHLIB_GRAPHFUNCTIONS_H
 
 #include "../include/SimplePatterns.h"
+#include "../include/io/io.h"
 
 bool ConversionTest(){
     for(std::string name : {"amazon", "dblp", "lj", "orkut", "youtube"}) {
@@ -96,6 +97,26 @@ bool GenerateGraphs(){
         g.Save({"../../../../GraphData/Hops/", "fc_" + std::to_string(size), GraphFormat::BGFS});
   }
     return true;
+}
+
+bool GraphsToLatex(){
+
+    GraphData graphs = GraphData<GraphStruct>(GraphFormat::BGFS, "../../../../GraphData/Hops/", "");
+    std::vector<std::vector<std::string>> info;
+
+    info.emplace_back(std::vector<std::string>{"Name", "Size", "Edges", "Avg. Degree", "Max. Degree"});
+
+    for (auto& graph : graphs.graphData) {
+        std::vector<std::string> g_info;
+        g_info.emplace_back(graph.GetName());
+        g_info.emplace_back(std::to_string(graph.nodes()));
+        g_info.emplace_back(std::to_string(graph.edges()));
+        g_info.emplace_back(std::to_string((graph.edges())*2/graph.nodes()));
+        g_info.emplace_back(std::to_string(graph.maxDegree));
+
+        info.emplace_back(g_info);
+    }
+    ToLatexTable("../../../../ChoPS/final_results/graphs.tex", info);
 }
 
 

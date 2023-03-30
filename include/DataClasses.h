@@ -186,6 +186,14 @@ public:
             return (struct1._name < struct2._name);
         }
     };
+
+    struct sort_by_size
+    {
+        inline bool operator() (const GraphStruct& struct1, const GraphStruct& struct2)
+        {
+            return (struct1.nodes() < struct2.nodes());
+        }
+    };
     bool operator==(const GraphStruct &rhs) const {
         if (_name != rhs._name){
             return false;
@@ -393,7 +401,7 @@ class GraphData {
 public:
     GraphData()= default;
     explicit GraphData(const std::string& graphPath, const std::string& labelPath = "", const std::string& searchName = "", const std::string& extension = "", bool sort = true, std::set<int>* graphSizes = nullptr, int patternNum = -1);
-    explicit GraphData(GraphFormat graphFormat, const std::string& graphPath, const std::string& searchName = "");
+    explicit GraphData(GraphFormat graphFormat, const std::string& graphPath, const std::string& search_name = "", bool sort = true);
 
     void Load(const std::string &graphPath);
     void Load(std::vector<T>& graphs, const std::string &graphPath, GraphFormat graphFormat = GraphFormat::BGFS);
@@ -1561,18 +1569,37 @@ inline GraphData<T>::GraphData(const std::string& graphPath, const std::string& 
 /// \param graphSizes
 /// \param patternNum
 template<typename T>
-inline GraphData<T>::GraphData(GraphFormat graphFormat, const std::string& graphPath, const std::string& searchName){
+inline GraphData<T>::GraphData(GraphFormat graphFormat, const std::string& graphPath, const std::string& search_name, bool sort){
+    std::vector<std::string> possible_files;
     std::vector<std::string> files;
     if (!is_regular_file(std::filesystem::path(graphPath))){
-        for (const auto &entry: std::filesystem::recursive_directory_iterator(graphPath)) {
+        for (const auto &entry: std::filesystem::directory_iterator(graphPath)) {
             if (entry.is_regular_file()) {
-                files.emplace_back(entry.path().string());
+                std::string string_path = std::filesystem::path(entry).string();
+
+                possible_files.emplace_back(entry.path().string());
+            }
+        }
+        for (const auto &p: possible_files) {
+            std::string lower_name = search_name;
+            std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(),
+                           [](unsigned char c) { return std::tolower(c); } // correct
+            );
+            std::string path_lower = p;
+            std::transform(path_lower.begin(), path_lower.end(), path_lower.begin(),
+                           [](unsigned char c) { return std::tolower(c); } // correct
+            );
+            if (path_lower.find(lower_name) != std::string::npos) {
+                files.emplace_back(p);
             }
         }
     }
     else{
         files = {graphPath};
     }
+
+
+
     for (auto const & file : files) {
         try {
             Load(this->graphData, file, graphFormat);
@@ -1580,6 +1607,9 @@ inline GraphData<T>::GraphData(GraphFormat graphFormat, const std::string& graph
         catch(const std::domain_error& e) {
             std::cerr << e.what();
         }
+    }
+    if (sort) {
+        std::sort(this->graphData.begin(), this->graphData.end(), GraphStruct::sort_by_size());
     }
 }
 

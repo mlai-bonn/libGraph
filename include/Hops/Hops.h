@@ -71,18 +71,18 @@ private:
     void InitEstimation(unsigned int& id, RunProps& runProps, const std::vector<NodeId>& PatternRootImages, bool random = true);
     /// Main function for the estimation of how often an unlabeled pattern occurs in the big graph
     /// @param id id of the estimation
-    /// @param accumulatedEstimation accumulated estimation number for all estimations up to now
+    /// @param accumulatedMean accumulated estimation number for all estimations up to now
     /// @param estimationVector vector of estimations
     /// @param zeroIterations counter for the iterations which are zero
     /// @param runProps extended properties used in the run
-    bool UnlabeledEmbedding(unsigned int id, long double& accumulatedEstimation, std::vector<UInt64>& estimationVector, UInt64& zeroIterations, RunProps& runProps);
+    bool UnlabeledEmbedding(unsigned int id, long double& accumulatedMean, long double& accumulatedDeviation, std::vector<UInt64>& estimationVector, UInt64& zeroIterations, RunProps& runProps);
     /// Main function for the estimation of how often a labelled pattern occurs in the big graph
     /// @param id id of the estimation
     /// @param accumulatedEstimation accumulated estimation number for all estimations up to now
     /// @param estimationVector vector of estimations
     /// @param zeroIterations counter for the iterations which are zero
     /// @param runProps extended properties used in the run
-    bool LabeledEmbeddings(unsigned int id, long double& accumulatedEstimation, std::vector<UInt64>& estimationVector, UInt64& zeroIterations, RunProps& runProps);
+    bool LabeledEmbeddings(unsigned int id, long double& accumulatedEstimation, long double& accumulatedDeviation, std::vector<UInt64>& estimationVector, UInt64& zeroIterations, RunProps& runProps);
     bool UnlabeledGraphEditDistance(unsigned int id, unsigned int &currentEditDistance, RunProps &runProps);
     bool LabeledGraphEditDistance(unsigned int id, unsigned int& currentEditDistance, RunProps &runProps);
     bool PickRandomNeighbors(unsigned int id, unsigned int sourceSize, unsigned int targetSize, NodeId currentNodeId, const Nodes& currentNodeNeighbors, unsigned int& possibleNeighbors, const Nodes &orderNodes, RunProps& runProps, int label = -1) const;
@@ -321,8 +321,11 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
     this->currentPattern = &pattern;
 
     //Value of accumulated estimation and counters for overall (zero) iterations
-    long double accumulatedEstimation = 0;
-    long double nodeEstimation = 0;
+    long double accumulatedMean = 0;
+    long double accumulatedStd = 0;
+
+    long double nodeMean = 0;
+    long double nodeStd = 0;
     //Counter of overall iterations
     UInt64 OverallIterations = 0;
     //Counter for overall zero iterations
@@ -372,7 +375,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
     snapShotEstimation.resize(this->runParameters.iteration_per_node.size());
 
 ////run the estimation in parallel mode
-#pragma omp parallel default(none) firstprivate(runProps, approximatedGED, nodeEstimation, Id) shared(estimations, snapShotEstimation, accumulatedApproximatedGED, possibleGraphImagesOfPatternRoot) reduction(+: accumulatedEstimation, OverallIterations, OverallZeroIterations)
+#pragma omp parallel default(none) firstprivate(runProps, approximatedGED, nodeMean, nodeStd, Id) shared(estimations, snapShotEstimation, accumulatedApproximatedGED, possibleGraphImagesOfPatternRoot) reduction(+: accumulatedMean, accumulatedStd, OverallIterations, OverallZeroIterations)
     {
         int thread_num = omp_get_thread_num();
         runProps.runAlgorithm = true;
@@ -384,7 +387,8 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
         for (auto currentNode : possibleGraphImagesOfPatternRoot) {
             //set current node
             runProps.currentRootNode = currentNode;
-            nodeEstimation = 0;
+            nodeMean = 0;
+            nodeStd = 0;
             //reset iteration to zero for the
             runProps.current_iteration_step = 0;
             //set the seed for this node
@@ -398,12 +402,12 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
                         //Start the embedding
                         //Unlabeled Case
                         if (runProps.labelType == LABEL_TYPE::UNLABELED) {
-                            Hops::UnlabeledEmbedding(Id, nodeEstimation, runProps.privateEstimations,
+                            Hops::UnlabeledEmbedding(Id, nodeMean, nodeStd, runProps.privateEstimations,
                                                      OverallZeroIterations, runProps);
                         }
                             //Labeled Case
                         else {
-                            Hops::LabeledEmbeddings(Id, nodeEstimation, runProps.privateEstimations, OverallZeroIterations,
+                            Hops::LabeledEmbeddings(Id, nodeMean, nodeStd, runProps.privateEstimations, OverallZeroIterations,
                                                     runProps);
                         }
                         ++OverallIterations;
@@ -436,11 +440,12 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
                 }
                 //Collect on the fly results
                 if (iter == this->runParameters.iteration_per_node[runProps.current_iteration_step] - 1){
-                    runProps.estimation_snapshots[runProps.current_iteration_step] += nodeEstimation;
+                    runProps.estimation_snapshots[runProps.current_iteration_step] += nodeMean;
                     ++runProps.current_iteration_step;
                 }
             }
-            accumulatedEstimation += nodeEstimation;
+            accumulatedMean += nodeMean;
+            accumulatedStd += nodeStd;
         }
 
         if (this->runParameters.iteration_per_node.size() > 1){
@@ -450,7 +455,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
         }
 
         if (this->runParameters.snapshot_time != -1) {
-            runProps.privateSnapshots.emplace_back((double) accumulatedEstimation / (double) OverallIterations);
+            runProps.privateSnapshots.emplace_back((double) accumulatedMean / (double) OverallIterations);
         }
 
         //merge evaluation values from different threads in one large vector if needed (do this only with one thread)
@@ -487,7 +492,8 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
         case HOPS_TYPE::ESTIMATION:
             //save hops runtime and estimation values and evaluate
             if (this->runParameters.single_number){
-                this->hopsEvaluation.hopsEstimation = accumulatedEstimation;
+                this->hopsEvaluation.hopsEstimation = accumulatedMean;
+                this->hopsEvaluation.hopsStd = accumulatedStd;
                 this->hopsEvaluation.hopsZeroIterations = OverallZeroIterations;
                 Hops::EvaluateResult(snapShotEstimation);
             }else {
@@ -556,6 +562,7 @@ inline void Hops::EvaluateResult(std::vector<long double>& snapshots) {
     auto start = std::chrono::high_resolution_clock::now();
     long double startEstimation = (double) this->possibleGraphImagesOfPatternRoot.size();
     this->hopsEvaluation.hopsEstimation *= startEstimation / (long double) this->hopsEvaluation.hopsIterations;
+    this->hopsEvaluation.hopsStd *= (startEstimation * startEstimation) / (long double) this->hopsEvaluation.hopsIterations;
     this->hopsEvaluation.snapshots = snapshots;
     for (long double & snapshot : this->hopsEvaluation.snapshots) {
         snapshot *= startEstimation;
@@ -663,7 +670,7 @@ inline void Hops::InitEstimation(unsigned int& id, Hops::RunProps &runProps, con
 }
 
 
-inline bool Hops::UnlabeledEmbedding(unsigned int id, long double& accumulatedEstimation, std::vector<UInt64>& estimationVector, UInt64& zeroIterations, RunProps& runProps) {
+inline bool Hops::UnlabeledEmbedding(unsigned int id, long double& accumulatedMean, long double& accumulatedDeviation, std::vector<UInt64>& estimationVector, UInt64& zeroIterations, RunProps& runProps) {
     NodeId CurrentGraphImageId;
     unsigned int SourceSize, TargetSize, possibleNeighbors;
     UInt64 estimation = 0;
@@ -703,6 +710,7 @@ inline bool Hops::UnlabeledEmbedding(unsigned int id, long double& accumulatedEs
             ++zeroIterations;
             return false;
         }
+
         //Calculate the Value for estimation Combinations in Log-Space
         estimation += (this->preComputedLogValues[possibleNeighbors] - this->preComputedLogValues[possibleNeighbors - SourceSize]);
 
@@ -715,7 +723,9 @@ inline bool Hops::UnlabeledEmbedding(unsigned int id, long double& accumulatedEs
         }
     }
     if (this->runParameters.single_number) {
-        accumulatedEstimation += exp((double) estimation / (double) this->logValueMultiplier);
+        long double val = exp((double) estimation / (double) this->logValueMultiplier);
+        accumulatedMean += val;
+        accumulatedDeviation += val*val;
     }
     else{
         estimationVector.push_back(estimation);
@@ -754,7 +764,7 @@ inline bool Hops::UnlabeledGraphEditDistance(unsigned int id, unsigned int &curr
 }
 
 
-inline bool Hops::LabeledEmbeddings(unsigned int id, long double& accumulatedEstimation, std::vector<UInt64>& estimationVector, UInt64& zeroIterations, RunProps& runProps) {
+inline bool Hops::LabeledEmbeddings(unsigned int id, long double& accumulatedMean, long double& accumulatedDeviation, std::vector<UInt64>& estimationVector, UInt64& zeroIterations, RunProps& runProps) {
     NodeId PatternParentNode, GraphImageOfPatternParentNode;
     unsigned int PossibleNeighborsSize, SourceSize, TargetSize;
     UInt64 estimation = 0;
@@ -815,7 +825,9 @@ inline bool Hops::LabeledEmbeddings(unsigned int id, long double& accumulatedEst
         }
     }
     if (this->runParameters.single_number) {
-        accumulatedEstimation += exp((double) estimation / (double) this->logValueMultiplier);
+        long double val = exp((double) estimation / (double) this->logValueMultiplier);
+        accumulatedMean += val;
+        accumulatedDeviation += val*val;
     }
     else{
         estimationVector.push_back(estimation);

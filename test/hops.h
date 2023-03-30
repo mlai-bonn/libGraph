@@ -55,6 +55,16 @@ void Hops100Iter(int threads){
     hops.Run(0, pattern, {LABEL_TYPE::UNLABELED,0,threads, {10000}, 0,true});
 }
 
+void HopsVarianceTest(int threads, int seed){
+    GraphStruct pattern = SimplePatterns::FullyConnected(3);
+    GraphData graphs = GraphData<GraphStruct>("../../../../GraphData/Hops/com-amazon.ungraph.bgfs");
+    Hops hops = Hops(graphs);
+    if (threads == -1){
+        threads = omp_get_max_threads();
+    }
+    hops.Run(0, pattern, {LABEL_TYPE::UNLABELED,0,threads, {1000}, seed,true});
+}
+
 void Hops10s(int threads){
     GraphStruct triangle = SimplePatterns::Triangle();
     GraphData graphs = GraphData<GraphStruct>("../../../../GraphData/Hops/com-amazon.ungraph.bgfs");

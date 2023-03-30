@@ -24,6 +24,7 @@ public:
     Evaluation(GraphStruct& graph, GraphStruct& pattern, RunParameters& runParameters) : graph(&graph), pattern(&pattern), parameters(runParameters), threads(runParameters.thread_num), seed(runParameters.seed){};
     double HopsRuntime() const{return (double)(hopsRuntime.count())/1000000.0;};
     long double hopsEstimation = 0;
+    long double hopsStd = 0;
     int threads = 0;
     int seed = 0;
     std::map<size_t, size_t> estimationMap;
@@ -63,12 +64,13 @@ public:
                     std::cout << "\t" << "Unlabeled embedding" << std::endl;
                 }
                 std::cout << "\t" << "Estimation: " << hopsEstimation << std::endl;
+                std::cout << "\t" << "HopsVariance: " << hopsStd << std::endl;
                 std::cout << "\t" << "Iterations per Node: " << parameters.iteration_per_node.back() << std::endl;
                 std::cout << "\t" << "Overall Iterations: " << hopsIterations << std::endl;
                 std::cout << "\t" << "NonZeroIterations: " << hopsIterations - hopsZeroIterations << std::endl;
                 std::cout << "\t" << "ZeroIterations: " << hopsZeroIterations << std::endl;
                 std::cout << "---Parallelization---" << std::endl;
-                std::cout << "\t" << "Threads:" << parameters.thread_num << std::endl;
+                std::cout << "\t" << "Threads: " << parameters.thread_num << std::endl;
                 std::cout << "---Runtime Performance---" << std::endl;
                 std::cout << "\t" << "HopsRuntime: " << (double) hopsRuntime.count() / 1000000 << " seconds" << std::endl;
                 std::cout << "\t" << "Iterations/second: " << (double) hopsIterations / ((double) hopsRuntime.count() / 1000000) << std::endl;

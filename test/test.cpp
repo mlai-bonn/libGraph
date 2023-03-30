@@ -6,12 +6,18 @@
 int main(int argc, char *argv[]) {
 
     int threads = -1;
+    int seed = 0;
 
     for (int i = 0; i < argc; ++i) {
         std::string str = argv[i];
-        if (std::strcmp(argv[i], "--threads") == 0 || std::strcmp(argv[i], "--all")==0){
-            threads = std::stoi(argv[i+1]);
+        if (std::strcmp(argv[i], "--threads") == 0) {
+            threads = std::stoi(argv[i + 1]);
         }
+        if (std::strcmp(argv[i], "--seed") == 0) {
+            seed = std::stoi(argv[i + 1]);
+        }
+    }
+    for (int i = 0; i < argc; ++i) {
         if (std::strcmp(argv[i], "--load_speed") == 0 || std::strcmp(argv[i], "--all") == 0) {
             LoadSpeedTest();
         }
@@ -47,6 +53,9 @@ int main(int argc, char *argv[]) {
         }
         if (std::strcmp(argv[i], "--hops_100iter") == 0 || std::strcmp(argv[i], "--all") == 0) {
             Hops100Iter(threads);
+        }
+        if (std::strcmp(argv[i], "--hops_variance_test") == 0 || std::strcmp(argv[i], "--all") == 0) {
+            HopsVarianceTest(threads, seed);
         }
         if (std::strcmp(argv[i], "--hops_pattern") == 0 || std::strcmp(argv[i], "--all") == 0) {
             HopsPatternTest();
@@ -91,6 +100,10 @@ int main(int argc, char *argv[]) {
 
         if (std::strcmp(argv[i], "--high_degree_test") == 0 || std::strcmp(argv[i], "--all") == 0) {
             HopsHighDegreeTest();
+        }
+
+        if (std::strcmp(argv[i], "--to_latex_table") == 0 || std::strcmp(argv[i], "--all") == 0) {
+            GraphsToLatex();
         }
 
     }

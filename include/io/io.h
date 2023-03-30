@@ -12,6 +12,7 @@ public:
     static void ReadTrivial(const std::string& s, std::vector<T>& data );
     static void WriteTrivialMatrix(const std::string& s, const std::vector<std::vector<T>>& data );
     static void ReadTrivialMatrix(const std::string& s, std::vector<std::vector<T>>& data );
+    static void ToLatexTable(const std::string& path, const std::vector<std::vector<T>>& data);
 };
 #include "io.txx"
 

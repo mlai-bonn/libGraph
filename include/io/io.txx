@@ -56,3 +56,21 @@ void DataIO<T>::ReadTrivialMatrix(const std::string& s, std::vector<std::vector<
     }
     in.close();
 }
+
+template<typename T>
+void ToLatexTable(const std::string& path, const std::vector<std::vector<T>>& data){
+    std::ofstream out(path, std::ios::out);
+    for (auto & x : data) {
+        int counter = 0;
+        for (auto y : x) {
+            out << y;
+            if (counter != x.size() - 1){
+                out << " & ";
+            }
+            else{
+                out << " \\\\" << std::endl;
+            }
+            ++counter;
+        }
+    }
+}
