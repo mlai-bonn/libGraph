@@ -7,12 +7,26 @@
 
 #include "../include/SimplePatterns.h"
 #include "../include/io/io.h"
+#include "../include/io/FileEvaluation.h"
 
 bool ConversionTest(){
     for(std::string name : {"amazon", "dblp", "lj", "orkut", "youtube"}) {
         GraphStruct::Convert("../../../GraphData/Hops/com-" + name + ".ungraph.bin", "", GraphFormat::BGFS);
     }
     GraphStruct::Convert("../../../GraphData/Hops/", GraphFormat::BGFS);
+    return true;
+}
+
+bool BGFS_to_TXT(){
+    GraphData graphs = GraphData<GraphStruct>("../../../../GraphData/Hops/patterns/size6.bgfs");
+    int counter = 0;
+    for(auto& g : graphs.graphData){
+        if (g.IsTree()) {
+            SaveParams params = {"../../../../../Repositories/hops/Patterns6/", "tree_" + std::to_string(counter), GraphFormat::EDGES};
+            g.Save(params);
+            ++counter;
+        }
+    }
     return true;
 }
 
@@ -102,21 +116,30 @@ bool GenerateGraphs(){
 bool GraphsToLatex(){
 
     GraphData graphs = GraphData<GraphStruct>(GraphFormat::BGFS, "../../../../GraphData/Hops/", "");
-    std::vector<std::vector<std::string>> info;
 
-    info.emplace_back(std::vector<std::string>{"Name", "Size", "Edges", "Avg. Degree", "Max. Degree"});
+    FileEvaluation evaluation = FileEvaluation("../../../../ChoPS/final_results/", "graphs");
+    //std::vector<std::vector<std::string>> info;
+
+    //info.emplace_back(std::vector<std::string>{"Name", "Size", "Edges", "Avg. Degree", "Max. Degree"});
 
     for (auto& graph : graphs.graphData) {
-        std::vector<std::string> g_info;
-        g_info.emplace_back(graph.GetName());
-        g_info.emplace_back(std::to_string(graph.nodes()));
-        g_info.emplace_back(std::to_string(graph.edges()));
-        g_info.emplace_back(std::to_string((graph.edges())*2/graph.nodes()));
-        g_info.emplace_back(std::to_string(graph.maxDegree));
 
-        info.emplace_back(g_info);
+        evaluation.headerValueInsert({"Name", "Size", "Edges", "Avg. Degree", "Max. Degree"},
+                                     {graph.GetName(), std::to_string(graph.nodes()), std::to_string(graph.edges()),
+                                      std::to_string((graph.edges())*2/graph.nodes()),
+                                      std::to_string(graph.maxDegree)});
+
+//        std::vector<std::string> g_info;
+//        g_info.emplace_back(graph.GetName());
+//        g_info.emplace_back(std::to_string(graph.nodes()));
+//        g_info.emplace_back(std::to_string(graph.edges()));
+//        g_info.emplace_back(std::to_string((graph.edges())*2/graph.nodes()));
+//        g_info.emplace_back(std::to_string(graph.maxDegree));
+//        info.emplace_back(g_info);
     }
-    ToLatexTable("../../../../ChoPS/final_results/graphs.tex", info);
+    evaluation.save();
+    evaluation.to_latex_table();
+    //ToLatexTable("../../../../ChoPS/final_results/graphs.tex", info);
 }
 
 

@@ -25,11 +25,56 @@ public:
     FileEvaluation()= default;
     explicit FileEvaluation(const std::string& out_path, const std::string& eval_name = "default", const std::string& extension = ".csv") : out_path(out_path), name(eval_name), extension(extension){};
     void save(bool summary = false, bool both = true, std::_Ios_Openmode mode = std::ios_base::app);
+    void to_latex_table();
+
     void headerValueInsert(const std::vector<std::string>& new_header, const std::vector<std::string>& new_values, int insert_position=-1, bool summary = false, bool both=false);
     void clear();
 
 };
 
+inline void FileEvaluation::to_latex_table() {
+    if (!out_path.empty()){
+        std::filesystem::create_directory(out_path);
+        std::ofstream out(this->out_path + this->name + ".tex", std::ios::out);
+        for (auto& header : headers_all) {
+            int counter = 0;
+            out << header;
+            if (counter != headers_all.size() - 1){
+                out << " & ";
+            }
+            else{
+                out << " \\\\" << std::endl;
+            }
+        }
+
+        int max_size = 0;
+        for (const auto &header: headers_all) {
+            max_size = std::max(max_size, (int) (values_all)[header].size());
+        }
+
+        out << std::fixed;
+        for (int i = 0; i < max_size; ++i) {
+            int counter = 0;
+            for (auto const& header : headers_all) {
+                if (counter != headers_all.size() - 1) {
+                    if ((values_all)[header].size() <= i) {
+                        out << (values_all)[header][(values_all)[header].size() - 1] << " & ";
+                    } else {
+                        out << (values_all)[header][i] << " & ";
+                    }
+                }
+                else{
+                    if ((values_all)[header].size() <= i) {
+                        out << (values_all)[header][(values_all)[header].size() - 1] << " \\\\";
+                    } else {
+                        out << (values_all)[header][i] << " \\\\";
+                    }
+                }
+            }
+            out << std::endl;
+        }
+    }
+}
 
 inline void FileEvaluation::save(bool summary, bool both, std::_Ios_Openmode mode) {
     if (!out_path.empty()) {
