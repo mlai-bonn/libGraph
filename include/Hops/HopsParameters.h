@@ -29,7 +29,7 @@ struct Parameters{
 struct RunParameters{
     /// parameters for one run (one pattern count estimation) of the hops algorithm
     LABEL_TYPE labelType = LABEL_TYPE::UNLABELED;
-    double runtime = 30;
+    std::vector<double> runtime = {};
     int thread_num = -1;
     std::vector<int> iteration_per_node = {0};
     int seed = 0;

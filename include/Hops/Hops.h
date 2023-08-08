@@ -382,7 +382,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
     unsigned int Id = 0;
     snapShotEstimation.resize(this->runParameters.iteration_per_node.size());
 
-    if(this->runParameters.runtime != 0)
+    if(!this->runParameters.runtime.empty())
     {
         this->runParameters.iteration_per_node = {0};
         //Run the estimation for random nodes in the graph
@@ -544,7 +544,7 @@ void Hops::RandomRun(long double accumulatedMean, long double accumulatedStd,
                    Hops::RunProps &runProps, unsigned int Id) {
     //start clock for hops runtime measure
     auto start = std::chrono::high_resolution_clock::now();
-    runProps.endTime = start + std::chrono::microseconds ((std::size_t) (this->runParameters.runtime*1e6));
+    runProps.endTime = start + std::chrono::microseconds ((std::size_t) (this->runParameters.runtime.back()*1e6));
 
     ////run the estimation in parallel mode
 #pragma omp parallel default(none) firstprivate(runProps, approximatedGED, nodeMean, nodeStd, Id) shared(estimations, snapShotEstimation, accumulatedApproximatedGED, possibleGraphImagesOfPatternRoot) reduction(+: accumulatedMean, accumulatedStd, OverallIterations, OverallZeroIterations)
@@ -553,7 +553,8 @@ void Hops::RandomRun(long double accumulatedMean, long double accumulatedStd,
         runProps.runAlgorithm = true;
         runProps.currentTime = std::chrono::high_resolution_clock::now();
         runProps.lastSnapShotTime = std::chrono::high_resolution_clock::now() - std::chrono::hours(1);
-        runProps.estimation_snapshots.resize(runParameters.iteration_per_node.size());
+        runProps.estimation_snapshots.resize(runParameters.runtime.size());
+
 
         // while time is not greater than runProps.endTime
         auto time = std::chrono::high_resolution_clock::now();
@@ -562,8 +563,6 @@ void Hops::RandomRun(long double accumulatedMean, long double accumulatedStd,
         auto threadId = omp_get_thread_num();
         runProps.gen.seed(runProps.seed + threadId);
         while (time < runProps.endTime) {
-
-
             //get estimation of one embedding
             InitEstimation(Id, runProps, possibleGraphImagesOfPatternRoot, false);
             switch (runParameters.hops_type) {
