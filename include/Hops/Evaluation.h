@@ -21,15 +21,19 @@
 class Evaluation {
 public:
     Evaluation() = default;
-    Evaluation(GraphStruct& graph, GraphStruct& pattern, RunParameters& runParameters) : graph(&graph), pattern(&pattern), parameters(runParameters), threads(runParameters.thread_num), seed(runParameters.seed){};
+    Evaluation(GraphStruct& graph, GraphStruct& pattern, RunParameters& runParameters) : graph(&graph), pattern(&pattern), parameters(runParameters), threads(runParameters.thread_num), seed(runParameters.seed){
+        snapShotTimes = runParameters.runtime;
+    };
     double HopsRuntime() const{return (double)(hopsRuntime.count())/1000000.0;};
     long double hopsEstimation = 0;
     long double hopsStd = 0;
     int threads = 0;
     int seed = 0;
     std::map<size_t, size_t> estimationMap;
+    std::vector<double> snapShotTimes;
     std::vector<long double> snapshots;
     std::vector<long double> snapShotErrors;
+    std::vector<UInt64> snapshotIterations;
     UInt64 hopsIterations = 0;
     UInt64 hopsZeroIterations = 0;
 
@@ -117,16 +121,18 @@ public:
     void save(const std::string& Path){
         FileEvaluation fileEvaluation = FileEvaluation(Path, this->graph->GetName(), ".hops");
         double hopsTime = (double) hopsRuntime.count() / 1000000;
-        fileEvaluation.headerValueInsert({"Graph", "Size", "Edges", "PatternName", "PatternSize",
+        // get timestamp
+        std::time_t t = std::time(nullptr);
+        fileEvaluation.headerValueInsert({"TimeStamp", "Graph", "Size", "Edges", "PatternName", "PatternSize",
                                           "PatternEdges", "IsPatternTree", "Threads", "HopsTime",
                                           "HopsCount", "HopsIterationsPerNode", "HopsIterations", "Zero", "NonZero",
-                                          "HopsIterations/second","Zero/second", "NonZero/second", "PreprocessingTime", "EvaluationTime",
+                                          "HopsIterations/second","Zero/second", "NonZero/second", "PreprocessingTime", "EvaluationTime", "SnapshotTimes", "SnapshotIterations",
                                           "Snapshots", "SnapshotErrors"},
-                                         {graph->GetName(), std::to_string(graph->nodes()), std::to_string(graph->edges()), pattern->GetName(), std::to_string(pattern->nodes()),
+                                         {std::to_string(t), graph->GetName(), std::to_string(graph->nodes()), std::to_string(graph->edges()), pattern->GetName(), std::to_string(pattern->nodes()),
                                           std::to_string(pattern->edges()),std::to_string(pattern->IsTree()), std::to_string(threads), std::to_string(hopsTime),
                                           std::to_string(hopsEstimation), std::to_string(parameters.iteration_per_node.back()), std::to_string(hopsIterations), std::to_string(hopsZeroIterations), std::to_string(hopsIterations - hopsZeroIterations),
                                           std::to_string((double) hopsIterations/hopsTime), std::to_string((double ) hopsZeroIterations/hopsTime), std::to_string((double)(hopsIterations - hopsZeroIterations)/hopsTime),
-                                          std::to_string(preprocessingTime.count() / 1000000), std::to_string(evaluationRuntime.count() / 1000000 ),
+                                          std::to_string((double) preprocessingTime.count() / 1000000), std::to_string(hopsTime ), StaticFunctionsLib::vectorToString(snapShotTimes), StaticFunctionsLib::vectorToString(snapshotIterations),
                                           StaticFunctionsLib::vectorToString(snapshots), StaticFunctionsLib::vectorToString(snapShotErrors)});
         fileEvaluation.save();
    };

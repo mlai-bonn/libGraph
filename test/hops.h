@@ -13,7 +13,7 @@ void HopsTest(){
     GraphData<GraphStruct> graph_data = GraphData<GraphStruct>();
     graph_data.add(SimplePatterns::DoubleTriangle());
     Hops hops = Hops(graph_data);
-    RunParameters rParameters = {LABEL_TYPE::UNLABELED,0,1, {10000}};
+    RunParameters rParameters = {LABEL_TYPE::UNLABELED,{},1, {10000}};
     hops.Run(0, star, rParameters);
 }
 
@@ -23,7 +23,7 @@ void HopsAutomorphismTest(){
         Hops hops = Hops(graphData);
         FileEvaluation fileEvaluation = FileEvaluation("../test/Results/", "automorphisms_" + std::to_string(size));
         for (int i = 0; i < graphData.size(); ++i) {
-            hops.Automorphisms(i, {LABEL_TYPE::UNLABELED,30});
+            hops.Automorphisms(i, {LABEL_TYPE::UNLABELED,{}, 1, {30}});
             fileEvaluation.headerValueInsert({"Size", "Edges", "Automorphisms"},{std::to_string(graphData[i].nodes()), std::to_string(graphData[i].edges()),
                                                                                  std::to_string(std::round(hops.hopsEvaluation.hopsEstimation))});
         }
@@ -34,15 +34,27 @@ void HopsAutomorphismTest(){
 void HopsTimeTest(){
     GraphStruct triangle = SimplePatterns::Triangle();
     GraphStruct five_clique = SimplePatterns::FullyConnected(5);
-    Hops hops = Hops("../../../../GraphData/Hops/com-amazon.ungraph.bgfs", "../Results/time_test_");
-    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,10,1, {100}, 0});
-    hops.Run(0, five_clique, {LABEL_TYPE::UNLABELED,0,1, {100}, 0});
+    //Hops hops = Hops("../../../../GraphData/Hops/com-amazon.ungraph.bgfs", "../Results/time_test_");
+    GraphData<GraphStruct> graph_data = GraphData<GraphStruct>();
+    graph_data.add(SimplePatterns::DoubleTriangle());
+    Hops hops = Hops(graph_data, "../Results/time_test/");
+    // Generate vector starting with a and end with b with step size c
+    std::vector<double>  runtimes;
+    for (int i = 0; i <= 15;) {
+        if (i != 0){
+            runtimes.push_back((double) i);
+        }
+        i += 5;
+    }
+    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED, runtimes,1, {100}, 0, true,true});
+    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,{},1, {1, 10, 100}, 0, true, true});
+    hops.Run(0, five_clique, {LABEL_TYPE::UNLABELED,{},1, {1}, 0});
 }
 
 void HopsHighDegreeTest(){
     GraphStruct triangle = SimplePatterns::Triangle();
     Hops hops = Hops("../../../../GraphData/Hops/fc_1000.bgfs", "../Results/time_test_");
-    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,0,1, {1}, 0});
+    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,{},1, {1}, 0});
 }
 
 void Hops100Iter(int threads){
@@ -52,7 +64,7 @@ void Hops100Iter(int threads){
     if (threads == -1){
         threads = omp_get_max_threads();
     }
-    hops.Run(0, pattern, {LABEL_TYPE::UNLABELED,0,threads, {1000}, 0,true});
+    hops.Run(0, pattern, {LABEL_TYPE::UNLABELED,{},threads, {1000}, 0,true});
 }
 
 void HopsVarianceTest(int threads, int seed){
@@ -62,7 +74,7 @@ void HopsVarianceTest(int threads, int seed){
     if (threads == -1){
         threads = omp_get_max_threads();
     }
-    hops.Run(0, pattern, {LABEL_TYPE::UNLABELED,0,threads, {1000}, seed,true});
+    hops.Run(0, pattern, {LABEL_TYPE::UNLABELED,{},threads, {1000}, seed,true});
 }
 
 void Hops10s(int threads){
@@ -72,7 +84,7 @@ void Hops10s(int threads){
     if (threads == -1){
         threads = omp_get_max_threads();
     }
-    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,10,threads, {0}, 0,true});
+    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,{10},threads, {0}, 0,true});
 }
 
 void HopsPatternTest(){
@@ -94,7 +106,7 @@ void HopsPatternTest(){
         std::cout << std::endl << "Counting patterns of size " << size << std::endl;
         GraphData g_patterns = GraphData<GraphStruct>("../../GraphData/Hops/patterns/size" + std::to_string(size)+ ".bgfs");
         for (auto& pattern : g_patterns.graphData) {
-            RunParameters runParameters = {LABEL_TYPE::UNLABELED, 5, -1, {0}, 0, true, true, true, 1};
+            RunParameters runParameters = {LABEL_TYPE::UNLABELED,{5}, -1, {0}, 0, true, true, true, 1};
             hops.Run(0, pattern, runParameters);
         }
     }
@@ -108,7 +120,7 @@ void HopsParallelizationTest(){
         Hops hops = Hops(path, "../Results/");
         int max_threads = omp_get_max_threads();
         for (unsigned int i = 1; i <= max_threads; ++i) {
-            RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 0, (int) i, {1000}, 0, true, true, true};
+            RunParameters unlabeledRun{LABEL_TYPE::UNLABELED,{}, (int) i, {1000}, 0, true, true, true};
             hops.Run(0, triangle, unlabeledRun);
         }
     }
@@ -120,7 +132,7 @@ void HopsRealWorldTest() {
     GraphStruct graph2 = GraphStruct("../../GraphData/Hops/com-youtube.ungraph.bgfs");
     GraphData graph_data = GraphData<GraphStruct>();
     graph_data.add({graph1, graph2});
-    RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 60, -1, {0}, 0, true, true};
+    RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, {60}, -1, {0}, 0, true, true};
 
 
     Hops hops = Hops(graph_data);
@@ -155,8 +167,8 @@ void HopsSimplePatternsTest(){
     GraphData graph_data = GraphData<GraphStruct>();
     graph_data.add({doubleTriangle, fullyConnected});
 
-    RunParameters labeledRun{LABEL_TYPE::LABELED_SPARSE, 1, 1, {0}, 0, true, false};
-    RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, 1, 1, {0}, 0, true, false};
+    RunParameters labeledRun{LABEL_TYPE::LABELED_SPARSE, {1}, 1, {0}, 0, true, false};
+    RunParameters unlabeledRun{LABEL_TYPE::UNLABELED, {1}, 1, {0}, 0, true, false};
 
 
     Hops hops = Hops(graph_data);
