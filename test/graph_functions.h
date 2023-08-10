@@ -18,15 +18,21 @@ bool ConversionTest(){
 }
 
 bool BGFS_to_TXT(){
-    GraphData graphs = GraphData<GraphStruct>("../../../../GraphData/Hops/patterns/size6.bgfs");
-    int counter = 0;
-    for(auto& g : graphs.graphData){
-        if (g.IsTree()) {
-            SaveParams params = {"../../../../../Repositories/hops/Patterns6/", "tree_" + std::to_string(counter), GraphFormat::EDGES};
-            g.Save(params);
-            ++counter;
+    for(auto i : std::vector<int>({4, 5, 6, 7, 8, 9}))
+    {
+        std::string name = "size" + std::to_string(i);
+        GraphData graphs = GraphData<GraphStruct>("../../../../GraphData/Hops/patterns/" + name + ".bgfs");
+        int counter = 0;
+        std::filesystem::create_directory("../../../../hops/Patterns" + std::to_string(i) + "/");
+        for(auto& g : graphs.graphData){
+            if (g.IsTree()) {
+                SaveParams params = {"../../../../hops/Patterns" + std::to_string(i) + "/", "tree_" + std::to_string(counter), GraphFormat::EDGES};
+                g.Save(params);
+                ++counter;
+            }
         }
     }
+
     return true;
 }
 

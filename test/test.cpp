@@ -109,6 +109,11 @@ int main(int argc, char *argv[]) {
             GraphsToLatex();
         }
 
+        if(std::strcmp(argv[i], "--load_txt_patterns") == 0 || std::strcmp(argv[i], "--all") == 0){
+            auto graphs = LoadTXTGraphs();
+            auto patterns = LoadTXTPatterns();
+        }
+
     }
     int x=0;
 }

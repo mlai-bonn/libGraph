@@ -147,4 +147,66 @@ bool LoadCSV(){
     return true;
 }
 
+std::map<std::string, GraphStruct> LoadTXTGraphs(){
+    std::vector<std::string> paths = StaticFunctionsLib::directory_paths("../../../../GraphData/data_ravkic/graphs/", {"DBLP", "FACEBOOK", "WEBKB", "YEAST"});
+    GraphStruct graphStruct;
+    std::map<std::string, GraphStruct> graphStructMap;
+    for (auto &path : paths) {
+            // iterate over path and get all txt files in it
+            std::vector<std::string> files = StaticFunctionsLib::file_paths(path, {}, {".txt"});
+            // Add path to graphMap keys
+            for (auto &file : files){
+                // load graph from edge list
+                graphStructMap[path] = GraphStruct(file);
+            }
+    }
+    return graphStructMap;
+}
+
+
+std::map<std::string, std::map<int, GraphData<GraphStruct>>> LoadTXTPatterns(){
+    std::vector<std::string> paths = StaticFunctionsLib::directory_paths("../../../../GraphData/data_ravkic/patterns/", {"DBLP", "FACEBOOK", "WEBKB", "YEAST"});
+    GraphData<GraphStruct> graphData;
+    std::map<std::string, std::map<int, GraphData<GraphStruct>>> graphDataMap;
+    for (auto &path : paths) {
+            // iterate over path and get all txt files in it
+            graphDataMap.emplace(path, std::map<int, GraphData<GraphStruct>>());
+            std::vector<std::string> files = StaticFunctionsLib::file_paths(path, {}, {".txt"});
+            // Add path to graphMap keys
+            for (auto &file : files){
+                // load graph from edgelist
+                GraphStruct graphStruct = GraphStruct(file);
+                int node_number = graphStruct.nodes();
+                // check if node number is already in graphMap
+                if (graphDataMap[path].find(node_number) == graphDataMap[path].end()){
+                    // if not add it
+                    graphDataMap[path].emplace(node_number, GraphData<GraphStruct>());
+
+                }
+                graphDataMap[path][node_number].add(graphStruct);
+                // the id is the size of the curren graphMap entry
+                int id = graphDataMap[path][node_number].size();
+                // set name path, node number, edge number and counter separated by _
+                graphDataMap[path][node_number].graphData.back().SetName(std::to_string(id));
+            }
+        }
+    for (auto &x : graphDataMap) {
+        // print path
+        for (auto &y : x.second) {
+            std::cout << "Graph:" << std::endl;
+            std::cout << x.first << std::endl;
+            std::cout << "Node number:" << std::endl;
+            std::cout << y.first << std::endl;
+            for (auto & graph : y.second.graphData){
+                // print path : number of nodes : number of edges
+                std::cout << graph.GetName() << " : ";
+                std::cout << graph.nodes() << " : ";
+                std::cout << graph.edges() << " : ";
+                std::cout << std::endl;
+            }
+        }
+    }
+    return graphDataMap;
+}
+
 #endif //TESTGRAPHLIB_UNITTEST_LOAD_SAVE_H

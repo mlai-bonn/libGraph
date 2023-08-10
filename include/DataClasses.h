@@ -1206,6 +1206,7 @@ inline void GraphStruct::Save(const SaveParams& saveParams) {
                 }
                 ++Src;
             }
+            break;
         }
         case GraphFormat::PEREGRINE_SMALL: {
             std::cout << saveName + ".peregrine";
@@ -1287,6 +1288,10 @@ inline void GraphStruct::Save(const SaveParams& saveParams) {
             Out.close();
             break;
         }
+        case GraphFormat::DIMACS:
+            break;
+        case GraphFormat::AIDS:
+            break;
     }
 }
 

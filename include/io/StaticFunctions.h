@@ -38,6 +38,11 @@ public:
     template<class T2>
     static std::string pairToString(const T2 &object);
 
+    // get the paths of directories inside path using the names in names
+    static std::vector<std::string> directory_paths(const std::string & path, const std::vector<std::string>& names);
+    // get the paths of files inside path using the names in names
+    static std::vector<std::string> file_paths(const std::string & path, const std::vector<std::string>& names = {}, const std::vector<std::string>& extensions = {});
+
     static std::string printMap(const std::map<int, int> &map);
     static void write_csv(const std::string& path, std::vector<std::vector<std::string>>& data, const char& delimiter = ',');
     static void load_csv(const std::string &path, std::vector<std::vector<std::string>>& out, const char& delimiter = ',');
@@ -426,6 +431,63 @@ inline void StaticFunctionsLib::saveValuesToFile(const std::string& path, const 
     fs << std::scientific;
     fs.close();
 }
+
+std::vector<std::string> StaticFunctionsLib::directory_paths(const std::string& path, const std::vector<std::string>& names) {
+    // search path for directories that match with entries in names
+    std::vector<std::string> paths;
+    // iterate recursively over the directory
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
+        // check if the entry is a directory
+        if (std::filesystem::is_directory(entry)) {
+            // check if the directory name is in the list of names
+            if (std::find(names.begin(), names.end(), entry.path().filename()) != names.end()) {
+                paths.emplace_back(entry.path());
+            }
+        }
+    }
+    // return the paths
+    return paths;
+}
+
+std::vector<std::string>
+StaticFunctionsLib::file_paths(const std::string &path, const std::vector<std::string> &names, const std::vector<std::string> &extensions) {
+    // search path for files that match with entries in names
+    std::vector<std::string> paths;
+    // iterate recursively over the directory
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
+        // get entry
+        std::string entry_path = entry.path();
+
+
+                // check if the entry is a regular file
+                if (std::filesystem::is_regular_file(entry)) {
+                    // get filename
+                    std::string filename = entry.path().filename();
+                    // get file extension
+                    std::string extension = entry.path().extension();
+                    // check if the file extensions is in the list of extensions
+                    if (!extensions.empty()) {
+                        if (std::find(extensions.begin(), extensions.end(), entry.path().extension()) !=
+                            extensions.end()) {
+                            // check if the file name is in the list of names
+                            paths.emplace_back(entry.path());
+                        }
+                    }
+                    // check if the file name is in the list of names
+                    if (!names.empty()) {
+                        if (std::find(names.begin(), names.end(), entry.path().filename()) != names.end()) {
+                            paths.emplace_back(entry.path());
+                        }
+                    }
+                    if (names.empty() && extensions.empty()) {
+                        paths.emplace_back(entry.path());
+                    }
+            }
+        }
+    // return the paths
+    return paths;
+}
+
 
 template<class T1>
 void StaticFunctionsLib::stringToVector(std::vector<T1>& out, std::string &string) {
