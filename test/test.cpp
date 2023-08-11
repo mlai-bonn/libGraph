@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
         if (std::strcmp(argv[i], "--bgfs_conversion") == 0 || std::strcmp(argv[i], "--all") == 0) {
             BGFS_to_TXT();
         }
-        if (std::strcmp(argv[i], "--hops_time") == 0 || std::strcmp(argv[i], "--all") == 0) {
+        if (std::strcmp(argv[i], "--hops_time_test") == 0 || std::strcmp(argv[i], "--all") == 0) {
             HopsTimeTest();
         }
         if (std::strcmp(argv[i], "--hops_10s") == 0 || std::strcmp(argv[i], "--all") == 0) {

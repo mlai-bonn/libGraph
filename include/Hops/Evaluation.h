@@ -84,7 +84,11 @@ public:
                 std::cout << "\t" << "EvaluationRuntime: " << (double) evaluationRuntime.count() / 1000000 << " seconds" << std::endl;
 
                 std::cout << "---Additional Evaluation---" << std::endl;
-                std::cout << "\t" << "Snapshots: " << std::endl;
+                std::cout << "\t" << "Snapshot Times: " << std::endl;
+                StaticFunctionsLib::print(snapShotTimes);
+                std::cout << "\t" << "Snapshot Iterations: " << std::endl;
+                StaticFunctionsLib::print(snapshotIterations);
+                std::cout << "\t" << "Snapshot Values: " << std::endl;
                 StaticFunctionsLib::print(snapshots);
                 std::cout << "\t" << "Snapshots Errors: " << std::endl;
                 for (size_t i = 1; i < snapshots.size(); ++i) {

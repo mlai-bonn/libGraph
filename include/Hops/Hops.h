@@ -651,7 +651,7 @@ void Hops::RandomRun(long double accumulatedMean, long double accumulatedStd,
 #pragma omp critical
             {
                 for (int i = 0; i < snapShotEstimation.size(); ++i) {
-                    snapShotEstimation[i] += runProps.estimation_snapshots[i];
+                    snapShotEstimation[i] += runProps.estimation_snapshots[i]/(double) this->runParameters.thread_num;
                     snapShotIterations[i] += runProps.iteration_snapshots[i];
                 }
             }
