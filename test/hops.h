@@ -34,6 +34,7 @@ void HopsAutomorphismTest(){
 void HopsTimeTest(){
     GraphStruct triangle = SimplePatterns::Triangle();
     GraphStruct five_clique = SimplePatterns::FullyConnected(5);
+    GraphStruct path = SimplePatterns::Path(3);
     //Hops hops = Hops("../../../../GraphData/Hops/com-amazon.ungraph.bgfs", "../Results/time_test_");
     GraphData<GraphStruct> graph_data = GraphData<GraphStruct>();
     graph_data.add(SimplePatterns::DoubleTriangle());
@@ -46,9 +47,10 @@ void HopsTimeTest(){
         }
         i += 1;
     }
-    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,1, {100}, runtimes, 0, true,true});
-    hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,1, {1, 10, 100},{}, 0, true, true});
-    hops.Run(0, five_clique, {LABEL_TYPE::UNLABELED,1, {1},{}, 0});
+    //hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,1, {100}, runtimes, 0, true,true});
+    hops.Run(0, path, {LABEL_TYPE::UNLABELED,1, {1}, {}, 0, true,true});
+    //hops.Run(0, triangle, {LABEL_TYPE::UNLABELED,1, {1, 10, 100},{}, 0, true, true});
+    //hops.Run(0, five_clique, {LABEL_TYPE::UNLABELED,1, {1},{}, 0});
 }
 
 void HopsHighDegreeTest(){
