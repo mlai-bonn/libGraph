@@ -44,7 +44,7 @@ struct SaveParams{
 struct GraphStruct{
 public:
     GraphStruct()= default;
-    explicit GraphStruct(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "", const std::string& formate = "", const std::string& search_name = "");
+    explicit GraphStruct(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "", const std::string& format = "", const std::string& search_name = "");
     GraphStruct(NodeId size, const Labels& labels);
 
     void Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format = "", const std::string& search_name = "");
@@ -1095,7 +1095,7 @@ inline NodeId GraphStruct::random_neighbor_in_range(NodeId nodeId, INDEX minIdx,
 /// \param relabeling
 /// \param withLabels
 /// \param labelPath
-inline GraphStruct::GraphStruct(const std::string &graphPath,bool relabeling, bool withLabels, const std::string & labelPath, const std::string& format, const std::string& search_name) {
+inline GraphStruct::GraphStruct(const std::string &graphPath, bool relabeling, bool withLabels, const std::string & labelPath, const std::string& format, const std::string& search_name) {
 Load(graphPath, relabeling, withLabels, labelPath, format, search_name);
 }
 

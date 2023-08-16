@@ -19,4 +19,7 @@
 #include "io/io.h"
 #include "io/StaticFunctions.h"
 
+#include "Closures/BaseOperator.h"
+#include "Closures/GraphClosures.h"
+
 #endif //TESTGRAPHLIB_LIBGRAPH_H

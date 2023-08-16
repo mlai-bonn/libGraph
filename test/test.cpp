@@ -2,6 +2,7 @@
 #include "load_save.h"
 #include "graph_functions.h"
 #include "hops.h"
+#include "closures.h"
 
 int main(int argc, char *argv[]) {
 
@@ -112,6 +113,10 @@ int main(int argc, char *argv[]) {
         if(std::strcmp(argv[i], "--load_txt_patterns") == 0 || std::strcmp(argv[i], "--all") == 0){
             auto graphs = LoadTXTGraphs();
             auto patterns = LoadTXTPatterns();
+        }
+        // test the graph closure algorithm
+        if(std::strcmp(argv[i], "--test_closure") == 0 || std::strcmp(argv[i], "--all") == 0){
+            TestClosure();
         }
 
     }
