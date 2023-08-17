@@ -20,7 +20,7 @@ public:
     explicit GraphClosureSP(GraphStruct& graph) : _graph(graph){
         _Id = 0;
         _graph_distances = std::vector<int>(graph.nodes(), -2);
-        _graph_containment_list = std::vector<bool>(graph.nodes(), false);
+        _graph_containment_list = std::vector<int>(graph.nodes(), 0);
         _graph_predecessors = std::vector<std::vector<NodeId>>(graph.nodes(), std::vector<NodeId>());
     };
 
@@ -107,9 +107,7 @@ private:
         for (NodeId elem : target_set) {
             _graph_containment_list[elem] = _Id;
         }
-        for (auto & x : _graph_predecessors) {
-            x.clear();
-        }
+        std::fill(_graph_predecessors.begin(), _graph_predecessors.end(), std::vector<NodeId>());
         std::fill(_graph_distances.begin(), _graph_distances.end(), -2);
         _graph_distances[bfs_start] = 0;
         bfsQueue.clear();
@@ -207,7 +205,7 @@ private:
     int _Id = 0;
     std::vector<int> _graph_distances;
     std::vector<std::vector<NodeId>> _graph_predecessors;
-    std::vector<bool> _graph_containment_list;
+    std::vector<int> _graph_containment_list;
     GraphStruct& _graph;
     int _threshold = std::numeric_limits<int>::max();
     std::chrono::time_point<std::chrono::system_clock> time;

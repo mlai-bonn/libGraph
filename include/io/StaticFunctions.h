@@ -101,13 +101,15 @@ public:
 
 template <class T1, class T2>
 std::string StaticFunctionsLib::print(T1& Object) {
-    return std::accumulate(std::begin(Object),
+
+
+    return "{" + std::accumulate(std::begin(Object),
                            std::end(Object),
                            std::string{},
                            [](const std::string &a, const T2 &b) {
-                               return a.empty() ? '"' + std::to_string(b)
-                                                : a + "|" + std::to_string(b) + '"';
-                           });
+                               return a.empty() ? std::to_string(b)
+                                                : a + ", " + std::to_string(b);
+                           }) + "}";
 }
 
 template<class T1, class T2>

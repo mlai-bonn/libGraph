@@ -18,8 +18,9 @@ void TestClosure(){
     ClosureParameters parameters = {.input_set =  {0, 1, 5, 6}};
     // compute the closure
     closure.closure(parameters);
-    // print the result
-    std::cout << "Closure: " << StaticFunctionsLib::print<std::set<NodeId>, NodeId>(parameters.closed_set) << std::endl;
+    // print the closure
+    std::cout << "Closure of : " << StaticFunctionsLib::print<std::set<NodeId>, NodeId>(parameters.input_set) << std::endl;
+    std::cout << "is: " << StaticFunctionsLib::print<std::set<NodeId>, NodeId>(parameters.closed_set) << std::endl;
 
 }
 
