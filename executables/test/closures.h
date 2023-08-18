@@ -5,9 +5,9 @@
 #ifndef TESTGRAPHLIB_CLOSURES_H
 #define TESTGRAPHLIB_CLOSURES_H
 
-#include "../include/DataClasses.h"
-#include "../include/Closures/GraphClosures.h"
-#include "../include/io/StaticFunctions.h"
+#include "../../include/DataClasses.h"
+#include "../../include/Closures/GraphClosures.h"
+#include "../../include/io/StaticFunctions.h"
 
 void TestClosure(){
     // load a graph

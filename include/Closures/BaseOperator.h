@@ -7,6 +7,7 @@
 
 #include <set>
 #include <utility>
+#include "../io/StaticFunctions.h"
 
 struct ClosureParameters{
     std::set<NodeId> input_set  = std::set<NodeId>();

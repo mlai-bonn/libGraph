@@ -5,9 +5,9 @@
 #ifndef TESTGRAPHLIB_GRAPHFUNCTIONS_H
 #define TESTGRAPHLIB_GRAPHFUNCTIONS_H
 
-#include "../include/SimplePatterns.h"
-#include "../include/io/io.h"
-#include "../include/io/FileEvaluation.h"
+#include "../../include/SimplePatterns.h"
+#include "../../include/io/io.h"
+#include "../../include/io/FileEvaluation.h"
 
 bool ConversionTest(){
     for(std::string name : {"amazon", "dblp", "lj", "orkut", "youtube"}) {

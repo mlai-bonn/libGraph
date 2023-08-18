@@ -22,4 +22,7 @@
 #include "Closures/BaseOperator.h"
 #include "Closures/GraphClosures.h"
 
+#include "Algorithms/GeodesicCore/CoreGrowAlgorithm.h"
+#include "Algorithms/GeodesicCore/CoreAlgorithm.h"
+
 #endif //TESTGRAPHLIB_LIBGRAPH_H

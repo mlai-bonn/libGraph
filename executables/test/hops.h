@@ -5,7 +5,7 @@
 #ifndef TESTGRAPHLIB_HOPS_H
 #define TESTGRAPHLIB_HOPS_H
 
-#include "../include/libGraph.h"
+#include "../../include/libGraph.h"
 
 void HopsTest(){
     GraphStruct triangle = SimplePatterns::Triangle();
