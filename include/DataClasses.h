@@ -1407,7 +1407,7 @@ inline void GraphStruct::BFSDistances(const GraphStruct &graph, INDEX root, std:
     std::vector<bool> visitedNodes = std::vector<bool>(graph.nodes(), false);
     visitedNodes[root] = true;
     distances[root] = 0;
-    std::deque<NodeId> nodes;
+    std::deque<NodeId> nodes = std::deque<NodeId>();
     nodes.push_back(root);
     while (!nodes.empty()){
         NodeId currentNode = nodes.back();

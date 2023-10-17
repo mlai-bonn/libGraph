@@ -119,6 +119,11 @@ int main(int argc, char *argv[]) {
             TestClosure();
         }
 
+        // test the layering tree algorithm
+        if(std::strcmp(argv[i], "--layering_tree") == 0 || std::strcmp(argv[i], "--all") == 0){
+            TestLayeringTree();
+        }
+
     }
     int x=0;
 }

@@ -24,5 +24,6 @@
 
 #include "Algorithms/GeodesicCore/CoreGrowAlgorithm.h"
 #include "Algorithms/GeodesicCore/CoreAlgorithm.h"
+#include "Algorithms/GraphMetricApproximation/TreeEmbedding.h"
 
 #endif //TESTGRAPHLIB_LIBGRAPH_H

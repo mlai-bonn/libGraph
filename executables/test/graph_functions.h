@@ -8,6 +8,7 @@
 #include "../../include/SimplePatterns.h"
 #include "../../include/io/io.h"
 #include "../../include/io/FileEvaluation.h"
+#include "../../include/Algorithms/GraphMetricApproximation/TreeEmbedding.h"
 
 bool ConversionTest(){
     for(std::string name : {"amazon", "dblp", "lj", "orkut", "youtube"}) {
@@ -146,6 +147,15 @@ bool GraphsToLatex(){
     evaluation.save();
     evaluation.to_latex_table();
     //ToLatexTable("../../../../ChoPS/final_results/graphs.tex", info);
+}
+
+bool TestLayeringTree(){
+    // generate some random graph
+    GraphStruct graph = SimplePatterns::ErdosRenyi(10, 20, 0, true);
+    TreeEmbeddingAlgorithm treeEmbeddingAlgorithm(graph);
+    TreeEmbeddingInputParameters inputParameters = {0,0};
+    treeEmbeddingAlgorithm.Run(inputParameters);
+    return true;
 }
 
 

@@ -20,7 +20,7 @@ public:
     static GraphStruct DoubleTriangle(const Labels *labels = nullptr, int num_labels = 2);
 
     static GraphStruct Path(int i, Labels *labels = nullptr, int num_labels = 2);
-    static GraphStruct ErdosRenyi(int size, int edges, int seed = 0);
+    static GraphStruct ErdosRenyi(int size, int edges, int seed = 0, bool connected = false);
 };
 
 inline GraphStruct SimplePatterns::Triangle(const Labels* labels, int num_labels) {
@@ -119,14 +119,31 @@ inline GraphStruct SimplePatterns::StarGraph(int size, const Labels *labels, int
     return G;
 }
 
-inline GraphStruct SimplePatterns::ErdosRenyi(int size, int edges, int seed) {
+inline GraphStruct SimplePatterns::ErdosRenyi(int size, int edges, int seed, bool connected) {
     std::mt19937_64 gen(seed);
     GraphStruct G = GraphStruct(size, Labels());
-    while(G.edges() < edges){
-        int src = std::uniform_int_distribution<int>(0, size - 1)(gen);
-        int dst = std::uniform_int_distribution<int>(0, size - 1)(gen);
-        if (src != dst){
-            G.add_edge(src, dst);
+    if (connected){
+        int max_tries = 1000000;
+        int tries = 0;
+        while (!GraphStruct::IsConnected(G) && tries < max_tries) {
+            G = GraphStruct(size, Labels());
+            while (G.edges() < edges) {
+                int src = std::uniform_int_distribution<int>(0, size - 1)(gen);
+                int dst = std::uniform_int_distribution<int>(0, size - 1)(gen);
+                if (src != dst) {
+                    G.add_edge(src, dst);
+                }
+            }
+            ++tries;
+        }
+    }
+    else {
+        while (G.edges() < edges) {
+            int src = std::uniform_int_distribution<int>(0, size - 1)(gen);
+            int dst = std::uniform_int_distribution<int>(0, size - 1)(gen);
+            if (src != dst) {
+                G.add_edge(src, dst);
+            }
         }
     }
     return G;
