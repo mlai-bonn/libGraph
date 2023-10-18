@@ -57,7 +57,7 @@ inline LayeringPartition TreeEmbeddingAlgorithm::GetLayeringPartition(const Tree
     std::vector<std::vector<NodeId>> spheres;
 
     std::vector<std::vector<std::vector<NodeId>>> partition;
-    std::vector<int> clusterIndices = std::vector<int>(_graph.nodes(), -1);
+    std::vector<int> connectedComponentIndices = std::vector<int>(_graph.nodes(), -1);
     for (INDEX i = 0; i < distances.size(); ++i) {
         // get the distance
         INDEX distance = distances[i];
@@ -70,6 +70,20 @@ inline LayeringPartition TreeEmbeddingAlgorithm::GetLayeringPartition(const Tree
 
     // iterate over the spheres
     for (int level = (int) spheres.size() - 1; level >= 0; --level) {
+        // create the sphere graph
+        if (level < (int) spheres.size()-1){
+            GraphStruct sphereGraph = GraphStruct(spheres[level].size(), {});
+            for (NodeId i = 0; i < spheres[level].size(); ++i) {
+                // iterate over the neighbors of the current node
+                for (NodeId j = 0; j < _graph.degree(spheres[level][i]); ++j) {
+                    NodeId neighbor = _graph.neighbor(spheres[level][i], j);
+                    // check if the neighbor is in the sphere
+                    if (distances[neighbor] == level && _graph.edge(i, neighbor)) {
+                        sphereGraph.add_edge(i, connectedComponentIndices[neighbor]);
+                    }
+                }
+            }
+        }
         auto & sphere = spheres[level];
         // get connected components of the sphere
         std::vector<std::vector<NodeId>> connectedComponents;
@@ -109,7 +123,7 @@ inline LayeringPartition TreeEmbeddingAlgorithm::GetLayeringPartition(const Tree
             partition[level].emplace_back(connectedComponent);
             // iterate over the connected components
             for (auto & node : connectedComponent) {
-                clusterIndices[node] = (int) partition[level].size() - 1;
+                connectedComponentIndices[node] = (int) partition[level].size() - 1;
             }
         }
 
@@ -141,8 +155,8 @@ inline LayeringPartition TreeEmbeddingAlgorithm::GetLayeringPartition(const Tree
                 NodeId currentNode = nodes.back();
                 nodes.pop_back();
                 INDEX currentDistance = distances[currentNode];
-                if (inverseLocalSpheres[currentDistance].first == -1 && clusterIndices[currentNode] != -1) {
-                    inverseLocalSpheres[currentDistance].first = clusterIndices[currentNode];
+                if (inverseLocalSpheres[currentDistance].first == -1 && connectedComponentIndices[currentNode] != -1) {
+                    inverseLocalSpheres[currentDistance].first = connectedComponentIndices[currentNode];
                 }
                 if (!visited[currentNode]) {
                     visited[currentNode] = true;
@@ -164,14 +178,14 @@ inline LayeringPartition TreeEmbeddingAlgorithm::GetLayeringPartition(const Tree
                     partition[counter].emplace_back(inverseLocalSphere.second);
                     // set the cluster indices
                     for (auto & node : inverseLocalSphere.second) {
-                        clusterIndices[node] = (int) partition[counter].size() - 1;
+                        connectedComponentIndices[node] = (int) partition[counter].size() - 1;
                     }
                 }
                 else{
                     partition[counter][inverseLocalSphere.first].insert(partition[counter][inverseLocalSphere.first].end(), inverseLocalSphere.second.begin(), inverseLocalSphere.second.end());
                     // set the cluster indices
                     for (auto & node : inverseLocalSphere.second) {
-                        clusterIndices[node] = inverseLocalSphere.first;
+                        connectedComponentIndices[node] = inverseLocalSphere.first;
                     }
                 }
                 ++counter;
