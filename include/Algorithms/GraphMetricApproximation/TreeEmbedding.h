@@ -90,7 +90,8 @@ inline LayeringPartition TreeEmbeddingAlgorithm::GetLayeringPartition(const Tree
                     deque.pop_back();
                     INDEX currentDistance = distances[currentNode];
                     for (NodeId i = 0; i < _graph.degree(currentNode); ++i) {
-                        NodeId neighbor = _graph.neighbor(currentNode, i);
+                        NodeId neighbor = _graph.neighbor(currentNode, _graph.degree(currentNode) - i);
+                        // ignore connected components
                         INDEX neighborDistance = distances[neighbor];
                         if (neighborDistance >= level) {
                             deque.push_front(neighbor);
@@ -98,16 +99,21 @@ inline LayeringPartition TreeEmbeddingAlgorithm::GetLayeringPartition(const Tree
                                 connectedComponents.back().emplace_back(neighbor);
                             }
                         }
-
                     }
                 }
             }
         }
         // add the connected components to the partition
+        // TODO contract the graph
         for (auto & connectedComponent : connectedComponents) {
             partition[level].emplace_back(connectedComponent);
+            // iterate over the connected components
+            for (auto & node : connectedComponent) {
+                clusterIndices[node] = (int) partition[level].size() - 1;
+            }
         }
-        // TODO contract the graph
+
+
     }
 
 
