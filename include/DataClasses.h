@@ -86,6 +86,7 @@ public:
     NodeId random_neighbor_in_range(NodeId nodeId, INDEX minIdx, std::mt19937_64& gen);
     virtual bool edge(NodeId source, NodeId destination) const;
     virtual bool add_edge(NodeId source, NodeId destination);
+    virtual bool add_edge_linear(NodeId source, NodeId destination);
     NodeId add_node(INDEX number = 1, Labels* labels = nullptr);
     //Get get_neighbors by []
     const Nodes& operator[](NodeId nodeId){return _graph[nodeId];};
@@ -286,6 +287,7 @@ public :
     void Save_0(const std::string & graphPath = "", GraphFormat Format = GraphFormat::BINARY, bool Labeled = false, bool OnlyGraph = true, const std::string& Name = "") const;
 
 
+    void set_type(GraphType type);
 };
 
 struct DGraphStruct : public GraphStruct{
@@ -881,7 +883,8 @@ inline void GraphStruct::UpdateGraphLabels(LABEL_TYPE label) {
 /// \param nodeId
 /// \return
 inline INDEX GraphStruct::degree(NodeId nodeId) const {
-    return this->_degrees[nodeId];
+    return this->get_neighbors(nodeId).size();
+    //return this->_degrees[nodeId];
 }
 
 /// Get the number of graph nodes
@@ -954,6 +957,33 @@ inline bool GraphStruct::add_edge(NodeId source, NodeId destination) {
         return true;
     }
     return false;
+}
+
+/// Add an edge to an undirected graph without testing duplicates. This is faster than the original add edge function but the function is only correct if the edge does not exist before
+/// \param source
+/// \param destination
+/// \return
+inline bool GraphStruct::add_edge_linear(NodeId source, NodeId destination) {
+        INDEX ElementId;
+        this->_graph[source].emplace_back(destination);
+        ElementId = (INDEX) this->_graph[source].size() - 1;
+        while (ElementId > 0 && this->_graph[source][ElementId] < this->_graph[source][ElementId - 1]){
+            std::swap(this->_graph[source][ElementId], this->_graph[source][ElementId - 1]);
+            --ElementId;
+        }
+
+        this->_graph[destination].emplace_back(source);
+        ElementId = (INDEX) this->_graph[destination].size() - 1;
+        while (ElementId > 0 && this->_graph[destination][ElementId] < this->_graph[destination][ElementId - 1]){
+            std::swap(this->_graph[destination][ElementId], this->_graph[destination][ElementId - 1]);
+            --ElementId;
+        }
+
+        ++this->_edges;
+        ++this->_degrees[source];
+        ++this->_degrees[destination];
+        this->maxDegree = std::max(this->maxDegree, (int) std::max(this->degree(source), this->degree(destination)));
+        return true;
 }
 
 void GraphStruct::set_graph(const std::vector<Nodes> &nodes) {
@@ -1402,8 +1432,13 @@ inline bool GraphStruct::IsTree() const {
 }
 
 inline void GraphStruct::BFSDistances(const GraphStruct &graph, INDEX root, std::vector<INDEX> &distances) {
-    distances.clear();
-    distances.resize(graph.nodes(), -1);
+    if (distances.size() != graph.nodes()){
+        distances.clear();
+        distances.resize(graph.nodes(), -1);
+    }
+    else{
+        std::fill(distances.begin(), distances.end(), -1);
+    }
     std::vector<bool> visitedNodes = std::vector<bool>(graph.nodes(), false);
     visitedNodes[root] = true;
     distances[root] = 0;
@@ -3449,7 +3484,9 @@ void GraphStruct::ReorderGraph(GraphStruct &graph, const Nodes &nodeOrder) {
 
 }
 
-
+void GraphStruct::set_type(GraphType type) {
+    this->graphType = type;
+}
 
 
 #endif //HOPS_DATACLASSES_H

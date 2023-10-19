@@ -8,7 +8,7 @@
 #include "../../include/SimplePatterns.h"
 #include "../../include/io/io.h"
 #include "../../include/io/FileEvaluation.h"
-#include "../../include/Algorithms/GraphMetricApproximation/TreeEmbedding.h"
+#include "../../include/Algorithms/GraphMetricApproximation/EvaluationGraphMetricApproximation.h"
 
 bool ConversionTest(){
     for(std::string name : {"amazon", "dblp", "lj", "orkut", "youtube"}) {
@@ -171,9 +171,15 @@ bool TestLayeringTree(){
     graph.add_edge(9,10);
     graph.add_edge(11,14);
     graph.add_edge(12,14);
-    TreeEmbeddingAlgorithm treeEmbeddingAlgorithm(graph);
-    TreeEmbeddingInputParameters inputParameters = {0,0};
-    treeEmbeddingAlgorithm.Run(inputParameters);
+    EvaluateApproximations evaluateApproximations(graph);
+
+    for (int i = 0; i < graph.nodes(); ++i) {
+        ParametersEvaluation params({ApproximationType::LAYERING_TREE, 0, i, 1, true});
+        evaluateApproximations.Evaluation(params);
+    }
+
+    ParametersEvaluation parametersEvaluation({ApproximationType::RANDOM_SPANNING_TREES, 0, 0, 100, true});
+    evaluateApproximations.Evaluation(parametersEvaluation);
     return true;
 }
 
