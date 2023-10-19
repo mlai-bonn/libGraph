@@ -50,46 +50,61 @@ private:
 
 };
 
-inline LayeringPartition TreeEmbeddingAlgorithm::GetLayeringPartition(const TreeEmbeddingInputParameters& inputParameters){
+inline LayeringPartition TreeEmbeddingAlgorithm::GetLayeringPartition(const TreeEmbeddingInputParameters& inputParameters) {
     std::vector<INDEX> distances;
     GraphStruct::BFSDistances(_graph, inputParameters.root_node_id, distances);
 
     std::vector<std::vector<NodeId>> spheres;
+    std::vector<GraphStruct> sphereGraphs;
+    std::vector<NodeId> maxRealNode;
+    std::vector<std::vector<NodeId>> sphereNodeIdToNodeId;
+    std::vector<NodeId> nodeIdToSphereNodeId = std::vector<NodeId>(_graph.nodes(), 0);
 
     std::vector<std::vector<std::vector<NodeId>>> partition;
     std::vector<int> connectedComponentIndices = std::vector<int>(_graph.nodes(), -1);
     for (INDEX i = 0; i < distances.size(); ++i) {
         // get the distance
         INDEX distance = distances[i];
-        while (spheres.size() <= distance){
+        while (spheres.size() <= distance) {
             spheres.emplace_back();
             partition.emplace_back();
+            maxRealNode.emplace_back(0);
+            sphereNodeIdToNodeId.emplace_back();
         }
         spheres[distance].push_back(i);
+        sphereNodeIdToNodeId[distance].push_back(i);
+        nodeIdToSphereNodeId[i] = spheres[distance].size() - 1;
+        ++maxRealNode[distance];
     }
 
-    // iterate over the spheres
-    for (int level = (int) spheres.size() - 1; level >= 0; --level) {
+
+
+    // create the sphere graphs
+    for (int level = 0; level < spheres.size(); ++level) {
         // create the sphere graph
-        if (level < (int) spheres.size()-1){
-            GraphStruct sphereGraph = GraphStruct(spheres[level].size(), {});
-            for (NodeId i = 0; i < spheres[level].size(); ++i) {
-                // iterate over the neighbors of the current node
-                for (NodeId j = 0; j < _graph.degree(spheres[level][i]); ++j) {
-                    NodeId neighbor = _graph.neighbor(spheres[level][i], j);
-                    // check if the neighbor is in the sphere
-                    if (distances[neighbor] == level && _graph.edge(i, neighbor)) {
-                        sphereGraph.add_edge(i, connectedComponentIndices[neighbor]);
-                    }
+        sphereGraphs.emplace_back(GraphStruct(spheres[level].size(), {}));
+        for (NodeId i = 0; i < spheres[level].size(); ++i) {
+            NodeId currentNodeId = spheres[level][i];
+            // iterate over the neighbors of the current node
+            for (NodeId j = 0; j < _graph.degree(currentNodeId); ++j) {
+                NodeId neighbor = _graph.neighbor(currentNodeId, j);
+                // check if the neighbor is in the sphere
+                if (distances[neighbor] == level && i < nodeIdToSphereNodeId[neighbor]) {
+                    sphereGraphs.back().add_edge(i, nodeIdToSphereNodeId[neighbor]);
                 }
             }
         }
-        auto & sphere = spheres[level];
+    }
+
+
+    // get the connected components of the sphere graphs
+    for (int level = (int) spheres.size() - 2; level >= 0; --level) {
+        auto & sphereGraph = sphereGraphs[level + 1];
         // get connected components of the sphere
         std::vector<std::vector<NodeId>> connectedComponents;
         // bfs on the sphere
-        std::vector<bool> visited(sphere.size(), false);
-        for (auto startNode : sphere) {
+        std::vector<bool> visited(sphereGraph.nodes(), false);
+        for (int startNode = 0; startNode < sphereGraph.nodes(); ++startNode) {
             if (!visited[startNode]) {
                 visited[startNode] = true;
                 // define a queue for the current backward bfs search
@@ -102,9 +117,8 @@ inline LayeringPartition TreeEmbeddingAlgorithm::GetLayeringPartition(const Tree
                 while (!deque.empty()) {
                     NodeId currentNode = deque.back();
                     deque.pop_back();
-                    INDEX currentDistance = distances[currentNode];
-                    for (NodeId i = 0; i < _graph.degree(currentNode); ++i) {
-                        NodeId neighbor = _graph.neighbor(currentNode, _graph.degree(currentNode) - i);
+                    for (NodeId i = 0; i < sphereGraph.degree(currentNode); ++i) {
+                        NodeId neighbor = sphereGraph.neighbor(currentNode, sphereGraph.degree(currentNode) - i);
                         // ignore connected components
                         INDEX neighborDistance = distances[neighbor];
                         if (neighborDistance >= level) {
@@ -118,12 +132,31 @@ inline LayeringPartition TreeEmbeddingAlgorithm::GetLayeringPartition(const Tree
             }
         }
         // add the connected components to the partition
-        // TODO contract the graph
+        // iterate over the connected components
         for (auto & connectedComponent : connectedComponents) {
-            partition[level].emplace_back(connectedComponent);
-            // iterate over the connected components
+            partition[level + 1].emplace_back();
+            for (auto & node : connectedComponent) {
+                if (node < maxRealNode[level + 1]) {
+                    partition[level + 1].back().emplace_back(sphereNodeIdToNodeId[level +1][node]);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            //modify sphere graph of the current level
+            NodeId id = sphereGraphs[level].add_node();
+
+
             for (auto & node : connectedComponent) {
                 connectedComponentIndices[node] = (int) partition[level].size() - 1;
+                for (NodeId i = 0; i < _graph.degree(sphereNodeIdToNodeId[level + 1][node]); ++i) {
+                    NodeId neighbor = _graph.neighbor(sphereNodeIdToNodeId[level + 1][node], i);
+                    if (distances[neighbor] == level) {
+                        sphereGraph.add_edge(id, neighbor);
+                    }
+                }
             }
         }
 
