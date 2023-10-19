@@ -171,14 +171,21 @@ bool TestLayeringTree(){
     graph.add_edge(9,10);
     graph.add_edge(11,14);
     graph.add_edge(12,14);
+
+    // Fully connected graph
+    //graph = SimplePatterns::ErdosRenyi(10000, 100000, 0, true);
+
+    // print graph has been generated
+    std::cout << "Graph has been generated" << std::endl;
+
     EvaluateApproximations evaluateApproximations(graph);
 
     for (int i = 0; i < graph.nodes(); ++i) {
-        ParametersEvaluation params({ApproximationType::LAYERING_TREE, 0, i, 1, true});
+        ParametersEvaluation params({ApproximationType::LAYERING_TREE, 0, i, 1, false});
         evaluateApproximations.Evaluation(params);
     }
 
-    ParametersEvaluation parametersEvaluation({ApproximationType::RANDOM_SPANNING_TREES, 0, 0, 100, true});
+    ParametersEvaluation parametersEvaluation({ApproximationType::RANDOM_SPANNING_TREES, 0, 0, 100, false});
     evaluateApproximations.Evaluation(parametersEvaluation);
     return true;
 }
