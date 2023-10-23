@@ -6,7 +6,7 @@
 #define TESTGRAPHLIB_COREALGORITHM_H
 
 #include "../../typedefs.h"
-#include "../../DataClasses.h"
+#include "../../GraphDataStructures/GraphBase.h"
 
 struct CoreAlgorithmInputParameters {
     int generator_size = 5;

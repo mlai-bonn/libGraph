@@ -9,7 +9,7 @@
 #include <set>
 #include <unordered_map>
 #include "typedefs.h"
-#include "DataClasses.h"
+#include "GraphDataStructures/GraphBase.h"
 
 
 class LoadSave {

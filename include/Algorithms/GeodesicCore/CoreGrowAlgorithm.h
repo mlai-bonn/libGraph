@@ -6,7 +6,7 @@
 #define GCOREAPPROXIMATION_COREGROWALGORITHM_H
 
 #include "../../typedefs.h"
-#include "../../DataClasses.h"
+#include "../../GraphDataStructures/GraphBase.h"
 #include "../../Closures/GraphClosures.h"
 
 struct CoreGrowAlgorithmInputParameters {

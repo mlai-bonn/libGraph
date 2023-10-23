@@ -5,7 +5,7 @@
 #ifndef TESTGRAPHLIB_CLOSURES_H
 #define TESTGRAPHLIB_CLOSURES_H
 
-#include "../../include/DataClasses.h"
+#include "../../include/GraphDataStructures/GraphBase.h"
 #include "../../include/Closures/GraphClosures.h"
 #include "../../include/io/StaticFunctions.h"
 

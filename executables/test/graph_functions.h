@@ -190,6 +190,63 @@ bool TestLayeringTree(){
     return true;
 }
 
+bool TestSpanningTrees(){
+    // generate some random graph
+    // GraphStruct graph = SimplePatterns::ErdosRenyi(10, 20, 0, true);
+    GraphStruct graph = GraphStruct(15, {});
+    graph.add_edge(0,1);
+    graph.add_edge(0,2);
+    graph.add_edge(1,2);
+    graph.add_edge(1,3);
+    graph.add_edge(2,4);
+    graph.add_edge(3,5);
+    graph.add_edge(4,6);
+    graph.add_edge(4,7);
+    graph.add_edge(5,8);
+    graph.add_edge(5,9);
+    graph.add_edge(6,10);
+    graph.add_edge(6,11);
+    graph.add_edge(7,12);
+    graph.add_edge(8,13);
+    graph.add_edge(9,13);
+    graph.add_edge(9,10);
+    graph.add_edge(11,14);
+    graph.add_edge(12,14);
+
+    // TODO
+    return true;
+}
+
+bool TestGraphAlgorithms(){
+    // generate some random graph
+    // GraphStruct graph = SimplePatterns::ErdosRenyi(10, 20, 0, true);
+    GraphStruct graph = GraphStruct(15, {});
+    graph.add_edge(0,1);
+    graph.add_edge(0,2);
+    graph.add_edge(1,2);
+    graph.add_edge(1,3);
+    graph.add_edge(2,4);
+    graph.add_edge(3,5);
+    graph.add_edge(4,6);
+    graph.add_edge(4,7);
+    graph.add_edge(5,8);
+    graph.add_edge(5,9);
+    graph.add_edge(6,10);
+    graph.add_edge(6,11);
+    graph.add_edge(7,12);
+    graph.add_edge(8,13);
+    graph.add_edge(9,13);
+    graph.add_edge(9,10);
+    graph.add_edge(11,14);
+    graph.add_edge(12,14);
+
+
+
+    // TODO
+    return true;
+}
+
+
 
 
 

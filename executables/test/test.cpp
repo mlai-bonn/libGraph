@@ -124,6 +124,16 @@ int main(int argc, char *argv[]) {
             TestLayeringTree();
         }
 
+        // test the spanning tree algorithms
+        if(std::strcmp(argv[i], "--spanning_trees_test") == 0 || std::strcmp(argv[i], "--all") == 0){
+            TestSpanningTrees();
+        }
+
+        // test the graph algorithms
+        if(std::strcmp(argv[i], "--graph_algorithms_test") == 0 || std::strcmp(argv[i], "--all") == 0){
+            TestGraphAlgorithms();
+        }
+
     }
     int x=0;
 }

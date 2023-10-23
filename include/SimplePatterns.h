@@ -7,7 +7,7 @@
 
 
 #include <list>
-#include "DataClasses.h"
+#include "GraphDataStructures/GraphBase.h"
 
 class SimplePatterns {
 public:

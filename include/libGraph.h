@@ -5,7 +5,12 @@
 #ifndef TESTGRAPHLIB_LIBGRAPH_H
 #define TESTGRAPHLIB_LIBGRAPH_H
 
-#include "DataClasses.h"
+#include "GraphDataStructures/GraphBase.h"
+#include "GraphDataStructures/GraphDirectedBase.h"
+#include "GraphDataStructures/GraphLabeledBase.h"
+#include "GraphDataStructures/OuterplanarGraphData.h"
+#include "GraphDataStructures/ExampleGraphs.h"
+
 #include "Enums.h"
 #include "GraphFunctions.h"
 #include "GraphStaticFunctions.h"
@@ -27,5 +32,8 @@
 #include "Algorithms/GraphMetricApproximation/EvaluationGraphMetricApproximation.h"
 #include "Algorithms/GraphMetricApproximation/Layering.h"
 #include "Algorithms/Graph/GraphAlgorithms.h"
+#include "Algorithms/Graph/SpanningTrees.h"
+#include "Algorithms/Graph/OuterplanarSubgraph.h"
+#include "Algorithms/Graph/OuterplanarSubgraphDFS.h"
 
 #endif //TESTGRAPHLIB_LIBGRAPH_H

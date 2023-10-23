@@ -13,7 +13,7 @@
 #include "Evaluation.h"
 #include "RootedPattern.h"
 #include "HopsParameters.h"
-#include "../DataClasses.h"
+#include "../GraphDataStructures/GraphBase.h"
 #include <omp.h>
 #include <list>
 #include <unordered_set>

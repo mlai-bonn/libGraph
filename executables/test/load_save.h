@@ -9,7 +9,7 @@
 #include <string>
 
 #include "load_save.h"
-#include "../../include/DataClasses.h"
+#include "../../include/GraphDataStructures/GraphBase.h"
 #include "../../include/io/StaticFunctions.h"
 
 bool TestLoadGraphsFromPath(const std::string& graph_path, const std::string& label_path, const std::string& extension) {

@@ -9,6 +9,7 @@
 
 #include "Layering.h"
 #include "../Graph/GraphAlgorithms.h"
+#include "Algorithms/Graph/SpanningTrees.h"
 
 enum class ApproximationType{
     RANDOM_SPANNING_TREES,
