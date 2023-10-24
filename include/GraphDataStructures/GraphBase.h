@@ -2,8 +2,8 @@
 // Created by Florian on 15.04.2021.
 //
 
-#ifndef HOPS_DATACLASSES_H
-#define HOPS_DATACLASSES_H
+#ifndef HOPS_GRAPHBASE_H
+#define HOPS_GRAPHBASE_H
 #include <vector>
 #include "../typedefs.h"
 #include "../GraphFunctions.h"
@@ -32,11 +32,10 @@ enum class GraphFormat{
     AIDS,
 };
 
-struct DGraphStruct;
 
 struct SaveParams{
-    std::string graphPath = "";
-    std::string Name = "";
+    std::string graphPath;
+    std::string Name;
     GraphFormat Format = GraphFormat::BGFS;
     bool Labeled = false;
 };
@@ -86,7 +85,8 @@ public:
     NodeId random_neighbor_in_range(NodeId nodeId, INDEX minIdx, std::mt19937_64& gen);
     virtual bool edge(NodeId source, NodeId destination) const;
     virtual bool add_edge(NodeId source, NodeId destination);
-    virtual bool add_edge_linear(NodeId source, NodeId destination);
+    virtual bool add_edge_no_check(NodeId source, NodeId destination);
+    virtual bool remove_edge(NodeId source, NodeId destination);
     NodeId add_node(INDEX number = 1, Labels* labels = nullptr);
     //Get get_neighbors by []
     const Nodes& operator[](NodeId nodeId){return _graph[nodeId];};
@@ -859,7 +859,7 @@ inline bool GraphStruct::add_edge(NodeId source, NodeId destination) {
 /// \param source
 /// \param destination
 /// \return
-inline bool GraphStruct::add_edge_linear(NodeId source, NodeId destination) {
+inline bool GraphStruct::add_edge_no_check(NodeId source, NodeId destination) {
         INDEX ElementId;
         this->_graph[source].emplace_back(destination);
         ElementId = (INDEX) this->_graph[source].size() - 1;
@@ -2565,5 +2565,19 @@ void GraphStruct::set_type(GraphType type) {
     this->graphType = type;
 }
 
+bool GraphStruct::remove_edge(NodeId source, NodeId destination) {
+    auto it_source = std::find(this->_graph[source].begin(), this->_graph[source].end(), destination);
+    auto it_destination = std::find(this->_graph[destination].begin(), this->_graph[destination].end(), source);
+    if (it_source != this->_graph[source].end() && it_destination != this->_graph[destination].end()) {
+        this->_graph[source].erase(it_source);
+        this->_graph[destination].erase(it_destination);
+        --_degrees[source];
+        --_degrees[destination];
+        --this->_edges;
+        return true;
+    }
+    return false;
+}
 
-#endif //HOPS_DATACLASSES_H
+
+#endif //HOPS_GRAPHBASE_H

@@ -134,7 +134,7 @@ LayeringPartition::LayeringPartition(const GraphStruct &graph, NodeId root_node_
                     for (NodeId i = 0; i < graph.degree(graphNodeId); ++i) {
                         NodeId neighbor = graph.neighbor(graphNodeId, i);
                         if (distances[neighbor] == level && !levelEdges[nodeIdToSphereNodeId[neighbor]]) {
-                            levelGraph.add_edge_linear(id, nodeIdToSphereNodeId[neighbor]);
+                            levelGraph.add_edge_no_check(id, nodeIdToSphereNodeId[neighbor]);
                             levelEdges[nodeIdToSphereNodeId[neighbor]] = true;
                         }
                     }

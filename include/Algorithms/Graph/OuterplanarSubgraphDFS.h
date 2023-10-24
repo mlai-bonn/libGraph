@@ -103,17 +103,17 @@ public:
     //Copy constructor
     OuterplanarSubgraphDFS(const OuterplanarSubgraphDFS& other);
 
-    void generate(GraphStruct& subgraph, std::mt19937_64& gen, bool p) override;
-    void generate(OuterplanarGraphData& subgraph, std::mt19937_64& gen, bool p);
-    void get_next_node();
-    bool CheckLeft(const NodeStruct& src, const NodeStruct& dst);
-    bool CheckRight(const NodeStruct& src, const NodeStruct& dst);
+    void generate(GraphStruct& subgraph, int seed, bool p) override;
+    void generate(OuterplanarGraphData& subgraph, int seed, bool p);
+    void get_next_node(std::mt19937_64& gen);
+    bool CheckLeft(const NodeStruct& src, const NodeStruct& dst) const;
+    bool CheckRight(const NodeStruct& src, const NodeStruct& dst) const;
     [[nodiscard]] bool crossesLeftDiagonal(const NodeStruct& dst) const;
     [[nodiscard]] bool crossesRightDiagonal(const NodeStruct& dst) const;
     [[nodiscard]] bool enclosingPointByLeftEdge(const NodeStruct &src,const NodeStruct &dst) const;
     [[nodiscard]] bool enclosingPointByRightEdge(const NodeStruct &src,const NodeStruct &dst) const;
 
-    void GetCotreeEdges(NodeStruct& currentNode);
+    void GetCotreeEdges(NodeStruct& currentNode, std::mt19937_64& gen);
 
     void GetValidEdges(NodeStruct& currentNode, std::vector<DirectedEdgeStruct>& edges, Side side);
     void AddEdges(const std::vector<DirectedEdgeStruct>& edges, Side side);
@@ -140,24 +140,24 @@ private:
     void UpdateNodeParameters(NodeStruct &aStruct);
 };
 
-OuterplanarSubgraphDFS::OuterplanarSubgraphDFS(const PUNGraph graph) : OuterplanarSubgraph(
-        graph) {
-    int maxDegree = 0;
-    graphNodes = std::vector<NodeStruct>(graph->GetNodes(), NodeStruct());
-    for (auto node = graph->BegNI(); node != graph->EndNI(); node++){
-        graphNodes[node.GetId()] = NodeStruct(node.GetId());
-        maxDegree = std::max(maxDegree, node.GetDeg());
+OuterplanarSubgraphDFS::OuterplanarSubgraphDFS(const GraphStruct & graph) : OuterplanarSubgraph(graph) {
+    INDEX maxDegree = 0;
+    graphNodes = std::vector<NodeStruct>(graph.nodes(), NodeStruct());
+    for (int i = 0; i < graph.nodes(); ++i) {
+        graphNodes[i] = NodeStruct(i);
+        maxDegree = std::max(maxDegree, graph.degree(i));
     }
     neighborIds = std::vector<int>(maxDegree);
     std::iota(neighborIds.begin(), neighborIds.end(), 0);
 }
 
-void OuterplanarSubgraphDFS::generate(GraphData& subgraph, std::mt19937_64& gen, bool p) {
-    subgraph.graphType = GraphType::OUTERPLANAR;
-    this->_subgraph = subgraph.graph();
+void OuterplanarSubgraphDFS::generate(GraphStruct& subgraph, int seed, bool p) {
+    std::mt19937_64 gen(seed);
+    subgraph.set_type(GraphType::OUTERPLANAR);
+    this->_subgraph = subgraph;
     this->print = p;
     this->reset();
-    dfs_root_node = std::uniform_int_distribution<int>(0, this->_graph->GetNodes() - 1)(gen);
+    dfs_root_node = std::uniform_int_distribution<INDEX>(0, this->_graph.nodes() - 1)(gen);
     dfs_stack.emplace_back(dfs_root_node);
     NodeStruct* path_root = &this->graphNodes[dfs_root_node];
     path_root->last_spanned_root = path_root;
@@ -168,14 +168,14 @@ void OuterplanarSubgraphDFS::generate(GraphData& subgraph, std::mt19937_64& gen,
         std::cout << std::endl;
     }
     while (!this->dfs_stack.empty()) {
-        get_next_node();
+        get_next_node(gen);
     }
     if (p) {
         std::cout << std::endl;
     }
 }
 
-void OuterplanarSubgraphDFS::get_next_node() {
+void OuterplanarSubgraphDFS::get_next_node(std::mt19937_64 & gen) {
     //Current _node in the dfs
     NodeId currentNodeId = this->dfs_stack.back();
     dfs_stack.pop_back();
@@ -185,7 +185,7 @@ void OuterplanarSubgraphDFS::get_next_node() {
         //Check if get_node is not the root node
         if (currentNodeId != dfs_root_node) {
             //Add tree edge to the graph
-            _subgraph->AddEdge(currentNodeId, currentNode.dfs_parent->node_id);
+            _subgraph.add_edge(currentNodeId, currentNode.dfs_parent->node_id);
             UpdateNodeParameters(currentNode);
         }
 
@@ -194,7 +194,7 @@ void OuterplanarSubgraphDFS::get_next_node() {
         reachableNodes.emplace_back(currentNodeId);
 
         //Traverse all the neighbors of currentNode and get cotree edges
-        GetCotreeEdges(currentNode);
+        GetCotreeEdges(currentNode, gen);
         if (!neighborsToVisit.empty()) {
             GetValidEdges(currentNode, left_edges, Side::LEFT);
             GetValidEdges(currentNode, right_edges, Side::RIGHT);
@@ -210,17 +210,17 @@ void OuterplanarSubgraphDFS::get_next_node() {
 }
 
 
-void OuterplanarSubgraphDFS::GetCotreeEdges(NodeStruct& currentNode) {
+void OuterplanarSubgraphDFS::GetCotreeEdges(NodeStruct& currentNode, std::mt19937_64& gen) {
     //Traverse all neighbors of get_node
-    auto node = this->_graph->GetNI(currentNode.node_id);
-    int degree = node.GetDeg();
+    //auto node = this->_graph->GetNI(currentNode.node_id);
+    INDEX degree = this->_graph.degree(currentNode.node_id);
     this->neighborsToVisit.clear();
     int randIdx;
     NodeId neighbor;
     NodeStruct* neighborNode;
     for (int i = 0; i < degree; ++i) {
-        randIdx = std::uniform_int_distribution<int>(i, degree - 1)(_gen);
-        neighbor = node.GetNbrNId(neighborIds[randIdx]);
+        randIdx = std::uniform_int_distribution<INDEX>(i, degree - 1)(gen);
+        neighbor = this->_graph.neighbor(currentNode.node_id, neighborIds[randIdx]);
         swaps.emplace_back(randIdx);
         std::swap(neighborIds[i], neighborIds[randIdx]);
         if (!currentNode.dfs_parent || neighbor != currentNode.dfs_parent->node_id) {
@@ -241,11 +241,11 @@ void OuterplanarSubgraphDFS::GetCotreeEdges(NodeStruct& currentNode) {
     }
 }
 
-bool OuterplanarSubgraphDFS::CheckLeft(const NodeStruct &src,const NodeStruct &dst) {
+bool OuterplanarSubgraphDFS::CheckLeft(const NodeStruct &src,const NodeStruct &dst) const {
     return !enclosingPointByLeftEdge(src, dst) && !crossesLeftDiagonal(dst);// || (dst.dfs_depth == src.last_spanned_root->dfs_depth - 1 && !current_left));
 }
 
-bool OuterplanarSubgraphDFS::CheckRight(const NodeStruct &src, const NodeStruct &dst) {
+bool OuterplanarSubgraphDFS::CheckRight(const NodeStruct &src, const NodeStruct &dst) const {
     return !enclosingPointByRightEdge(src, dst) && !crossesRightDiagonal(dst);// || (dst.dfs_depth == src.last_spanned_root->dfs_depth - 1 && !current_right));
 }
 
@@ -328,8 +328,8 @@ void OuterplanarSubgraphDFS::AddEdges(const std::vector<DirectedEdgeStruct>& edg
 
 
 void OuterplanarSubgraphDFS::reset() {
-    for (int i = 0; i < this->_graph->GetNodes(); ++i) {
-        _subgraph->AddNode();
+    for (int i = 0; i < this->_graph.nodes(); ++i) {
+        _subgraph.add_node();;
         this->graphNodes[i].reset();
     }
     dfs_stack.clear();
@@ -404,12 +404,12 @@ void OuterplanarSubgraphDFS::AddGraphEdges(const std::vector<DirectedEdgeStruct>
                 std::cout << " " << src.node_id << "--R" << dst.node_id << " ";
             }
         }
-        this->_subgraph->AddEdge(src.node_id, dst.node_id);
+        this->_subgraph.add_edge(src.node_id, dst.node_id);
     }
 }
 
-void OuterplanarSubgraphDFS::generate(OuterplanarGraphData &subgraph, std::mt19937_64 &gen, bool p) {
-    generate(dynamic_cast<GraphData &>(subgraph), gen, p);
+void OuterplanarSubgraphDFS::generate(OuterplanarGraphData &subgraph, int seed, bool p) {
+    generate(dynamic_cast<GraphStruct &>(subgraph), seed, p);
 }
 
 

@@ -53,7 +53,7 @@ inline void BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId 
                 if (!visited[neighbor]) {
                     visited[current_node] = true;
                     queue.push(neighbor);
-                    tree.add_edge_linear(current_node, neighbor);
+                    tree.add_edge_no_check(current_node, neighbor);
                 }
             }
         }
@@ -68,7 +68,7 @@ inline void BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId 
                 if (!visited[neighbor]) {
                     visited[neighbor] = true;
                     queue.push(neighbor);
-                    tree.add_edge_linear(current_node, neighbor);
+                    tree.add_edge_no_check(current_node, neighbor);
                 }
             }
             // undo the swaps
@@ -106,7 +106,7 @@ inline void DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId 
                 if (!visited[neighbor]) {
                     visited[current_node] = true;
                     queue.push(neighbor);
-                    tree.add_edge_linear(current_node, neighbor);
+                    tree.add_edge_no_check(current_node, neighbor);
                 }
             }
         }
@@ -121,7 +121,7 @@ inline void DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId 
                 if (!visited[neighbor]) {
                     visited[neighbor] = true;
                     queue.push(neighbor);
-                    tree.add_edge_linear(current_node, neighbor);
+                    tree.add_edge_no_check(current_node, neighbor);
                 }
             }
             // undo the swaps

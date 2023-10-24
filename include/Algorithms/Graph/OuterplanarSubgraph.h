@@ -5,25 +5,25 @@
 #ifndef CLOSURES_OUTERPLANARSUBGRAPH_H
 #define CLOSURES_OUTERPLANARSUBGRAPH_H
 
+#include "../include/Algorithms/Graph/GraphAlgorithms.h"
+
 class OuterplanarSubgraph {
 public:
-    explicit OuterplanarSubgraph(const GraphStruct & graph);
+    OuterplanarSubgraph() = default;
+    explicit OuterplanarSubgraph(const GraphStruct & graph) : _graph(graph) {};
+    OuterplanarSubgraph(const OuterplanarSubgraph &other) : _graph(other._graph), print(other.print){};
 
     //copying
-    OuterplanarSubgraph(const OuterplanarSubgraph& other);
+    //OuterplanarSubgraph(const OuterplanarSubgraph& other){};
 
-    virtual void generate(GraphStruct& subgraph, std::mt19937_64& gen, bool print) = 0;
+    virtual void generate(GraphStruct& subgraph, int seed, bool print) = 0;
 
 protected:
-    std::mt19937_64 _gen;
     const GraphStruct _graph;
     bool print = false;
 };
 
-OuterplanarSubgraph::OuterplanarSubgraph(const GraphStruct& graph) : _graph(graph){}
 
-OuterplanarSubgraph::OuterplanarSubgraph(const OuterplanarSubgraph &other) : _graph(other._graph), _gen(other._gen), print(other.print) {
-}
 
 struct OuterplanarGraphStatistics{
     OuterplanarGraphStatistics() = default;
@@ -44,17 +44,17 @@ struct OuterplanarGraphStatistics{
 };
 
 void OuterplanarGraphStatistics::getStatistics(const GraphStruct &outerplanarGraph) {
-    std::vector<std::vector<NodeId>> components;
+    std::vector<GraphStruct> components;
     GetBiconnectedComponents(outerplanarGraph, components);
     this->ComponentSizes.clear();
     this->ComponentFaces.clear();
     this->ComponentSizes.emplace_back(0);
     this->ComponentFaces.emplace_back(0);
-    for (const auto& component : components) {
-        if (component.size() > 2) {
-            this->ComponentSizes.back().emplace_back(component.size());
+    for (auto& component : components) {
+        if (component.nodes() > 2) {
+            this->ComponentSizes.back().emplace_back(component.nodes());
             this->ComponentFaces.back().emplace_back(0.0);
-            GraphFunctions::GetBiconnectedOuterplanarFaceNum(component, this->ComponentFaces.back().back());
+            GetBiconnectedOuterplanarFaceNum(component, this->ComponentFaces.back().back());
         }
     }
     this->ComponentNumber.emplace_back(static_cast<int>(this->ComponentSizes.back().size()));

@@ -10,7 +10,6 @@
 #include <unordered_set>
 #include <deque>
 #include <queue>
-#include "typedefs.h"
 
 
 class GraphStruct;

@@ -9,6 +9,7 @@
 #include "GraphDataStructures/GraphDirectedBase.h"
 #include "GraphDataStructures/GraphLabeledBase.h"
 #include "GraphDataStructures/OuterplanarGraphData.h"
+#include "GraphDataStructures/OuterplanarStructs.h"
 #include "GraphDataStructures/ExampleGraphs.h"
 
 #include "Enums.h"
