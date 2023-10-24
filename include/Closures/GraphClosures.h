@@ -19,19 +19,25 @@ typedef void (*ClosureFunction)(GraphStruct&, ClosureParameters&);
 
 class GraphClosureSP : public BaseOperator<GraphStruct> {
 public:
-    explicit GraphClosureSP(GraphStruct& graph) : _graph(graph){
+    explicit GraphClosureSP(const GraphStruct& graph) : _graph(graph){
         _Id = 0;
         _graph_distances = std::vector<int>(graph.nodes(), -2);
         _graph_containment_list = std::vector<int>(graph.nodes(), 0);
         _graph_predecessors = std::vector<std::vector<NodeId>>(graph.nodes(), std::vector<NodeId>());
         _graph_bfs_list = std::vector<int>(graph.nodes(), 0);
-        _is_tree = graph.IsTree();
+        _is_tree = graph.CheckTree();
     };
 
     void closure(ClosureParameters& closureParameters) override {
         if (closureParameters.input_set.empty()) {
             return;
         }
+        _graph_distances.resize(_graph.nodes(), -2);
+        _graph_containment_list.resize(_graph.nodes(), 0);
+        _graph_predecessors.resize(_graph.nodes(), std::vector<NodeId>());
+        _graph_bfs_list.resize(_graph.nodes(), 0);
+
+
         std::unordered_set<NodeId> generatedElements;
         std::deque<NodeId> bfsQueue;
         // set closed set to input set
@@ -133,7 +139,7 @@ private:
             if ((visitedSize == target_set.size() && _graph_distances[currentNodeId] > lastDistance)) {
                 break;
             }
-            for (auto neighborId : _graph.neighbors(currentNodeId)) {
+            for (auto neighborId : _graph.get_neighbors(currentNodeId)) {
                 if (_info.first == 17 && _info.second == 5 && _iterations == 26) {
                     std::cout << "Neighbor Id: " << currentNodeId << std::endl;
                 }
@@ -225,7 +231,7 @@ private:
     std::vector<std::vector<NodeId>> _graph_predecessors;
     std::vector<int> _graph_containment_list;
     std::vector<int> _graph_bfs_list;
-    GraphStruct& _graph;
+    const GraphStruct& _graph;
     int _threshold = std::numeric_limits<int>::max();
     std::chrono::time_point<std::chrono::system_clock> time;
 

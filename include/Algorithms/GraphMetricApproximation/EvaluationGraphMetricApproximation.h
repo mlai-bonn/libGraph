@@ -45,6 +45,8 @@ void EvaluateApproximations::Evaluation(ParametersEvaluation &params) {
     std::vector<INDEX> approximationDistances;
     LayeringTree layeringTree;
     std::vector<GraphStruct> spanningTrees;
+    std::vector<bool> visited;
+    std::vector<INDEX> distances;
     // make a case distinction for the approximation type
     switch (params.approximationType) {
         case ApproximationType::RANDOM_SPANNING_TREES:
@@ -52,7 +54,7 @@ void EvaluateApproximations::Evaluation(ParametersEvaluation &params) {
             for (int i = 0; i < params.tree_number; ++i){
                 spanningTrees.emplace_back();
                 NodeId root_node = std::uniform_int_distribution<NodeId>(0, _graph.nodes() - 1)(generator);
-                BFSSpanningTree(_graph, spanningTrees.back(), root_node, false, params.seed + i);
+                BFSSpanningTree(_graph, spanningTrees.back(), root_node, visited, distances, false, params.seed + i);
             }
             break;
         case ApproximationType::OUTERPLANAR_SPANNING_GRAPHS:

@@ -220,7 +220,9 @@ inline void DDataGraph::Load(const std::string &graphPath, bool relabeling, bool
         }
 
         this->sortNeighborIds();
-        this->isTree = IsTree();
+        if (CheckTree()){
+            this->graphType = GraphType::TREE;
+        }
     }
     else{
         std::cout << "Graph path is not a valid path!" << std::endl;

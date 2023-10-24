@@ -241,7 +241,7 @@ inline NodeId Hops::getRootNodeByCondition(ROOT_NODE_CONDITION condition, std::m
 }
 
 inline LABEL_TYPE Hops::PatternPreprocessing(const DGraphStruct & spanTree, int pattern_seed) {
-    this->currentPatternIsTree = this->currentPattern->IsTree();
+    this->currentPatternIsTree = this->currentPattern->CheckTree();
 
     LABEL_TYPE labelType = this->currentGraph->labelType;
     if (this->runParameters.labelType == LABEL_TYPE::UNLABELED || this->currentGraph->labelType == LABEL_TYPE::UNLABELED || this->runParameters.labelType != this->currentGraph->labelType)
@@ -287,7 +287,7 @@ inline LABEL_TYPE Hops::PatternPreprocessing(const DGraphStruct & spanTree, int 
         //Generate the rooted pattern from the pattern graph
         this->rootedPattern = RootedPattern(this->spanningTree, PatternRootNode, this->runParameters.labelType);
 
-        if (!this->currentPattern->isTree) {
+        if (this->currentPattern->get_type() != GraphType::TREE) {
             this->nonTreeEdges = std::vector<EDGES>(this->currentPattern->nodes(), EDGES());
             for (NodeId nodeId = 0; nodeId < this->currentPattern->nodes(); ++nodeId) {
                 NodeId Source = nodeId;

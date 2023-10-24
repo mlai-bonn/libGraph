@@ -125,10 +125,17 @@ inline void GetBiconnectedComponents(const GraphStruct& graph, std::vector<std::
                     visited[current_node] = true;
                     components.back().emplace_back(current_node);
                     current_node = parent[current_node];
-                    if (articulationPoints[current_node] && !visited[current_node]){
-                        leaves.emplace_back(current_node);
-                        components.back().emplace_back(current_node);
-                        components.emplace_back();
+                    if (articulationPoints[current_node]){
+                        if (!visited[current_node]) {
+                            leaves.emplace_back(current_node);
+
+                            leaves.emplace_back(current_node);
+                            components.back().emplace_back(current_node);
+                            components.emplace_back();
+                        }
+                        else{
+                            components.back().emplace_back(current_node);
+                        }
                     }
                 }
             }

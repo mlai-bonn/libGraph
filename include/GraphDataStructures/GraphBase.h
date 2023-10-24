@@ -116,7 +116,7 @@ public:
     /// \param path
     /// \param Format
     static void Convert(const std::string & path, GraphFormat Format = GraphFormat::BGF, const std::string & extension = ".txt");
-    bool IsTree() const;
+    bool CheckTree() const;
     bool CheckSpanningTree(const GraphStruct& spanningTree) const;
 
     static void BFSDistances(const GraphStruct &graph, INDEX root, std::vector<INDEX> &distances);
@@ -212,9 +212,6 @@ public:
         if (_numLabels != rhs._numLabels){
             return false;
         }
-        if (isTree != rhs.isTree){
-            return false;
-        }
         if (labelMap != rhs.labelMap){
             return false;
         }
@@ -255,7 +252,6 @@ public:
     //Graph attributes for faster access
     int maxDegree = 0;
     LABEL_TYPE labelType = LABEL_TYPE::UNLABELED;
-    bool isTree = false;
 
     //for labels
     std::unordered_map<Label, Nodes> labelMap{};
@@ -289,6 +285,7 @@ public :
 
 
     void set_type(GraphType type);
+    GraphType get_type();
 };
 
 
@@ -738,7 +735,6 @@ inline void GraphStruct::CreateGraph(INDEX size, const Labels& labels) {
     this->_labels = labels;
     this->_graph = std::vector<std::vector<INDEX>>(nodes(), std::vector<INDEX>());
     this->_degrees = std::vector<INDEX>(nodes(), 0);
-    this->isTree = false;
 }
 
 /// Initialize labeled graph using the label type
@@ -1303,7 +1299,7 @@ inline NodeId GraphStruct::add_node(INDEX number, Labels* labels) {
 }
 
 inline bool GraphStruct::CheckSpanningTree(const GraphStruct &spanningTree) const {
-    if (spanningTree.nodes() != this->nodes() || !spanningTree.IsTree()) {
+    if (spanningTree.nodes() != this->nodes() || !spanningTree.CheckTree()) {
         return false;
     }
     NodeId Counter = 0;
@@ -1318,7 +1314,7 @@ inline bool GraphStruct::CheckSpanningTree(const GraphStruct &spanningTree) cons
     return true;
 }
 
-inline bool GraphStruct::IsTree() const {
+inline bool GraphStruct::CheckTree() const {
     for (INDEX i = 0; i < this->nodes(); ++i) {
         if(this->degree(i) == 0){
             return false;
@@ -2111,7 +2107,9 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
     }
 
     this->sortNeighborIds();
-    this->isTree = IsTree();
+    if (CheckTree()){
+        this->set_type(GraphType::TREE);
+    }
 
 }
 
@@ -2563,6 +2561,9 @@ void GraphStruct::ReorderGraph(GraphStruct &graph, const Nodes &nodeOrder) {
 
 void GraphStruct::set_type(GraphType type) {
     this->graphType = type;
+}
+GraphType GraphStruct::get_type() {
+    return this->graphType;
 }
 
 bool GraphStruct::remove_edge(NodeId source, NodeId destination) {

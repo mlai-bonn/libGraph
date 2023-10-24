@@ -186,7 +186,7 @@ LayeringTree::LayeringTree(GraphStruct &graph, int seed, NodeId root_node_id) : 
             }
         }
     }
-    this->tree.isTree = true;
+    this->tree.set_type(GraphType::TREE);
 }
 
 #endif //TESTGRAPHLIB_LAYERING_H

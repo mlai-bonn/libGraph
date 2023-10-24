@@ -14,6 +14,7 @@ public:
     static GraphStruct Circle(int size, const Labels* labels = nullptr, int num_labels = 2);
     static GraphStruct StarGraph(int size, const Labels* labels = nullptr, int num_labels = 2);
     static GraphStruct Triangle(const Labels* labels = nullptr, int num_labels = 2);
+    static GraphStruct MaxPreClosure(int i, Labels *labels = nullptr, int num_labels = 2);
 
     static GraphStruct FullyConnected(int i, const Labels* labels = nullptr, int num_labels = 2);
 
@@ -21,6 +22,7 @@ public:
 
     static GraphStruct Path(int i, Labels *labels = nullptr, int num_labels = 2);
     static GraphStruct ErdosRenyi(int size, int edges, int seed = 0, bool connected = false);
+
 };
 
 inline GraphStruct SimplePatterns::Triangle(const Labels* labels, int num_labels) {
@@ -144,6 +146,30 @@ inline GraphStruct SimplePatterns::ErdosRenyi(int size, int edges, int seed, boo
             if (src != dst) {
                 G.add_edge(src, dst);
             }
+        }
+    }
+    return G;
+}
+
+GraphStruct SimplePatterns::MaxPreClosure(int i, Labels *labels, int num_labels) {
+    GraphStruct G = GraphStruct(4+2*i, Labels());
+    G.add_edge(0, 2);
+    G.add_edge(0, 3);
+    G.add_edge(1, 2);
+    G.add_edge(1, 3);
+    for (int j = 0; j < i; ++j) {
+        G.add_edge(2*j + 2, 2*j + 4);
+        G.add_edge(2*j + 2, 2*j + 5);
+        G.add_edge(2*j + 3, 2*j + 4);
+        G.add_edge(2*j + 3, 2*j + 5);
+    }
+    G.SetName("max_pre_closure_" + std::to_string(i));
+    if (labels != nullptr){
+        G.SetNumLabels(num_labels);
+        G.set_labels(labels);
+        G.SetName(G.GetName() + "_labels_");
+        for (auto l : *labels) {
+            G.SetName(G.GetName() + std::to_string(l));
         }
     }
     return G;

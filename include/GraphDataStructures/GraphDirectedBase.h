@@ -329,7 +329,9 @@ void DGraphStruct::Load(const std::string &graphPath, bool relabeling, bool with
     }
 
     this->sortNeighborIds();
-    this->isTree = IsTree();
+    if (CheckTree()) {
+        this->graphType = GraphType::TREE;
+    }
 }
 
 void DGraphStruct::Save(const SaveParams& saveParams) {

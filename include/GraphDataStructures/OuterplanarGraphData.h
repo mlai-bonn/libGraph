@@ -17,14 +17,14 @@ public:
         maxCompSize = std::vector<int>(this->nodes(), 0);
         set();
     };
-    OuterplanarGraphData(GraphStruct& pGraph, int size) : GraphStruct(size, {}){
-        nodeToComponents = std::vector<std::vector<int>>(pGraph.nodes());
-        maxCompSize = std::vector<int>(pGraph.nodes(), 0);
+    explicit OuterplanarGraphData(const GraphStruct& graph) : GraphStruct(graph){
+        nodeToComponents = std::vector<std::vector<int>>(graph.nodes());
+        maxCompSize = std::vector<int>(graph.nodes(), 0);
         set();
     };
 
     std::vector<OuterplanarComponent> Components;
-    void set();
+
     GraphStruct& get_bbTree() {return bbTree.tree;};
     NodeOrComponent& get_bbNodeOrComponent(NodeId nodeId){return bbTree.BBNodesToNodeOrComponent[nodeId];};
     void get_components(NodeId nodeId, std::vector<NodeOrComponent>& nodeOrComponent);
@@ -38,6 +38,7 @@ private:
     BBTree bbTree;
 
     void init_outerplanar();
+    void set();
 };
 
 void OuterplanarGraphData::set() {
