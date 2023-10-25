@@ -98,7 +98,6 @@ public:
                         // print random element
                         std::cout << "Random element: " << random_element << std::endl;
                     }
-                    graphClosureSP._info = std::pair<int, int>(i, j);
                     graphClosureSP.closure(closureParameters);
                     // add the random element to the added elements
                     closureParameters.added_elements.insert(random_element);

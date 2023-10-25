@@ -2,4 +2,8 @@
 /cmake-build-release/
 /executables/test/cmake-build-debug/
 /executables/test/cmake-build-release/
-/Google_tests/lib/
+**/Google_tests/lib/*
+**/Google_tests/data/*
+/Google_tests/cmake-build-debug/
+/Google_tests/cmake-build-release/
+/Google_tests/cmake-build-relwithdebinfo/

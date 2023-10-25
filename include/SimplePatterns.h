@@ -75,6 +75,7 @@ inline GraphStruct SimplePatterns::Path(int i, Labels *labels, int num_labels) {
         G.add_edge(j, j + 1);
     }
     G.SetName("path_" + std::to_string(i));
+    G.set_type(GraphType::TREE);
 
     if (labels != nullptr){
         G.SetNumLabels(num_labels);
@@ -93,6 +94,7 @@ inline GraphStruct SimplePatterns::Circle(int size, const Labels *labels, int nu
         G.add_edge(i, (i + 1) % size);
     }
     G.SetName("circle_" + std::to_string(size));
+    G.set_type(GraphType::OUTERPLANAR);
     if (labels != nullptr){
         G.SetNumLabels(num_labels);
         G.set_labels(labels);
@@ -110,6 +112,7 @@ inline GraphStruct SimplePatterns::StarGraph(int size, const Labels *labels, int
         G.add_edge(0, i + 1);
     }
     G.SetName("star_" + std::to_string(size));
+    G.set_type(GraphType::TREE);
     if (labels != nullptr){
         G.SetNumLabels(num_labels);
         G.set_labels(labels);

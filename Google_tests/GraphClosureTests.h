@@ -35,31 +35,33 @@ TEST(GraphClosureTestSuite, ExampleGraphClosureConnectedSimple){
 }
 
 TEST(GraphClosureTestSuite, ExampleGraphClosureConnectedAdvanced){
-    GraphStruct graph = SimplePatterns::Path(50);
-    GraphClosureSP graphClosure = GraphClosureSP(graph);
+    GraphStruct path = SimplePatterns::Path(50);
+    GraphClosureSP graphClosurePath = GraphClosureSP(path);
     ClosureParameters closureParameters = {{0}};
-    graphClosure.closure(closureParameters);
+    graphClosurePath.closure(closureParameters);
     EXPECT_EQ(closureParameters.closed_set.size(), 1);
     EXPECT_EQ(closureParameters.closed_set, std::set<NodeId>({0}));
 
     closureParameters = {{0, 49}};
-    graphClosure.closure(closureParameters);
+    graphClosurePath.closure(closureParameters);
     EXPECT_EQ(closureParameters.closed_set.size(), 50);
     closureParameters = {{1, 3}};
-    graphClosure.closure(closureParameters);
+    graphClosurePath.closure(closureParameters);
     EXPECT_EQ(closureParameters.closed_set.size(), 3);
     EXPECT_EQ(closureParameters.closed_set, std::set<NodeId>({1, 2, 3}));
 
-    graph = SimplePatterns::Circle(4);
+    GraphStruct circle = SimplePatterns::Circle(4);
+    GraphClosureSP graphClosureCircle = GraphClosureSP(circle);
     closureParameters = {{0, 2}};
-    graphClosure.closure(closureParameters);
+    graphClosureCircle.closure(closureParameters);
     EXPECT_EQ(closureParameters.closed_set.size(), 4);
 
 
-    for (int i = 3; i < 20; ++i) {
-        graph = SimplePatterns::Circle(i);
+    for (int i = 3; i < 100; ++i) {
+        GraphStruct variableCircle = SimplePatterns::Circle(i);
+        GraphClosureSP graphClosureVariableCircle = GraphClosureSP(variableCircle);
         closureParameters = {{0, (NodeId) i/2 }};
-        graphClosure.closure(closureParameters);
+        graphClosureVariableCircle.closure(closureParameters);
         // if i is odd
         if (i % 2 == 1) {
             EXPECT_EQ(closureParameters.closed_set.size(), (size_t) i/2 + 1);
@@ -68,38 +70,87 @@ TEST(GraphClosureTestSuite, ExampleGraphClosureConnectedAdvanced){
             EXPECT_EQ(closureParameters.closed_set.size(), i);
         }
 
-        graph = SimplePatterns::StarGraph(i);
+        GraphStruct starGraph = SimplePatterns::StarGraph(i);
+        GraphClosureSP graphClosureStarGraph = GraphClosureSP(starGraph);
         closureParameters = {{0, (NodeId) i-1}};
-        graphClosure.closure(closureParameters);
+        graphClosureStarGraph.closure(closureParameters);
         EXPECT_EQ(closureParameters.closed_set.size(), 2);
         EXPECT_EQ(closureParameters.closed_set, std::set<NodeId>({0, (NodeId) i-1}));
         closureParameters = {{1, (NodeId) i-1}};
-        graphClosure.closure(closureParameters);
+        graphClosureStarGraph.closure(closureParameters);
         EXPECT_EQ(closureParameters.closed_set.size(), 3);
         EXPECT_EQ(closureParameters.closed_set, std::set<NodeId>({0, 1, (NodeId) i-1}));
+    }
+}
 
-        graph = SimplePatterns::MaxPreClosure(i);
-        for (int j = 0; j < graph.nodes(); ++j) {
-            for (int k = 0; k < graph.nodes(); ++k) {
+TEST(GraphClosureTestSuite, ExampleClosureTree){
+
+}
+
+TEST(GraphClosureTestSuite, ExampleClosureOuterplanarGraph){
+
+}
+
+
+TEST(GraphClosureTestSuite, ExamplePreClosureTest){
+    ClosureParameters closureParameters;
+    for (int i = 0; i < 20; ++i) {
+        GraphStruct testGraph = SimplePatterns::MaxPreClosure(i);
+        GraphClosureSP graphClosureTestGraph = GraphClosureSP(testGraph);
+        for (int j = 0; j < testGraph.nodes(); ++j) {
+            for (int k = 0; k < testGraph.nodes(); ++k) {
                 closureParameters = {{(NodeId) j, (NodeId) k}};
-                graphClosure.closure(closureParameters);
+                graphClosureTestGraph.closure(closureParameters);
                 if (j==k){
                     EXPECT_EQ(closureParameters.closed_set.size(), 1);
                     EXPECT_EQ(closureParameters.closed_set, std::set<NodeId>({(NodeId) j}));
                 }
-                else if (graph.edge(j, k)){
+                else if (testGraph.edge(j, k)){
                     EXPECT_EQ(closureParameters.closed_set.size(), 2);
                     EXPECT_EQ(closureParameters.closed_set, std::set<NodeId>({(NodeId) j, (NodeId) k}));
                 }
                 else{
-                    EXPECT_EQ(closureParameters.closed_set.size(), graph.nodes());
+                    EXPECT_EQ(closureParameters.closed_set.size(), testGraph.nodes());
                 }
             }
         }
     }
+}
 
+TEST(GraphClosureTestSuite, ExampleClosureThetaTest){
+    for (int i = 1; i <= 100; ++i) {
+        GraphStruct testGraph = SimplePatterns::Path(i);
+        GraphClosureSP graphClosureTestGraph = GraphClosureSP(testGraph);
+        ClosureParameters closureParameters = {.input_set = {0, (NodeId) i}, .threshold = 50};
+        graphClosureTestGraph.closure(closureParameters);
+        if (i <= 50){
+            EXPECT_EQ(closureParameters.closed_set.size(), i + 1);
+        }
+        else{
+            EXPECT_EQ(closureParameters.closed_set.size(), 2);
+            EXPECT_EQ(closureParameters.closed_set, std::set<NodeId>({0, (NodeId) i}));
+        }
+    }
 
-
+    GraphStruct testGraph = SimplePatterns::Path(9);
+    GraphClosureSP graphClosureTestGraph = GraphClosureSP(testGraph);
+    ClosureParameters closureParameters = {.input_set = {1, 3, 6, 8}};
+    for (int threshold = 0; threshold < 10; ++threshold) {
+        closureParameters.threshold = threshold;
+        graphClosureTestGraph.closure(closureParameters);
+        if (threshold < 2){
+            EXPECT_EQ(closureParameters.closed_set.size(), 4);
+            EXPECT_EQ(closureParameters.closed_set, closureParameters.input_set);
+        }
+        else if (threshold == 2){
+            EXPECT_EQ(closureParameters.closed_set.size(), 6);
+            EXPECT_EQ(closureParameters.closed_set, std::set<NodeId>({1, 2, 3, 6, 7, 8}));
+        }
+        else {
+            EXPECT_EQ(closureParameters.closed_set.size(), 8);
+            EXPECT_EQ(closureParameters.closed_set, std::set<NodeId>({1, 2, 3, 4, 5, 6, 7, 8}));
+        }
+    }
 
 }
 

@@ -11,6 +11,8 @@
 
 struct ClosureParameters{
     std::set<NodeId> input_set  = std::set<NodeId>();
+    int threshold = std::numeric_limits<int>::max();
+
     std::vector<std::set<NodeId>*> forbidden_elements;
 
     bool output_is_all = false;

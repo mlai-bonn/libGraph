@@ -5,6 +5,8 @@
 #ifndef GOOGLE_TESTS_OUTERPLANARSTRUCTS_H
 #define GOOGLE_TESTS_OUTERPLANARSTRUCTS_H
 
+#include <map>
+
 struct OuterplanarComponent{
     std::vector<GraphStruct> faces;
     std::vector<std::vector<int>> nodeToFaces;
