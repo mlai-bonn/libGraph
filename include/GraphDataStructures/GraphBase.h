@@ -133,14 +133,14 @@ public:
     static void ReorderGraph(GraphStruct &graph, const Nodes& nodeOrder);
 
     //Static functions
-    //compare the given labeled degree vector with the labeled degree vector of the node with Id:nodeId of this _graph
+    //compare the given labeled degree vector with the labeled degree vector of the node with Id:srcId of this _graph
     bool isBigger(const std::vector<INDEX>& labeledDegree, NodeId nodeId);
 
     //Iterators
     struct NodeIterator{
         // Prefix increment
         void operator++() { ++nodeId;};
-        const Nodes& operator*() const { return _graph->get_neighbors(nodeId); }
+        NodeId operator*() const { return nodeId; }
         friend bool operator== (const NodeIterator& a, INDEX b) { return a.nodeId == b;};
         friend bool operator!= (const NodeIterator& a, INDEX b) { return a.nodeId != b;};
 
@@ -148,7 +148,73 @@ public:
         NodeId nodeId{};
     };
     [[nodiscard]] NodeIterator begin() const { return NodeIterator{this, 0}; }
-    [[nodiscard]] INDEX end() const   { return this->nodes(); }
+    [[nodiscard]] INDEX end() const {
+        return this->nodes();
+    }
+
+    struct EdgeIterator{
+        // Prefix increment
+        void operator++() {
+            ++neighborIdx;
+            bool condition = neighborIdx >= _graph->degree(srcId) || _graph->neighbor(srcId, neighborIdx) < srcId;
+            while(condition){
+                ++neighborIdx;
+                if (neighborIdx >= _graph->degree(srcId)){
+                    ++srcId;
+                    neighborIdx = 0;
+                }
+            }
+            dstId = this->_graph->neighbor(srcId, neighborIdx);
+        };
+        std::pair<NodeId, NodeId> operator*() const { return {srcId, dstId}; }
+        friend bool operator== (const EdgeIterator& a, std::pair<NodeId, INDEX> b) { return a.srcId == b.first && a.neighborIdx == b.second;};
+        friend bool operator!= (const EdgeIterator& a, std::pair<NodeId, INDEX> b) { return a.srcId != b.first || a.neighborIdx != b.second;};
+        friend bool operator!= (const EdgeIterator& a, NodeId b) { return a.srcId != b;};
+
+
+        const GraphStruct* _graph{};
+        NodeId srcId{};
+        NodeId dstId{};
+        NodeId neighborIdx{};
+
+    };
+
+    [[nodiscard]] EdgeIterator first_edge() const { if (edges() == 0){return EdgeIterator(this, 1, 0,0);} NodeId startNode = 0; while (this->degree(startNode) == 0){++startNode;} return EdgeIterator{this, startNode, this->_graph[0][0], 0}; }
+    [[nodiscard]] NodeId last_edge() const {
+        return this->nodes();
+    }
+
+    struct EdgeIteratorDirected{
+        // Prefix increment
+        void operator++() {
+            if (neighborIdx < _graph->degree(srcId) - 1)
+            {
+                ++neighborIdx;
+            }
+            else
+            {
+                ++srcId; while(srcId != this->_graph->nodes() && this->_graph->degree(srcId) == 0){++srcId;} neighborIdx = 0;
+            }
+            dstId = this->_graph->neighbor(srcId, neighborIdx);
+        };
+        const std::pair<NodeId, NodeId> operator*() const { return {srcId, dstId}; }
+        friend bool operator== (const EdgeIteratorDirected& a, std::pair<NodeId, INDEX> b) { return a.srcId == b.first && a.neighborIdx == b.second;};
+        friend bool operator!= (const EdgeIteratorDirected& a, std::pair<NodeId, INDEX> b) { return a.srcId != b.first || a.neighborIdx != b.second;};
+        friend bool operator!= (const EdgeIteratorDirected& a, NodeId b) { return a.srcId != b;};
+
+
+        const GraphStruct* _graph{};
+        NodeId srcId{};
+        NodeId dstId{};
+        NodeId neighborIdx{};
+
+    };
+
+    [[nodiscard]] EdgeIteratorDirected first_edge_directed() const { if (edges() == 0){return EdgeIteratorDirected(this, 1, 0,0);} NodeId startNode = 0; while (this->degree(startNode) == 0){++startNode;} return EdgeIteratorDirected{this, startNode, this->_graph[0][0], 0}; }
+    [[nodiscard]] NodeId last_edge_directed() const {
+        return this->nodes();
+    }
+
 
     struct NeighborIterator{
         // Prefix increment
@@ -776,7 +842,7 @@ inline void GraphStruct::UpdateGraphLabels(LABEL_TYPE label) {
 /// \return
 inline INDEX GraphStruct::degree(NodeId nodeId) const {
     return this->get_neighbors(nodeId).size();
-    //return this->_degrees[nodeId];
+    //return this->_degrees[srcId];
 }
 
 /// Get the number of _graph nodes

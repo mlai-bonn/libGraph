@@ -98,7 +98,7 @@ void OuterplanarGraphData::set() {
         }
         ++c;
     }
-    //bbTree.tree.print();
+    //bbTree.tree._print();
     //bbTree.tree.init();
 }
 

@@ -152,12 +152,13 @@ OuterplanarSubgraphDFS::OuterplanarSubgraphDFS(const GraphStruct & graph) : Oute
 }
 
 void OuterplanarSubgraphDFS::generate(GraphStruct& subgraph, int seed, bool p) {
-    std::mt19937_64 gen(seed);
+    // call super generate function
+    OuterplanarSubgraph::generate(subgraph, seed, p);
     subgraph.set_type(GraphType::OUTERPLANAR);
     this->_subgraph = subgraph;
     this->print = p;
     this->reset();
-    dfs_root_node = std::uniform_int_distribution<INDEX>(0, this->_graph.nodes() - 1)(gen);
+    dfs_root_node = std::uniform_int_distribution<INDEX>(0, this->_graph.nodes() - 1)(_gen);
     dfs_stack.emplace_back(dfs_root_node);
     NodeStruct* path_root = &this->graphNodes[dfs_root_node];
     path_root->last_spanned_root = path_root;
@@ -168,7 +169,7 @@ void OuterplanarSubgraphDFS::generate(GraphStruct& subgraph, int seed, bool p) {
         std::cout << std::endl;
     }
     while (!this->dfs_stack.empty()) {
-        get_next_node(gen);
+        get_next_node(_gen);
     }
     if (p) {
         std::cout << std::endl;

@@ -14,7 +14,7 @@
  * generator_size: size of the random input set
  * core_iterations: number of iterations of the algorithm, if -1 the algorithm stops if the intersection of the closed sets computed so far gets stable
  * seed: seed for the random number generator
- * print: if true prints the growth steps and the closure size
+ * _print: if true prints the growth steps and the closure size
  * save: if true saves the core nodes vector
  * output_path: path to the output file
  * core_nodes: vector of core nodes
@@ -42,7 +42,7 @@ public:
     explicit CoreRandomAlgorithm(GraphStruct &graph) : _graph(graph) {};
     void Run(CoreAlgorithmParameters& parameters){
         GraphClosure gc = GraphClosure(_graph);
-        ClosureParameters closureParameters;
+        GraphClosureParameters closureParameters;
         std::vector<std::set<NodeId>> closures;
         std::cout << std::endl;
         std::set<NodeId> overlap;

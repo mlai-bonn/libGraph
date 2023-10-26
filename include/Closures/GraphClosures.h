@@ -30,12 +30,12 @@ enum class EGraphClosureType {
  * @param number_of_substructures defines the number of substructures used for the approximation
  * @param relative_threshold defines the relative threshold for the approximation
  */
-class GraphClosureParameters : public ClosureParameters {
-
-public:
-    GraphClosureParameters() = default;
+struct GraphClosureParameters : ClosureParameters {
     EGraphClosureType closureType = EGraphClosureType::EXACT_GEODESIC;
+
+    // Used only for approximation methods
     int number_of_substructures = 1;
+    std::string path_to_substructures;
     double relative_threshold = 0.0;
 };
 

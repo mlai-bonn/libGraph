@@ -16,7 +16,7 @@
  * grow_steps: number of growth steps per run, i.e. the number of elements added in the iterative growth process
  * core_percentage: percentage of runs in which a node has to be in the core to be considered a core node
  * seed: seed for the random number generator
- * print: if true prints the growth steps and the closure size
+ * _print: if true prints the growth steps and the closure size
  * save: if true saves the core nodes vector
  * output_path: path to the output file
  * core_nodes: vector of core nodes
@@ -79,7 +79,6 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
     // iterate over the number of runs
     for (int i = 0; i < parameters.num_runs; ++i)
     {
-        std::cout << "Run" << i << std::endl;
         FileEvaluation detailedEvaluation = FileEvaluation(parameters.output_path, "details_grow_core_" + _graph.GetName());
         // get the start vertex
         NodeId start_vertex = std::uniform_int_distribution<NodeId>(0, _graph.nodes() - 1)(generator);
@@ -90,14 +89,14 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
 
         // get the closure of the start vertex
         std::set<NodeId> start_set = std::set<NodeId>({start_vertex});
-        ClosureParameters closureParameters = {.input_set = start_set};
+        GraphClosureParameters closureParameters = GraphClosureParameters({.input_set = start_set});
         graphClosureSP.closure(closureParameters);
 
 
         // iterate over the growth steps
         for (int j = 0; j < parameters.grow_steps; ++j)
         {
-            // print the growth step
+            // _print the growth step
             if (parameters.print)
             {
                 std::cout << "Run: " << i << " Grow step: " << j << std::endl;
@@ -146,7 +145,7 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
                 core_size_evolution[i][j + 1] = (int) closureParameters.added_elements.size();
             }
         }
-        // print the closure size
+        // _print the closure size
         if (parameters.print)
         {
             std::cout << "Closure size: " << closureParameters.closed_set.size() << std::endl;
@@ -161,7 +160,7 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
                                              {_graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "", std::to_string(parameters.num_runs), std::to_string(parameters.grow_steps), std::to_string(parameters.core_percentage), std::to_string(parameters.seed), "", std::to_string(i), std::to_string(closureParameters.closed_set.size()), "", std::to_string(parameters.runtime)});
         detailedEvaluation.save();
     }
-    // print the core nodes vector
+    // _print the core nodes vector
     if (parameters.print)
     {
         std::cout << "Core nodes: " << std::endl;

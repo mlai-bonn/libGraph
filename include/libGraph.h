@@ -11,6 +11,7 @@
 #include "GraphDataStructures/OuterplanarGraphData.h"
 #include "GraphDataStructures/OuterplanarStructs.h"
 #include "GraphDataStructures/ExampleGraphs.h"
+#include "GraphDataStructures/GraphStructs.h"
 
 #include "Enums.h"
 #include "GraphFunctions.h"
@@ -36,7 +37,7 @@
 #include "Algorithms/Graph/SpanningTrees.h"
 #include "Algorithms/Graph/OuterplanarSubgraph.h"
 #include "Algorithms/Graph/OuterplanarSubgraphDFS.h"
-//#include "Algorithms/Graph/OuterplanarSubgraphMitchell.h"
+#include "Algorithms/Graph/OuterplanarSubgraphMitchell.h"
 
 
 #endif //TESTGRAPHLIB_LIBGRAPH_H

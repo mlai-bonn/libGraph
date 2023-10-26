@@ -139,8 +139,8 @@ void EvaluateApproximations::Evaluation(ParametersEvaluation &params) {
     mean_error = (double) absolute_error / (false_distances + correct_distances);
     mean_relative_error = relative_error / (false_distances + correct_distances);
 
-    // print the results
-    // print the root node
+    // _print the results
+    // _print the root node
     switch (params.approximationType) {
 
         case ApproximationType::RANDOM_SPANNING_TREES:

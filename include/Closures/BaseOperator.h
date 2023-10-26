@@ -9,9 +9,8 @@
 #include <utility>
 #include "../io/StaticFunctions.h"
 
-class ClosureParameters {
+struct ClosureParameters {
 public:
-    ClosureParameters() = default;
     std::set<NodeId> input_set  = std::set<NodeId>();
     int threshold = std::numeric_limits<int>::max();
     bool output_is_all = false;
