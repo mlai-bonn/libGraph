@@ -9,5 +9,5 @@
 /executables/geodesic_core/cmake-build-debug/
 /executables/geodesic_core/cmake-build-release/
 /executables/geodesic_core/cmake-build-relwithdebinfo/
-/Google_tests/tests/out/*
-/Google_tests/lib/
+**/Google_tests/tests/out/*
+**/Google_tests/lib/*
