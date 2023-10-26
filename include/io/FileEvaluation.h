@@ -28,6 +28,7 @@ public:
     void to_latex_table();
 
     void headerValueInsert(const std::vector<std::string>& new_header, const std::vector<std::string>& new_values, int insert_position=-1, bool summary = false, bool both=false);
+    void headerInsert(const std::vector<std::string>& new_header, bool summary = false, bool both=false);
     void clear();
 
 };
@@ -134,7 +135,7 @@ inline void FileEvaluation::headerValueInsert(const std::vector<std::string> &ne
     }
 
     for (int i=0; i<new_header.size(); ++i) {
-        const std::string header = new_header[i];
+        const std::string& header = new_header[i];
 
         if (!summary || both) {
             if (std::find(headers_all.begin(), headers_all.end(), header) == headers_all.end()) {
@@ -178,6 +179,25 @@ inline void FileEvaluation::headerValueInsert(const std::vector<std::string> &ne
         }
     }
 }
+
+inline void FileEvaluation::headerInsert(const std::vector<std::string> &new_header, bool summary, bool both) {
+    for (const auto & header : new_header) {
+        if (!summary || both) {
+            if (std::find(headers_all.begin(), headers_all.end(), header) == headers_all.end()) {
+                headers_all.emplace_back(header);
+            }
+        }
+
+        if (summary) {
+            if (std::find(headers_summary.begin(), headers_summary.end(), header) == headers_summary.end()) {
+                headers_summary.emplace_back(header);
+                values_summary.emplace(
+                        std::pair<std::string, std::vector<std::string>>{header, std::vector<std::string>()});
+            }
+        }
+    }
+}
+
 
 inline void FileEvaluation::clear() {
     headers_all.clear();

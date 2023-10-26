@@ -2,7 +2,7 @@
 // Created by florian on 17.10.23.
 //
 // This file contains the algorithm from the paper "Constant approximation algorithms for embedding
-//graph metrics into trees and outerplanar graphs" by Chepoi, Dragan, Newman, Rabinovich and Vaxès.
+//_graph metrics into trees and outerplanar graphs" by Chepoi, Dragan, Newman, Rabinovich and Vaxès.
 
 #ifndef LIBGRAPH_TREEEMBEDDING_H
 #define LIBGRAPH_TREEEMBEDDING_H
@@ -39,7 +39,7 @@ private:
 };
 
 void EvaluateApproximations::Evaluation(ParametersEvaluation &params) {
-    // for each node run a BFS in the graph and in the layering trees and compare the results
+    // for each node run a BFS in the _graph and in the layering trees and compare the results
     std::mt19937_64 generator(params.seed);
     std::vector<INDEX> graphDistances;
     std::vector<INDEX> approximationDistances;
@@ -58,7 +58,7 @@ void EvaluateApproximations::Evaluation(ParametersEvaluation &params) {
             }
             break;
         case ApproximationType::OUTERPLANAR_SPANNING_GRAPHS:
-            // run the outerplanar spanning graph approximation
+            // run the outerplanar spanning _graph approximation
             break;
         case ApproximationType::LAYERING_TREE:
             // run the layering tree approximation
@@ -102,7 +102,7 @@ void EvaluateApproximations::Evaluation(ParametersEvaluation &params) {
                 // run the random spanning tree approximation
                 break;
             case ApproximationType::OUTERPLANAR_SPANNING_GRAPHS:
-                // run the outerplanar spanning graph approximation
+                // run the outerplanar spanning _graph approximation
                 break;
             case ApproximationType::LAYERING_TREE:
                 // run the layering tree approximation
@@ -177,7 +177,7 @@ void EvaluateApproximations::Evaluation(ParametersEvaluation &params) {
             filename = "../out/random_spanning_trees_distance_matrix.csv";
             break;
         case ApproximationType::OUTERPLANAR_SPANNING_GRAPHS:
-            // run the outerplanar spanning graph approximation
+            // run the outerplanar spanning _graph approximation
             break;
         case ApproximationType::LAYERING_TREE:
             // run the layering tree approximation

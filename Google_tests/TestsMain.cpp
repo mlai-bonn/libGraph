@@ -5,9 +5,10 @@
 
 // AllTests.cpp
 #include "gtest/gtest.h"
-#include "GraphClassTest.h"
-#include "GraphAlgorithmsTests.h"
-#include "GraphClosureTests.h"
+#include "tests/GraphClassTest.h"
+#include "tests/GraphAlgorithmsTests.h"
+#include "tests/GraphClosureTests.h"
+#include "tests/GraphCoreTests.h"
 
 int main(int argc, char **argv)
 {

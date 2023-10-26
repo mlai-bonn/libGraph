@@ -1,4 +1,4 @@
-# graph-lib: A c++ library for different graph based tasks
+# _graph-lib: A c++ library for different _graph based tasks
 
 ## Graph Format (.bgfs for graphs with less than 2^32 edges .bgf else)
 
@@ -6,7 +6,7 @@
 |:----------------:|:------------------------------------:|
 |     **int**      |    *compatibility_format_version*    |
 |     **int**      |            *graph_number*            |
-|                  |      **Repeat for each graph**       |
+|                  |      **Repeat for each _graph**       |
 | **unsigned int** |    string length of *graph_name*     |
 |    **string**    |             *graph_name*             |
 |     **enum**     |             *graph_type*             |
@@ -24,7 +24,7 @@
 | **unsigned int** | string length of *edge_feature_name* |
 |    **string**    |         *edge_feature_name*          |
 |                  |                                      |
-|                  |      **Repeat for each graph**       |
+|                  |      **Repeat for each _graph**       |
 |                  |                                      |
 |                  |      **Repeat for every node**       |
 |    **double**    |           *node_feature_i*           |
@@ -37,9 +37,9 @@
 
 ## Graph classes
 
-GraphStruct: undirected (labeled) graph
-DGraphStruct: directed (labeled) graph
-DDGraphStruct: directed graph with node and edge features
+GraphStruct: undirected (labeled) _graph
+DGraphStruct: directed (labeled) _graph
+DDGraphStruct: directed _graph with node and edge features
 
 GraphData<T>: collection of graphs from the above classes
 

@@ -8,8 +8,8 @@
 #include <stack>
 
 /**
- * @brief Computes the bi-connected components of a graph
- * @param graph The input graph
+ * @brief Computes the bi-connected components of a _graph
+ * @param graph The input _graph
  * @param components The output components (each component is a vector of node ids)
  */
 static void GetBiconnectedComponents(const GraphStruct& graph, std::vector<std::vector<NodeId>>& components);

@@ -133,7 +133,7 @@ public:
     static void ReorderGraph(GraphStruct &graph, const Nodes& nodeOrder);
 
     //Static functions
-    //compare the given labeled degree vector with the labeled degree vector of the node with Id:nodeId of this graph
+    //compare the given labeled degree vector with the labeled degree vector of the node with Id:nodeId of this _graph
     bool isBigger(const std::vector<INDEX>& labeledDegree, NodeId nodeId);
 
     //Iterators
@@ -337,7 +337,7 @@ void GraphData<T>::LoadBGF(std::vector<T> &graphs, const std::string &graphPath,
         for (int i = 0; i < graphNumber; ++i) {
             graphs.emplace_back();
             T& graph = graphs.back();
-            //Create graph
+            //Create _graph
             graph.Init(graphsNames[i], (int) graphsSizes[i], (int) graphsEdges[i],
                        (int) graphsNodeFeatureNames[i].size(), (int) graphsEdgeFeatureNames[i].size(),
                        graphsNodeFeatureNames[i], graphsEdgeFeatureNames[i]);
@@ -425,7 +425,7 @@ void GraphData<T>::LoadAIDS(std::vector<T> &graphs, const std::string &graphPath
 
             graphs.emplace_back();
             T& graph = graphs.back();
-            //Create graph
+            //Create _graph
             graph.Init(std::to_string(graph_counter), num_nodes, 0,1, 1,{"node_label"}, {"edge_label"});
 
             INDEX nodeCounter = 0;
@@ -445,7 +445,7 @@ void GraphData<T>::LoadAIDS(std::vector<T> &graphs, const std::string &graphPath
                 }
             }
             if (num_edges_duplicates > 0) {
-                std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!"
+                std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base _graph)!"
                           << std::endl;
                 std::cout << graphEdges.size() - num_edges_duplicates << " edges are remaining" << std::endl;
             }
@@ -493,10 +493,10 @@ void GraphData<T>::LoadAIDS(std::vector<T> &graphs, const std::string &graphPath
             graphNodeIds.emplace(src);
             graphNodeIds.emplace(dest);
     }
-//    graph.nodes() = graphNodeIds.size();
+//    _graph.nodes() = graphNodeIds.size();
 //    NodeId num_edges = graphEdges.size();
-//    this->_degrees.resize(graph.nodes());
-//    this->_graph.resize(graph.nodes());
+//    this->_degrees.resize(_graph.nodes());
+//    this->_graph.resize(_graph.nodes());
 //    INDEX nodeCounter = 0;
 //    for (auto x: graphNodeIds) {
 //        originalIdsToNodeIds.insert({x, nodeCounter});
@@ -513,7 +513,7 @@ void GraphData<T>::LoadAIDS(std::vector<T> &graphs, const std::string &graphPath
 //            }
 //        }
 //    }
-//    std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!"
+//    std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base _graph)!"
 //              << std::endl;
 //    std::cout << graphEdges.size() - num_edges_duplicates << " edges are remaining" << std::endl;
 //    if (!labelPath.empty() && withLabels) {
@@ -638,7 +638,7 @@ void GraphData<T>::Load(const std::string &graphPath) {
                 for (int i = 0; i < graphNumber; ++i) {
                     this->graphData.emplace_back();
                     T& graph = this->graphData.back();
-                    //Create graph
+                    //Create _graph
                     graph.Init(graphsNames[i], (int) graphsSizes[i], (int) graphsEdges[i],
                                    (int) graphsNodeFeatureNames[i].size(), (int) graphsEdgeFeatureNames[i].size(),
                                    graphsNodeFeatureNames[i], graphsEdgeFeatureNames[i]);
@@ -719,14 +719,14 @@ void GraphData<T>::Load(std::vector<T>& graphs, const std::string &graphPath, Gr
     }
 }
 
-/// Construct new undirected graph
+/// Construct new undirected _graph
 /// \param size
 /// \param labels
 inline GraphStruct::GraphStruct(INDEX size, const Labels& labels) {
     CreateGraph(size, labels);
 }
 
-/// Initialize a new undirected graph
+/// Initialize a new undirected _graph
 /// \param size
 /// \param labels
 inline void GraphStruct::CreateGraph(INDEX size, const Labels& labels) {
@@ -737,7 +737,7 @@ inline void GraphStruct::CreateGraph(INDEX size, const Labels& labels) {
     this->_degrees = std::vector<INDEX>(nodes(), 0);
 }
 
-/// Initialize labeled graph using the label type
+/// Initialize labeled _graph using the label type
 /// \param label
 inline void GraphStruct::UpdateGraphLabels(LABEL_TYPE label) {
     if (label == LABEL_TYPE::LABELED_SPARSE) {
@@ -750,7 +750,7 @@ inline void GraphStruct::UpdateGraphLabels(LABEL_TYPE label) {
     //set labels of neighbor Nodes
     for (NodeId Id = 0; Id < nodes(); ++Id) {
         for (NodeId neighborId: _graph[Id]) {
-            //Create labeled graph
+            //Create labeled _graph
             if (label == LABEL_TYPE::LABELED_DENSE) {
                 Label NodeLabel = _labels[neighborId];
                 if (this->labeledMapGraph[Id].find(NodeLabel)== this->labeledMapGraph[Id].end()) {
@@ -771,7 +771,7 @@ inline void GraphStruct::UpdateGraphLabels(LABEL_TYPE label) {
     }
 }
 
-/// Get the degree of a graph node
+/// Get the degree of a _graph node
 /// \param nodeId
 /// \return
 inline INDEX GraphStruct::degree(NodeId nodeId) const {
@@ -779,13 +779,13 @@ inline INDEX GraphStruct::degree(NodeId nodeId) const {
     //return this->_degrees[nodeId];
 }
 
-/// Get the number of graph nodes
+/// Get the number of _graph nodes
 /// \return
 inline INDEX GraphStruct::nodes() const {
     return _nodes;
 }
 
-/// Get the number of graph edges
+/// Get the number of _graph edges
 /// \return
 inline INDEX GraphStruct::edges() const {
     return _edges;
@@ -793,7 +793,7 @@ inline INDEX GraphStruct::edges() const {
 
 
 
-/// Check if a graph contains some edge
+/// Check if a _graph contains some edge
 /// \param source
 /// \param destination
 /// \return
@@ -806,21 +806,21 @@ inline bool GraphStruct::edge(NodeId source, NodeId destination) const {
     }
 }
 
-/// Get all neighbors of a graph node (const)
+/// Get all neighbors of a _graph node (const)
 /// \param nodeId
 /// \return
 inline const Nodes &GraphStruct::get_neighbors(NodeId nodeId) const {
     return _graph[nodeId];
 }
 
-/// Get all neighbors of a graph node (non const)
+/// Get all neighbors of a _graph node (non const)
 /// \param nodeId
 /// \return
 inline Nodes &GraphStruct::neighbors(NodeId nodeId) {
     return _graph[nodeId];
 }
 
-/// Add an edge to an undirected graph
+/// Add an edge to an undirected _graph
 /// \param source
 /// \param destination
 /// \return
@@ -851,7 +851,7 @@ inline bool GraphStruct::add_edge(NodeId source, NodeId destination) {
     return false;
 }
 
-/// Add an edge to an undirected graph without testing duplicates. This is faster than the original add edge function but the function is only correct if the edge does not exist before
+/// Add an edge to an undirected _graph without testing duplicates. This is faster than the original add edge function but the function is only correct if the edge does not exist before
 /// \param source
 /// \param destination
 /// \return
@@ -892,13 +892,13 @@ void GraphStruct::set_graph(const std::vector<Nodes> &nodes) {
     this->sortNeighborIds();
 }
 
-/// Get labels of the graph nodes
+/// Get labels of the _graph nodes
 /// \return
 inline const std::vector<Label>& GraphStruct::labels() const {
     return _labels;
 }
 
-/// Get label of a graph node
+/// Get label of a _graph node
 /// \param nodeId
 /// \return
 inline Label GraphStruct::label(NodeId nodeId) const{
@@ -906,7 +906,7 @@ inline Label GraphStruct::label(NodeId nodeId) const{
 }
 
 
-/// Get specific neighbor of a graph node
+/// Get specific neighbor of a _graph node
 /// \param nodeId
 /// \param neighborIdx
 /// \return
@@ -914,7 +914,7 @@ inline NodeId GraphStruct::neighbor(NodeId nodeId, INDEX neighborIdx) const {
     return _graph[nodeId][neighborIdx];
 }
 
-/// Get specific neighbor of a graph node with specific label
+/// Get specific neighbor of a _graph node with specific label
 /// \param nodeId
 /// \param neighborIdx
 /// \param label
@@ -932,7 +932,7 @@ inline NodeId GraphStruct::neighbor(NodeId nodeId, INDEX neighborIdx, Label labe
     return -1;
 }
 
-/// Compare the labeled degrees of graph node with given labeled degrees
+/// Compare the labeled degrees of _graph node with given labeled degrees
 /// \param labeledDegree
 /// \param nodeId
 /// \return
@@ -987,7 +987,7 @@ inline const std::vector<INDEX> &GraphStruct::degreeByLabel(NodeId nodeId) {
 }
 
 
-/// Check if graph node has neighbor with specific label
+/// Check if _graph node has neighbor with specific label
 /// \param nodeId
 /// \param label
 /// \return
@@ -1012,7 +1012,7 @@ inline NodeId GraphStruct::random_neighbor_in_range(NodeId nodeId, INDEX minIdx,
     return this->neighbors(nodeId)[0];
 }
 
-/// Construct graph from path (optionally with node labels)
+/// Construct _graph from path (optionally with node labels)
 /// \param graphPath
 /// \param relabeling
 /// \param withLabels
@@ -1021,7 +1021,7 @@ inline GraphStruct::GraphStruct(const std::string &graphPath, bool relabeling, b
 Load(graphPath, relabeling, withLabels, labelPath, format, search_name);
 }
 
-/// Save graph in certain path and format
+/// Save _graph in certain path and format
 /// \param graphPath
 /// \param Format
 /// \param Labeled
@@ -1258,7 +1258,7 @@ inline void GraphStruct::write_graph_nodes(const std::string & graphPath, const 
     Out.close();
 }
 
-/// Add labels to a graph
+/// Add labels to a _graph
 /// \param labels
 inline void GraphStruct::set_labels(const Labels* labels) {
     this->_labels = *labels;
@@ -1279,7 +1279,7 @@ inline void GraphStruct::set_labels(const Labels* labels) {
     }
 }
 
-/// Add nodes with labels to a graph
+/// Add nodes with labels to a _graph
 /// \param number
 /// \param labels
 /// \return
@@ -1445,7 +1445,7 @@ inline GraphStruct GraphStruct::GetLargestComponent(const GraphStruct& graph){
 }
 
 
-/// Construct a graph database from a graph path with labels
+/// Construct a _graph database from a _graph path with labels
 /// \param graphPath
 /// \param labelPath
 /// \param extension
@@ -1494,7 +1494,7 @@ inline GraphData<T>::GraphData(const std::string& graphPath, const std::string& 
     }
 }
 
-/// Construct a graph database from a graph path with labels
+/// Construct a _graph database from a _graph path with labels
 /// \param graphPath
 /// \param labelPath
 /// \param extension
@@ -1545,14 +1545,14 @@ inline GraphData<T>::GraphData(GraphFormat graphFormat, const std::string& graph
     }
 }
 
-/// Add a graph to a graph database
+/// Add a _graph to a _graph database
 /// \param graph
 template<typename T>
 inline void GraphData<T>::add(const T& graph) {
     graphData.push_back(graph);
 }
 
-/// Add graphs from path to a graph database, optionally with labels
+/// Add graphs from path to a _graph database, optionally with labels
 /// \param graphPath
 /// \param labelPath
 /// \param extension
@@ -1564,14 +1564,14 @@ GraphData<T>::add(const std::string &graphPath, const std::string &labelPath, co
     GraphStruct::LoadGraphsFromPath(graphPath, labelPath, this->graphData, searchName, extension, sort, graphSizes, patternNum);
 }
 
-/// Add a vector of undirected graph to a graph
+/// Add a vector of undirected _graph to a _graph
 /// \param graphs
 template<typename T>
 inline void GraphData<T>::add(const std::vector<T> &graphs) {
     this->graphData.insert(this->graphData.end(), graphs.begin(), graphs.end());
 }
 
-/// Add graph from path a graph database
+/// Add _graph from path a _graph database
 /// \param graphPath
 /// \param withLabels
 template<typename T>
@@ -1682,7 +1682,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
             if (GraphStruct::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes,
                                      graphsNodeFeatureNames, graphsEdges, graphsEdgeFeatureNames)) {
                 for (int i = 0; i < graphNumber; ++i) {
-                    //Create graph
+                    //Create _graph
                     if (i == graphId) {
                         this->Init(graphsNames[i], (int) graphsSizes[i], (int) graphsEdges[i],
                                    (int) graphsNodeFeatureNames[i].size(), (int) graphsEdgeFeatureNames[i].size(),
@@ -1860,7 +1860,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                     }
                 }
             }
-            std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!"
+            std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base _graph)!"
                       << std::endl;
             std::cout << graphEdges.size() - num_edges_duplicates << " edges are remaining" << std::endl;
             if (!labelPath.empty() && withLabels) {
@@ -1959,7 +1959,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                 }
             }
             if (num_edges_duplicates > 0) {
-                std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!"
+                std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base _graph)!"
                           << std::endl;
             }
             if (!labelPath.empty() && withLabels) {
@@ -2059,7 +2059,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                 }
             }
             if (num_edges_duplicates > 0) {
-                std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base graph)!"
+                std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base _graph)!"
                           << std::endl;
             }
             if (!labelPath.empty() && withLabels) {
@@ -2113,7 +2113,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
 
 }
 
-/// Deprecated Save graph in certain path and format
+/// Deprecated Save _graph in certain path and format
 /// \param graphPath
 /// \param Format
 /// \param Labeled
@@ -2347,7 +2347,7 @@ bool GraphStruct::ReadBGF(const std::string& extension,std::ifstream& In, int &s
 }
 
 void GraphStruct::InitLabels() {
-    //Add graph labels if possible
+    //Add _graph labels if possible
     if (this->_labels.size() == this->_graph.size()) {
         labelMap = GraphFunctions::GetGraphLabelMap(_labels);
         labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);

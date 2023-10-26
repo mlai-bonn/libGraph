@@ -9,12 +9,11 @@
 #include <utility>
 #include "../io/StaticFunctions.h"
 
-struct ClosureParameters{
+class ClosureParameters {
+public:
+    ClosureParameters() = default;
     std::set<NodeId> input_set  = std::set<NodeId>();
     int threshold = std::numeric_limits<int>::max();
-
-    std::vector<std::set<NodeId>*> forbidden_elements;
-
     bool output_is_all = false;
     bool output_intersects_forbidden = false;
     NodeId element_to_add = -1;
@@ -30,6 +29,7 @@ struct ClosureParameters{
 
     std::set<NodeId> closed_set = std::set<NodeId>();
     std::set<NodeId> added_elements = std::set<NodeId>();
+    std::vector<std::set<NodeId>*> forbidden_elements;
 
 
 
@@ -63,10 +63,6 @@ struct ClosureParameters{
         target_set_size = 0;
         iteration_number = 0;
     };
-
-
-
-
 };
 
 template <typename T>

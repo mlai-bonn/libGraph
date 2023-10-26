@@ -9,7 +9,7 @@ struct LayeringCluster {
     std::vector<std::vector<NodeId>> clusters;
 };
 
-/* Creates a layering partition of the graph with the given root node id
+/* Creates a layering partition of the _graph with the given root node id
  *
  */
 struct LayeringPartition {
@@ -56,7 +56,7 @@ LayeringPartition::LayeringPartition(const GraphStruct &graph, NodeId root_node_
 
     // create the sphere graphs
     for (int level = 0; level < spheres.size(); ++level) {
-        // create the sphere graph
+        // create the sphere _graph
         sphereGraphs.emplace_back(GraphStruct(spheres[level].size(), {}));
         for (NodeId i = 0; i < spheres[level].size(); ++i) {
             NodeId currentNodeId = spheres[level][i];
@@ -124,7 +124,7 @@ LayeringPartition::LayeringPartition(const GraphStruct &graph, NodeId root_node_
             }
 
             GraphStruct & levelGraph = sphereGraphs[level];
-            //modify sphere graph of the current level
+            //modify sphere _graph of the current level
             NodeId id = levelGraph.add_node();
 
             std::vector<bool> levelEdges = std::vector<bool>(levelGraph.nodes(), false);
@@ -147,7 +147,7 @@ LayeringPartition::LayeringPartition(const GraphStruct &graph, NodeId root_node_
     this->partitions[0].clusters.back().emplace_back(root_node_id);
 }
 
-/* Creates a layering tree of the graph with the given root node id based on a seed value if the root node is not given a random one is chosen
+/* Creates a layering tree of the _graph with the given root node id based on a seed value if the root node is not given a random one is chosen
  *
  */
 

@@ -9,24 +9,24 @@
 #include <stack>
 
 /**
- * @brief Generates a breadth first search spanning tree of the given graph.
- * @param graph The graph to generate the spanning tree from.
+ * @brief Generates a breadth first search spanning tree of the given _graph.
+ * @param graph The _graph to generate the spanning tree from.
  * @param tree The resulting spanning tree.
  * @param root_node_id The root node of the spanning tree.
- * @param deterministic If true, the algorithm will use the neighbors in the order they are stored in the graph, otherwise it will use a random order. The random order is a little bit slower. If the order does not play a role deterministic = true should be used.
+ * @param deterministic If true, the algorithm will use the neighbors in the order they are stored in the _graph, otherwise it will use a random order. The random order is a little bit slower. If the order does not play a role deterministic = true should be used.
  * @param seed The seed for the random number generator. Only used if deterministic = false.
- * @return The number of components in the graph.
+ * @return The number of components in the _graph.
  */
 static int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId root_node_id, std::vector<bool>& visited, std::vector<INDEX>& distances, bool deterministic = true, int seed = 0);
 
 /**
- * @brief Generates a depth first search spanning tree of the given graph.
- * @param graph The graph to generate the spanning tree from.
+ * @brief Generates a depth first search spanning tree of the given _graph.
+ * @param graph The _graph to generate the spanning tree from.
  * @param tree The resulting spanning tree.
  * @param root_node_id The root node of the spanning tree.
- * @param deterministic If true, the algorithm will use the neighbors in the order they are stored in the graph, otherwise it will use a random order. The random order is a little bit slower. If the order does not play a role deterministic = true should be used.
+ * @param deterministic If true, the algorithm will use the neighbors in the order they are stored in the _graph, otherwise it will use a random order. The random order is a little bit slower. If the order does not play a role deterministic = true should be used.
  * @param seed The seed for the random number generator. Only used if deterministic = false.
-  * @return The number of components in the graph.
+  * @return The number of components in the _graph.
  */
 static int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId root_node_id, std::vector<bool>& visited, std::vector<INDEX>& distances, bool deterministic = true, int seed = 0);
 

@@ -151,6 +151,7 @@ inline GraphStruct SimplePatterns::ErdosRenyi(int size, int edges, int seed, boo
             }
         }
     }
+    G.SetName("erdos_renyi_" + std::to_string(size) + "_" + std::to_string(edges));
     return G;
 }
 

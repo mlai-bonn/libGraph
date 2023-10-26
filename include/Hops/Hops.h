@@ -25,18 +25,18 @@ class Hops {
 public:
     /// Default constructor
     Hops() = default;
-    /// Constructor which gets the graph data and some parameters for running the approximation
+    /// Constructor which gets the _graph data and some parameters for running the approximation
     /// @param graphs input graphs
     /// @param parameters input parameters such as Save path etc.
     explicit Hops(GraphData<GraphStruct>& graphs, const std::string& out_path = "") : graphs(graphs), out_path(out_path) {
         for (auto & graph : this->graphs.graphData) {
             Nodes order;
             //GraphStruct tree;
-            //GraphStruct::DFS(graph, tree, order);
-            //GraphStruct::ReorderGraph(graph, order);
+            //GraphStruct::DFS(_graph, tree, order);
+            //GraphStruct::ReorderGraph(_graph, order);
         }
     };
-    /// Constructor which gets the graph data and some parameters for running the approximation
+    /// Constructor which gets the _graph data and some parameters for running the approximation
     /// @param graphs input graphs
     /// @param parameters input parameters such as Save path etc.
     explicit Hops(const std::string& in_path, const std::string& out_path = "") : out_path(out_path) {
@@ -44,17 +44,17 @@ public:
         for (auto & graph : this->graphs.graphData) {
             Nodes order;
             //GraphStruct tree;
-            //GraphStruct::DFS(graph, tree, order);
-            //GraphStruct::ReorderGraph(graph, order);
+            //GraphStruct::DFS(_graph, tree, order);
+            //GraphStruct::ReorderGraph(_graph, order);
         }
     };
 
     /// Main function of the hops class runs the hops algorithm with different run parameters
-    /// @param graphId id of the graph used for estimation
+    /// @param graphId id of the _graph used for estimation
     /// @param pattern Pattern used for estimation
     /// @param runParameters Parameters for the run of hops e.g. number of iterations, fixed runtime, run labeled or not etc...
     void Run(size_t graphId, GraphStruct& pattern, RunParameters rParameters = RunParameters());
-    /// Estimate automorphisms for a certain graph
+    /// Estimate automorphisms for a certain _graph
     /// \param graphId
     /// \param rParameters
     void Automorphisms(size_t graphId, RunParameters rParameters = RunParameters());
@@ -65,18 +65,18 @@ public:
 
 private:
     /// Preprocess the pattern, mainly create rooted pattern from some pattern spanning tree and returns the label type for the run
-    /// @param spanTree id of the graph used for estimation
+    /// @param spanTree id of the _graph used for estimation
     /// @param pattern_seed seed for some randomness of the spanning tree of the pattern
     LABEL_TYPE PatternPreprocessing(const DGraphStruct & spanTree, int pattern_seed = 0);
     void InitEstimation(unsigned int& id, RunProps& runProps, const std::vector<NodeId>& PatternRootImages, bool random = true);
-    /// Main function for the estimation of how often an unlabeled pattern occurs in the big graph
+    /// Main function for the estimation of how often an unlabeled pattern occurs in the big _graph
     /// @param id id of the estimation
     /// @param accumulatedMean accumulated estimation number for all estimations up to now
     /// @param estimationVector vector of estimations
     /// @param zeroIterations counter for the iterations which are zero
     /// @param runProps extended properties used in the run
     bool UnlabeledEmbedding(unsigned int id, long double& accumulatedMean, long double& accumulatedDeviation, std::vector<UInt64>& estimationVector, UInt64& zeroIterations, RunProps& runProps);
-    /// Main function for the estimation of how often a labelled pattern occurs in the big graph
+    /// Main function for the estimation of how often a labelled pattern occurs in the big _graph
     /// @param id id of the estimation
     /// @param accumulatedEstimation accumulated estimation number for all estimations up to now
     /// @param estimationVector vector of estimations
@@ -284,7 +284,7 @@ inline LABEL_TYPE Hops::PatternPreprocessing(const DGraphStruct & spanTree, int 
             }
 
         }
-        //Generate the rooted pattern from the pattern graph
+        //Generate the rooted pattern from the pattern _graph
         this->rootedPattern = RootedPattern(this->spanningTree, PatternRootNode, this->runParameters.labelType);
 
         if (this->currentPattern->get_type() != GraphType::TREE) {
@@ -349,7 +349,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
     std::vector<UInt64> estimations;
     std::vector<long double> snapShotEstimation;
 
-    //Preprocess the graph information, i.e. precompute the possible combination values by considering the max degree in the graph
+    //Preprocess the _graph information, i.e. precompute the possible combination values by considering the max degree in the _graph
     if (this->currentGraph != &graphs[graphId]) {
         this->currentGraph = &graphs[graphId];
         this->currentGraphMaxDegree = this->currentGraph->maxDegree;
@@ -367,7 +367,7 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
 
     }
     this->spanningTreeRootNode = this->runParameters.spanningTreeRootNode;
-    //Preprocess the pattern graph
+    //Preprocess the pattern _graph
     LABEL_TYPE labelType = this->PatternPreprocessing(this->runParameters.spanningTree, this->runParameters.seed);
 
     //Set the run properties
@@ -393,13 +393,13 @@ inline void Hops::Run(size_t graphId, GraphStruct& pattern, RunParameters rParam
     {
         this->runParameters.iteration_per_node = {0};
         snapShotEstimation.resize(this->runParameters.runtime.size());
-        //Run the estimation for random nodes in the graph
+        //Run the estimation for random nodes in the _graph
         RandomRun(accumulatedMean, accumulatedStd, nodeMean, nodeStd, OverallIterations, OverallZeroIterations,
                   accumulatedApproximatedGED, approximatedGED, estimations, snapShotEstimation, runProps, Id);
     }
     else {
         snapShotEstimation.resize(this->runParameters.iteration_per_node.size());
-        //Run the estimation for each node in the graph
+        //Run the estimation for each node in the _graph
         FastRun(accumulatedMean, accumulatedStd, nodeMean, nodeStd, OverallIterations, OverallZeroIterations,
                 accumulatedApproximatedGED, approximatedGED, estimations, snapShotEstimation, runProps, Id);
     }
@@ -450,7 +450,7 @@ void Hops::FastRun(long double accumulatedMean, long double accumulatedStd,
                         }
                         ++OverallIterations;
                         break;
-                        //TODO add graph edit distance algorithm
+                        //TODO add _graph edit distance algorithm
                     case HOPS_TYPE::GRAPH_EDIT_DISTANCE:
                         unsigned int approxGED = static_cast<int>(currentPattern->nodes() + currentPattern->edges());
                         runProps.labelType = LABEL_TYPE::UNLABELED;
@@ -602,7 +602,7 @@ void Hops::RandomRun(long double accumulatedMean, long double accumulatedStd,
                     }
                     ++OverallIterations;
                     break;
-                    //TODO add graph edit distance algorithm
+                    //TODO add _graph edit distance algorithm
                 case HOPS_TYPE::GRAPH_EDIT_DISTANCE:
                     unsigned int approxGED = static_cast<int>(currentPattern->nodes() + currentPattern->edges());
                     runProps.labelType = LABEL_TYPE::UNLABELED;
@@ -840,7 +840,7 @@ inline void Hops::InitEstimation(unsigned int& id, Hops::RunProps &runProps, con
     }
     ++id;
     if (random) {
-        //Determine the initial graph image of the pattern root node
+        //Determine the initial _graph image of the pattern root node
         NodeId rand = std::uniform_int_distribution<NodeId>(0, (NodeId) PatternRootImages.size() - 1)(runProps.gen);
         //Assign Initial Image
         runProps.currentRootNode = PatternRootImages[rand];
@@ -958,7 +958,7 @@ inline bool Hops::LabeledEmbeddings(unsigned int id, long double& accumulatedMea
     unsigned int PossibleNeighborsSize, SourceSize, TargetSize;
     UInt64 estimation = 0;
     bool rootNode = true;
-    //Iterate over all nodes in the pattern graph
+    //Iterate over all nodes in the pattern _graph
     for (int i = 0; i < this->rootedPattern.BFSOrder.size(); ++i) {
         PatternParentNode = this->rootedPattern.BFSOrder[i].first;
         GraphImageOfPatternParentNode = runProps.treeGraphMap[this->rootedPattern.GetBFSOrderIndexByNodeId(PatternParentNode)];
@@ -1004,7 +1004,7 @@ inline bool Hops::LabeledEmbeddings(unsigned int id, long double& accumulatedMea
             return false;
         }
 
-        //Check if all graph edges are valid
+        //Check if all _graph edges are valid
         if(!Hops::CheckValidGraphEmbedding(this->rootedPattern.BFSOrder[i].second, runProps)){
             if (!this->runParameters.single_number) {
                 estimationVector.push_back(std::numeric_limits<INDEX>::max());
@@ -1032,7 +1032,7 @@ inline bool Hops::LabeledGraphEditDistance(unsigned int id, unsigned int &curren
     auto Error = static_cast<unsigned int>(this->currentPattern->nodes() + this->currentPattern->edges());
     unsigned int embeddedNodes = 1;
     unsigned int embeddedEdges = 0;
-    //Iterate over all nodes in the pattern graph
+    //Iterate over all nodes in the pattern _graph
     for (unsigned int i = 0; i < this->rootedPattern.BFSOrder.size(); ++i) {
         PatternParentNode = this->rootedPattern.BFSOrder[i].first;
         GraphImageOfPatternParentNode = runProps.treeGraphMap[this->rootedPattern.GetBFSOrderIndexByNodeId(PatternParentNode)];
@@ -1058,7 +1058,7 @@ inline bool Hops::LabeledGraphEditDistance(unsigned int id, unsigned int &curren
             }
         }
 
-        //Check if all graph edges are valid
+        //Check if all _graph edges are valid
         if(!Hops::CheckValidGraphEmbedding(this->rootedPattern.BFSOrder[i].second, runProps)){
             Error -= (embeddedNodes + embeddedEdges);
             currentEditDistance = std::min(currentEditDistance, Error);
@@ -1173,7 +1173,7 @@ inline bool Hops::FindEmbedding(unsigned int id, unsigned int sourceSize, unsign
 
 inline bool Hops::CheckValidGraphEmbedding(const Nodes &nodes, const RunProps& runProps) const {
     NodeId sourceId, targetId;
-    //Check if all graph edges are valid
+    //Check if all _graph edges are valid
     if (!this->currentPatternIsTree) {
         for (NodeId nodeId: nodes) {
             for (auto &[source, target]: this->nonTreeEdges[this->rootedPattern.GetBFSOrderIndexByNodeId(nodeId)]) {
@@ -1206,7 +1206,7 @@ inline bool Hops::CheckValidGraphEmbedding(const Nodes &nodes, const RunProps& r
 
 inline bool Hops::CheckValidGraphEmbedding(const Nodes &nodes, unsigned int &embeddedEdges, const Hops::RunProps &runProps) const {
     NodeId sourceId, targetId;
-    //Check if all graph edges are valid
+    //Check if all _graph edges are valid
     if (!this->currentPatternIsTree)
     {
         int EdgeError = 0;

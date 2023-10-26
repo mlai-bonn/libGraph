@@ -29,13 +29,14 @@
 #include "Closures/GraphClosures.h"
 
 #include "Algorithms/GeodesicCore/CoreGrowAlgorithm.h"
-#include "Algorithms/GeodesicCore/CoreAlgorithm.h"
+#include "Algorithms/GeodesicCore/CoreRandomAlgorithm.h"
 #include "Algorithms/GraphMetricApproximation/EvaluationGraphMetricApproximation.h"
 #include "Algorithms/GraphMetricApproximation/Layering.h"
 #include "Algorithms/Graph/GraphAlgorithms.h"
 #include "Algorithms/Graph/SpanningTrees.h"
 #include "Algorithms/Graph/OuterplanarSubgraph.h"
 #include "Algorithms/Graph/OuterplanarSubgraphDFS.h"
+//#include "Algorithms/Graph/OuterplanarSubgraphMitchell.h"
 
 
 #endif //TESTGRAPHLIB_LIBGRAPH_H

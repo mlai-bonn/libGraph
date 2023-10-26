@@ -5,7 +5,7 @@
 #ifndef GOOGLE_TESTS_GRAPHALGORITHMSTESTS_H
 #define GOOGLE_TESTS_GRAPHALGORITHMSTESTS_H
 #include <gtest/gtest.h>
-#include "../include/libGraph.h"
+#include "libGraph.h"
 
 TEST(SpanningSubgraphsTestSuite, ExampleBFSTreeUnconnected){
     GraphStruct graph = GraphStruct();

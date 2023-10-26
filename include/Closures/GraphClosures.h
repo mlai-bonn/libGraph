@@ -14,18 +14,41 @@
 #include <unordered_set>
 #include "BaseOperator.h"
 
-typedef void (*ClosureFunction)(GraphStruct&, ClosureParameters&);
+enum class EGraphClosureType {
+    EXACT_GEODESIC,
+    APPROXIMATION_PRECLOSURE,
+    APPROXIMATION_OUTERPLANAR,
+    APPROXIMATION_TREE,
+    APPROXIMATION_LAYERING,
+};
 
 /**
- * @brief Class for computing the closure of a graph
+ * @brief Parameters for the closure computation on graphs
+ * @details The parameters are used to define the closure computation
+ * @see ClosureParameters
+ * @param closureType defines the closure function
+ * @param number_of_substructures defines the number of substructures used for the approximation
+ * @param relative_threshold defines the relative threshold for the approximation
  */
-class GraphClosureSP : public BaseOperator<GraphStruct> {
+class GraphClosureParameters : public ClosureParameters {
+
+public:
+    GraphClosureParameters() = default;
+    EGraphClosureType closureType = EGraphClosureType::EXACT_GEODESIC;
+    int number_of_substructures = 1;
+    double relative_threshold = 0.0;
+};
+
+/**
+ * @brief Class for computing the closure of a _graph
+ */
+class GraphClosure : public BaseOperator<GraphStruct> {
 public:
     /**
      * @brief Default constructor
-     * @param graph Input graph
+     * @param graph Input _graph
      */
-    explicit GraphClosureSP(GraphStruct& graph) : _graph(graph){
+    explicit GraphClosure(GraphStruct& graph) : _graph(graph){
         Id = 0;
         _graph_distances = std::vector<int>(graph.nodes(), -2);
         _graph_containment_list = std::vector<int>(graph.nodes(), 0);
@@ -34,38 +57,38 @@ public:
     };
 
     /**
-     * @brief Computes the closure of the input set
+     * @brief Computes the closure of the input set, the closure function is determined in the closure parameters
      * @param closureParameters defines all necessary parameters for the closure computation
      */
     void closure(ClosureParameters& closureParameters) override;
+    void exact_geodesic_closure(GraphClosureParameters& closureParameters);
 
     /**
      * @brief Computes the closure of the input set
      * @param outerplanarGraphData
      * @param closureParameters
      */
-    void outerplanar_closure(ClosureParameters &closureParameters);
+    void outerplanar_closure(GraphClosureParameters &closureParameters);
 
 
 private:
     /**
-     * @brief Forward search through the graph
-     * @param graph the graph
+     * @brief Forward search through the _graph
+     * @param graph the _graph
      * @param closureParameters defines all necessary parameters for the closure computation
      */
-    void bfs_forward(std::set<NodeId>& target_set, NodeId bfs_start, std::deque<NodeId> &bfsQueue, int threshold);
+    void bfs_forward(GraphClosureParameters& closureParameters, NodeId bfs_start, std::deque<NodeId> &bfsQueue);
     /**
      * @brief Backward search
-     * @param target_set
      * @param closureParameters
      * @param bfsQueue
      * @param bfsElements
      * @param generatedElements
      */
-    void bfs_backward(std::set<NodeId>& target_set, ClosureParameters &closureParameters,
+    void bfs_backward(GraphClosureParameters &closureParameters,
                       std::deque<NodeId> &bfsQueue, std::deque<NodeId>& bfsElements, std::unordered_set<NodeId>& generatedElements);
 
-    void set_break_condition(bool &break_condition, std::deque<NodeId> &newElements, ClosureParameters &closureParameters);
+    void set_break_condition(bool &break_condition, std::deque<NodeId> &newElements, GraphClosureParameters &closureParameters);
 
     static void get_generators(OuterplanarComponent& outerplanarComponent, std::set<NodeId> &input_set,
                         std::set<NodeId> &generator_set);
@@ -78,12 +101,37 @@ private:
     std::vector<int> _graph_bfs_list;
     GraphStruct& _graph;
     std::chrono::time_point<std::chrono::system_clock> time;
-
     int _iterations = 0;
 };
 
+inline void GraphClosure::closure(ClosureParameters& closureParameters) {
+    // check if closureParameters can be casted to GraphClosureParameters
+    auto* graphClosureParameters = (GraphClosureParameters*)(&closureParameters);
+    if (graphClosureParameters != nullptr){
+        switch (graphClosureParameters->closureType) {
+            case EGraphClosureType::EXACT_GEODESIC:
+                exact_geodesic_closure(*graphClosureParameters);
+                break;
+            case EGraphClosureType::APPROXIMATION_PRECLOSURE:
+                graphClosureParameters->onlyPreClosure = true;
+                exact_geodesic_closure(*graphClosureParameters);
+                break;
+            case EGraphClosureType::APPROXIMATION_OUTERPLANAR:
+                break;
+            case EGraphClosureType::APPROXIMATION_TREE:
+                break;
+            case EGraphClosureType::APPROXIMATION_LAYERING:
+                break;
+        }
+    }
+    else{
+        // throw an error message that one should use GraphClosureParameters instead of ClosureParameters
 
-inline void GraphClosureSP::closure(ClosureParameters& closureParameters) {
+
+    }
+}
+
+inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closureParameters) {
     // Check validity of input set
     if (closureParameters.input_set.empty()) {
         return;
@@ -93,6 +141,11 @@ inline void GraphClosureSP::closure(ClosureParameters& closureParameters) {
     if (dynamic_cast<OuterplanarGraphData *>(&_graph) != nullptr) {
         outerplanar_closure(closureParameters);
         return;
+    }
+
+    // If the _graph type is tree or outerplanar only preclosure is needed
+    if (_graph.get_type() == GraphType::TREE || _graph.get_type() == GraphType::OUTERPLANAR) {
+        closureParameters.onlyPreClosure = true;
     }
 
     //Initialize variables
@@ -158,11 +211,11 @@ inline void GraphClosureSP::closure(ClosureParameters& closureParameters) {
 //                        ++iterations;
 //                    }
 //                } else {
-        bfs_forward(closureParameters.closed_set, bfsStart, bfsQueue, closureParameters.threshold);
-        bfs_backward(closureParameters.closed_set, closureParameters, bfsQueue, newElements, generatedElements);
+        bfs_forward(closureParameters, bfsStart, bfsQueue);
+        bfs_backward(closureParameters, bfsQueue, newElements, generatedElements);
         ++_iterations;
 //}
-        // if the graph is a tree and the threshold is infinite one bfs is enough to find the closure
+        // if the _graph is a tree and the threshold is infinite one bfs is enough to find the closure
         if (_graph.get_type() == GraphType::TREE && closureParameters.threshold == std::numeric_limits<int>::max()) {
             break;
         }
@@ -170,9 +223,9 @@ inline void GraphClosureSP::closure(ClosureParameters& closureParameters) {
     }
 }
 
-inline void GraphClosureSP::bfs_forward(std::set<NodeId>& target_set, NodeId bfs_start, std::deque<NodeId> &bfsQueue, int threshold){
+inline void GraphClosure::bfs_forward(GraphClosureParameters& closureParameters, NodeId bfs_start, std::deque<NodeId> &bfsQueue){
 
-    //Forward Search through graph O(m)
+    //Forward Search through _graph O(m)
     //all elements in closed set
     ++Id;
     if (Id == 0){
@@ -180,7 +233,7 @@ inline void GraphClosureSP::bfs_forward(std::set<NodeId>& target_set, NodeId bfs
         std::fill(_graph_bfs_list.begin(), _graph_bfs_list.end(), 0);
         ++Id;
     }
-    for (NodeId elem : target_set) {
+    for (NodeId elem : closureParameters.closed_set) {
         _graph_containment_list[elem] = Id;
     }
     _graph_distances[bfs_start] = 0;
@@ -194,11 +247,11 @@ inline void GraphClosureSP::bfs_forward(std::set<NodeId>& target_set, NodeId bfs
         NodeId currentNodeId = bfsQueue.back();
         bfsQueue.pop_back();
         int currentDistance = _graph_distances[currentNodeId];
-        if ((visitedSize == target_set.size() && _graph_distances[currentNodeId] > lastDistance)) {
+        if ((visitedSize == closureParameters.closed_set.size() && _graph_distances[currentNodeId] > lastDistance)) {
             break;
         }
         // Use threshold to stop search this corresponds to considering only shortest paths of length <= threshold
-        if (currentDistance + 1 > threshold){
+        if (currentDistance + 1 > closureParameters.threshold){
             break;
         }
         for (auto neighborId : _graph.get_neighbors(currentNodeId)) {
@@ -217,14 +270,14 @@ inline void GraphClosureSP::bfs_forward(std::set<NodeId>& target_set, NodeId bfs
                 _graph_predecessors[neighborId].push_back(currentNodeId);
             }
         }
-        if (visitedSize == target_set.size()) {
+        if (visitedSize == closureParameters.closed_set.size()) {
             lastDistance = currentDistance;
         }
     }
 }
 
-inline void GraphClosureSP::bfs_backward(std::set<NodeId>& target_set, ClosureParameters &closureParameters,
-                  std::deque<NodeId> &bfsQueue, std::deque<NodeId>& bfsElements, std::unordered_set<NodeId>& generatedElements) {
+inline void GraphClosure::bfs_backward(GraphClosureParameters &closureParameters,
+                                       std::deque<NodeId> &bfsQueue, std::deque<NodeId>& bfsElements, std::unordered_set<NodeId>& generatedElements) {
     //Backward search
     ++Id;
     if (Id == 0){
@@ -232,14 +285,14 @@ inline void GraphClosureSP::bfs_backward(std::set<NodeId>& target_set, ClosurePa
         ++Id;
     }
     bfsQueue.clear();
-//        if (graph.graphType == GraphType::OUTERPLANAR){
+//        if (_graph.graphType == GraphType::OUTERPLANAR){
 //            for (NodeId elem: closureParameters.input_set) {
 //                _graph_containment_list[elem] = _Id;
 //                bfsQueue.push_back(elem);
 //            }
 //        }
 //        else {
-    for (NodeId elem: target_set) {
+    for (NodeId elem: closureParameters.closed_set) {
         _graph_containment_list[elem] = Id;
         bfsQueue.push_back(elem);
     }
@@ -255,8 +308,8 @@ inline void GraphClosureSP::bfs_backward(std::set<NodeId>& target_set, ClosurePa
                 closureParameters.added_elements.insert(NeighborNodeId);
                 bfsQueue.push_back(NeighborNodeId);
 
-                //New elements should be only considered in the case that the graph is of general type
-                if (_graph.get_type() != GraphType::TREE && _graph.get_type() != GraphType::OUTERPLANAR){
+                // Add the newly found elements to the bfs start nodes if not only the preclosure is computed
+                if (!closureParameters.onlyPreClosure){
                     bfsElements.push_back(NeighborNodeId);
                 }
             }
@@ -270,15 +323,15 @@ inline void GraphClosureSP::bfs_backward(std::set<NodeId>& target_set, ClosurePa
 
 }
 
-inline void GraphClosureSP::outerplanar_closure(ClosureParameters &closureParameters) {
+inline void GraphClosure::outerplanar_closure(GraphClosureParameters &closureParameters) {
     auto* graph = dynamic_cast<OuterplanarGraphData *>(&_graph);
     if (graph != nullptr) {
 
-        ClosureParameters bbTreeParameters;
+        GraphClosureParameters bbTreeParameters;
         for (const auto &elem: closureParameters.input_set) {
             graph->get_bb_tree_ids(elem, bbTreeParameters.input_set);
         }
-        GraphClosureSP closure_bb_tree = GraphClosureSP(graph->get_bbTree());
+        GraphClosure closure_bb_tree = GraphClosure(graph->get_bbTree());
         closure_bb_tree.closure(bbTreeParameters);
         int nodeId = 0;
         int componentId = 0;
@@ -310,12 +363,12 @@ inline void GraphClosureSP::outerplanar_closure(ClosureParameters &closureParame
 
         for (int i = 0; i < graph->Components.size(); ++i) {
             OuterplanarComponent &component = graph->Components[i];
-            ClosureParameters componentClosureParameters;
+            GraphClosureParameters componentGraphClosureParameters;
             if (componentInput[i].size() > 1) {
-                GraphClosureSP::get_generators(component, componentInput[i], componentClosureParameters.input_set);
-                GraphClosureSP componentClosure = GraphClosureSP(component.component);
-                componentClosure.closure(componentClosureParameters);
-                for (auto const &elem: componentClosureParameters.closed_set) {
+                GraphClosure::get_generators(component, componentInput[i], componentGraphClosureParameters.input_set);
+                GraphClosure componentClosure = GraphClosure(component.component);
+                componentClosure.closure(componentGraphClosureParameters);
+                for (auto const &elem: componentGraphClosureParameters.closed_set) {
                     closureParameters.closed_set.insert(component.nodeId(elem));
                 }
             }
@@ -323,7 +376,7 @@ inline void GraphClosureSP::outerplanar_closure(ClosureParameters &closureParame
     }
 }
 
-inline void GraphClosureSP::set_break_condition(bool &break_condition, std::deque<NodeId> &newElements, ClosureParameters &closureParameters)
+inline void GraphClosure::set_break_condition(bool &break_condition, std::deque<NodeId> &newElements, GraphClosureParameters &closureParameters)
 {
     break_condition = newElements.empty();
     if (closureParameters.iteration_number > 0){
@@ -336,8 +389,8 @@ inline void GraphClosureSP::set_break_condition(bool &break_condition, std::dequ
     }
 }
 
-void GraphClosureSP::get_generators(OuterplanarComponent& outerplanarComponent, std::set<NodeId> &input_set,
-                                    std::set<NodeId> &generator_set) {
+void GraphClosure::get_generators(OuterplanarComponent& outerplanarComponent, std::set<NodeId> &input_set,
+                                  std::set<NodeId> &generator_set) {
     // TODO get the three defining generators for each face
     generator_set.clear();
     std::vector<GraphStruct> faces;

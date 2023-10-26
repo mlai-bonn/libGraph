@@ -73,8 +73,8 @@ private:
 /// Default constructor
 inline DDataGraph::DDataGraph() = default;
 
-/// Read directed data graph from file TODO binary extension
-/// \param graphPath path of the graph file
+/// Read directed data _graph from file TODO binary extension
+/// \param graphPath path of the _graph file
 /// \param relabeling if true node labels start with 0 and end with size-1, otherwise use original labels TODO check this
 /// \param withLabels if considering node attributes
 /// \param labelPath path to node data
@@ -250,7 +250,7 @@ inline double DDataGraph::get_edge_data(const EDGE &edge, int index) const {
     return _edge_data.at(edge.first).at(edge.second)[index];
 }
 
-/// Get edge data for some edge in a directed data graph
+/// Get edge data for some edge in a directed data _graph
 /// \param edge
 /// \return
 inline const std::vector<double>& DDataGraph::get_edge_data(const EDGE & edge) const {
@@ -282,7 +282,7 @@ inline void DDataGraph::add_edge_data(const EDGE &edge, std::vector<double> &dat
     _edge_data[edge.first][edge.second] = data;
 }
 
-/// Add an data edge to a directed data graph
+/// Add an data edge to a directed data _graph
 /// \param source
 /// \param destination
 /// \param data
@@ -293,7 +293,7 @@ inline bool DDataGraph::add_edge(NodeId source, NodeId destination, std::vector<
 }
 
 
-/// Get the node data for some node in the directed data graph (by type)
+/// Get the node data for some node in the directed data _graph (by type)
 /// \param node
 /// \param type
 /// \return
@@ -301,7 +301,7 @@ inline double DDataGraph::get_node_data(NodeId node, const std::string &type) co
     return get_node_data(node, _node_data_names.at(type));
 }
 
-/// Get the node data for some node in the directed data graph (by index)
+/// Get the node data for some node in the directed data _graph (by index)
 /// \param node
 /// \param index
 /// \return
@@ -309,7 +309,7 @@ inline double DDataGraph::get_node_data(NodeId node, int index) const {
     return _node_data[node][index];
 }
 
-/// Get the node data for some node in the directed data graph (all data)
+/// Get the node data for some node in the directed data _graph (all data)
 /// \param node
 /// \return
 inline const std::vector<double> &DDataGraph::get_node_data(NodeId node) const {

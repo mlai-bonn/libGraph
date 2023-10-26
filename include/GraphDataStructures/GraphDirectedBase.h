@@ -49,7 +49,7 @@ struct DGraphStruct : public GraphStruct{
 };
 
 
-/// Construct a directed graph from an undirected graph
+/// Construct a directed _graph from an undirected _graph
 /// \param graph
 inline DGraphStruct::DGraphStruct(GraphStruct & graph) : GraphStruct(graph){
     for (INDEX i = 0; i < graph.nodes(); ++i) {
@@ -58,14 +58,14 @@ inline DGraphStruct::DGraphStruct(GraphStruct & graph) : GraphStruct(graph){
     }
 }
 
-/// Construct a directed graph by certain size
+/// Construct a directed _graph by certain size
 /// \param size
 inline DGraphStruct::DGraphStruct(INDEX size) : GraphStruct(size, Labels()){
     this->_in_degrees.resize(size, 0);
     this->_out_degrees.resize(size, 0);
 }
 
-/// Read directed graph from file
+/// Read directed _graph from file
 /// \param graphPath
 /// \param relabeling
 /// \param withLabels
@@ -78,7 +78,7 @@ inline INDEX DGraphStruct::out_degree(NodeId node) {
     return this->_out_degrees[node];
 }
 
-/// Constructor of directed graph with certain size and given labels
+/// Constructor of directed _graph with certain size and given labels
 /// \param size
 /// \param labels
 inline DGraphStruct::DGraphStruct(INDEX size, const Labels &labels) : GraphStruct(size, labels) {
@@ -86,7 +86,7 @@ inline DGraphStruct::DGraphStruct(INDEX size, const Labels &labels) : GraphStruc
     this->_out_degrees.resize(size, 0);
 }
 
-/// Ad an edge to a directed graph
+/// Ad an edge to a directed _graph
 /// \param source
 /// \param destination
 /// \return
@@ -109,7 +109,7 @@ inline bool DGraphStruct::add_edge(NodeId source, NodeId destination) {
     return false;
 }
 
-/// Check if edge in directed graph exists
+/// Check if edge in directed _graph exists
 /// \param source
 /// \param destination
 /// \return
@@ -117,7 +117,7 @@ inline bool DGraphStruct::edge(NodeId source, NodeId destination) const {
     return DGraphStruct::edge(source, destination, true);
 }
 
-/// Check if edge in directed graph exists
+/// Check if edge in directed _graph exists
 /// \param source
 /// \param destination
 /// \param directed
@@ -413,7 +413,7 @@ void DGraphStruct::Init(const std::string &name, int size, int edges, int nodeFe
                         const std::vector<std::string> &nodeFeatureNames,
                         const std::vector<std::string> &edgeFeatureNames) {
     GraphStruct::Init(name, size, edges, nodeFeatures, edgeFeatures, nodeFeatureNames, edgeFeatureNames);
-    //Create graph
+    //Create _graph
     this->_in_degrees.resize(_nodes);
     this->_out_degrees.resize(_nodes);
 }

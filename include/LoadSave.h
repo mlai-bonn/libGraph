@@ -107,7 +107,7 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
         edge_file.close();
     }
 
-    //read graph indicator data
+    //read _graph indicator data
     std::ifstream graph_indicator_file(path + dbName + "/" + dbName + "_graph_indicator.txt", std::ios_base::out);
 
     if (graph_indicator_file.is_open()){
@@ -117,7 +117,7 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
         graph_indicator_file.close();
     }
 
-    //read graph labels
+    //read _graph labels
     std::ifstream graph_label_file(path + dbName + "/" + dbName + "_graph_labels.txt", std::ios_base::out);
     if (graph_label_file.is_open()){
         while (std::getline(graph_label_file, str)){
@@ -170,7 +170,7 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
         }
     }
 
-    //Get all graph nodes
+    //Get all _graph nodes
     std::unordered_map<INDEX, std::pair<INDEX, INDEX>> idMap;
     INDEX nodeCounter = 0;
     INDEX graphNodeCounter = 0;
@@ -213,7 +213,7 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
         }
     }
 
-    //Get all graph edges
+    //Get all _graph edges
     INDEX edgeCounter = 0;
     for (auto edge : edges) {
         INDEX graphId = idMap[edge.first].first;
