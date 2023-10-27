@@ -28,7 +28,9 @@ public:
 
     std::set<NodeId> closed_set = std::set<NodeId>();
     std::set<NodeId> added_elements = std::set<NodeId>();
-    std::vector<std::set<NodeId>*> forbidden_elements;
+    const std::set<NodeId>* forbidden_elements = nullptr;
+
+
 
 
 

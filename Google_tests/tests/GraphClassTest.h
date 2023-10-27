@@ -96,6 +96,13 @@ TEST(GraphIteratorsTestSuite, ExampleIterateOverNodes){
 }
 
 TEST(GraphIteratorsTestSuite, ExampleEdgeIterator){
+    GraphStruct no_edges = GraphStruct(100, {});
+    int counter = 0;
+    // Iterate over edges
+    for (auto edge = no_edges.first_edge(); edge != no_edges.last_edge(); ++edge) {
+        ++counter;
+    }
+
     GraphStruct graph = GraphStruct(10, {});
 
     graph.add_edge(0, 1);
@@ -104,7 +111,7 @@ TEST(GraphIteratorsTestSuite, ExampleEdgeIterator){
 
 
 
-    int counter = 0;
+    counter = 0;
     std::vector<std::pair<NodeId, NodeId> > edges = {{0, 1}, {0, 2}, {8, 9}};
     GraphStruct::EdgeIterator edge = graph.first_edge();
     NodeId last_edge = graph.last_edge();
@@ -114,39 +121,96 @@ TEST(GraphIteratorsTestSuite, ExampleEdgeIterator){
     EXPECT_EQ(edges[1], *edge);
     ++edge;
     EXPECT_EQ(edges[2], *edge);
+    ++edge;
     for (auto edge = graph.first_edge(); edge != graph.last_edge(); ++edge){
         EXPECT_EQ(edges[counter], *edge);
         ++counter;
     }
 }
 
-TEST(GraphIteratorsTestSuite, ExampleNodeIterator){
-    GraphStruct graph = GraphStruct(10000, {});
-    std::mt19937_64 generator(0);
-    for (int i = 0; i < 10000; ++i) {
-        for (int j = 0; j < 5000; ++j) {
-            graph.add_edge(i, std::uniform_int_distribution<NodeId>(0, 9999)(generator));
-        }
-    }
+TEST(GraphIteratorsTestSuite, ExampleRuntimeIterator){
+    INDEX graph_size = 100000000;
+    GraphStruct graph = GraphStruct(graph_size, {});
 
     // iterator runtime for nodes
     auto start = std::chrono::high_resolution_clock::now();
-    int counter = 0;
+    std::vector<NodeId> nodes;
     for (auto node : graph){
-        ++counter;
+        nodes.emplace_back(node);
     }
-    auto iterator_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
-    std::cout << "Iterator time for nodes: " << iterator_time << std::endl;
-    EXPECT_EQ(counter, 10000);
+    auto iterator_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count();
+    std::cout << "Iterator time for nodes: " << ((double) iterator_time / 1e9) << std::endl;
+    EXPECT_EQ(nodes.size(), graph_size);
     start = std::chrono::high_resolution_clock::now();
-    counter = 0;
-    for(int i = 0; i < graph.nodes(); ++i){
-        ++counter;
+    nodes.clear();
+    for(NodeId i = 0; i < graph.nodes(); ++i){
+        nodes.emplace_back(i);
     }
-    auto for_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
-    std::cout << "For time for nodes: " << for_time << std::endl;
-    EXPECT_EQ(counter, 10000);
-    std::cout << "Iterator time for nodes is " << for_time / iterator_time << " times faster than for loop" << std::endl;
+    auto for_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count();
+    std::cout << "For time for nodes: " << ((double) for_time / 1e9) << std::endl;
+    EXPECT_EQ(nodes.size(), graph_size);
+    std::cout << "For loop is " << (double) iterator_time / (double) for_time << " times faster than the iterator" << std::endl;
+
+    std::mt19937_64 generator(0);
+    for (int i = 0; i < 1000; ++i) {
+        for (int j = 0; j < 100; ++j) {
+            graph.add_edge(i, std::uniform_int_distribution<NodeId>(0, graph_size - 1)(generator));
+        }
+    }
+    EXPECT_EQ(graph.edges(), 100000);
+
+    std::vector<std::pair<NodeId, NodeId>> edges;
+    start = std::chrono::high_resolution_clock::now();
+    for (NodeId i = 0; i < graph.nodes(); ++i) {
+        for (int j = 0; j < graph.degree(i); ++j) {
+            NodeId neighbor = graph[i][j];
+            edges.emplace_back(i, neighbor);
+        }
+    }
+    auto edge_for_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count();
+    std::cout << "Num Edges:" << edges.size() << std::endl;
+    EXPECT_EQ(graph.edges()*2, edges.size());
+
+    edges.clear();
+    start = std::chrono::high_resolution_clock::now();
+    for (auto i : graph) {
+        for (int j = 0; j < graph.degree(i); ++j) {
+            NodeId neighbor = graph[i][j];
+            edges.emplace_back(i, neighbor);
+        }
+    }
+    auto edge_node_iterator = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count();
+    std::cout << "Num Edges:" << edges.size() << std::endl;
+    EXPECT_EQ(graph.edges()*2, edges.size());
+
+    edges.clear();
+    start = std::chrono::high_resolution_clock::now();
+    for (NodeId i = 0; i < graph.nodes(); ++i) {
+        for (auto neighbor = graph.beginN(i); neighbor != graph.endN(i);++neighbor) {
+            NodeId n = *neighbor;
+            edges.emplace_back(i, n);
+        }
+    }
+    auto neighbor_iterator_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count();
+    std::cout << "Num Edges:" << edges.size() << std::endl;
+    EXPECT_EQ(graph.edges()*2, edges.size());
+
+    edges.clear();
+    start = std::chrono::high_resolution_clock::now();
+    for (auto edge = graph.first_edge(); edge != graph.last_edge(); ++edge) {
+        edges.emplace_back(edge.srcId, edge.dstId);
+    }
+    auto edge_iterator_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count();
+    std::cout << "Num Edges:" << edges.size() << std::endl;
+    EXPECT_EQ(graph.edges(), edges.size());
+
+    std::cout << "Iterating over all edges (for loop) is: " << (double) edge_for_time / (double) 1e9 << std::endl;
+    std::cout << "For time for iterating over all edges is: " << (double) edge_for_time / (double) 1e9 << std::endl;
+    std::cout << "For time for iterating over all edges using the neighbor iterator is: " << (double) neighbor_iterator_time / (double) 1e9 << std::endl;
+    std::cout << "For time for iterating over all edges using the edge iterator is: " << (double) edge_iterator_time / (double) 1e9 << std::endl;
+
+    // NeighborIterators
+
 
 }
 

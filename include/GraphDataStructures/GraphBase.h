@@ -156,20 +156,30 @@ public:
         // Prefix increment
         void operator++() {
             ++neighborIdx;
-            bool condition = neighborIdx >= _graph->degree(srcId) || _graph->neighbor(srcId, neighborIdx) < srcId;
+            bool condition = (neighborIdx >= _graph->degree(srcId) || _graph->neighbor(srcId, neighborIdx) > srcId);
             while(condition){
-                ++neighborIdx;
-                if (neighborIdx >= _graph->degree(srcId)){
                     ++srcId;
                     neighborIdx = 0;
+                if (srcId >= this->_graph->nodes()){
+                    return;
                 }
+                condition = (neighborIdx >= _graph->degree(srcId) || _graph->neighbor(srcId, neighborIdx) > srcId);
             }
             dstId = this->_graph->neighbor(srcId, neighborIdx);
         };
-        std::pair<NodeId, NodeId> operator*() const { return {srcId, dstId}; }
-        friend bool operator== (const EdgeIterator& a, std::pair<NodeId, INDEX> b) { return a.srcId == b.first && a.neighborIdx == b.second;};
-        friend bool operator!= (const EdgeIterator& a, std::pair<NodeId, INDEX> b) { return a.srcId != b.first || a.neighborIdx != b.second;};
-        friend bool operator!= (const EdgeIterator& a, NodeId b) { return a.srcId != b;};
+
+        std::pair<NodeId, NodeId> operator*() const {
+            return {dstId, srcId};
+        }
+        friend bool operator== (const EdgeIterator& a, std::pair<NodeId, INDEX> b) {
+            return a.srcId == b.first && a.neighborIdx == b.second;
+        };
+        friend bool operator!= (const EdgeIterator& a, std::pair<NodeId, INDEX> b) {
+            return a.srcId != b.first || a.neighborIdx != b.second;
+        };
+        friend bool operator!= (const EdgeIterator& a, NodeId b) {
+            return a.srcId != b;
+        };
 
 
         const GraphStruct* _graph{};
@@ -179,7 +189,24 @@ public:
 
     };
 
-    [[nodiscard]] EdgeIterator first_edge() const { if (edges() == 0){return EdgeIterator(this, 1, 0,0);} NodeId startNode = 0; while (this->degree(startNode) == 0){++startNode;} return EdgeIterator{this, startNode, this->_graph[0][0], 0}; }
+    [[nodiscard]] EdgeIterator first_edge() const {
+        if (edges() == 0){
+            return EdgeIterator(this, this->nodes(), 0,0);
+        }
+        NodeId startNode = 0;
+        INDEX neighborIdx = 0;
+        bool condition = neighborIdx >= this->degree(startNode) || this->neighbor(startNode, neighborIdx) > startNode;
+        while(condition){
+            ++startNode;
+            neighborIdx = 0;
+            if (startNode >= this->nodes()){
+                break;
+            }
+            condition = neighborIdx >= this->degree(startNode) || this->neighbor(startNode, neighborIdx) > startNode;
+        }
+        return EdgeIterator{this,startNode, this->_graph[startNode][neighborIdx],  0};
+    }
+
     [[nodiscard]] NodeId last_edge() const {
         return this->nodes();
     }
