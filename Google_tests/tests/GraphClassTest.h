@@ -141,6 +141,7 @@ TEST(GraphIteratorsTestSuite, ExampleRuntimeIterator){
     auto iterator_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count();
     std::cout << "Iterator time for nodes: " << ((double) iterator_time / 1e9) << std::endl;
     EXPECT_EQ(nodes.size(), graph_size);
+
     start = std::chrono::high_resolution_clock::now();
     nodes.clear();
     for(NodeId i = 0; i < graph.nodes(); ++i){
@@ -197,6 +198,18 @@ TEST(GraphIteratorsTestSuite, ExampleRuntimeIterator){
 
     edges.clear();
     start = std::chrono::high_resolution_clock::now();
+    for (auto node : graph) {
+        for (auto neighbor = graph.beginN(node); neighbor != graph.endN(node);++neighbor) {
+            NodeId n = *neighbor;
+            edges.emplace_back(node, n);
+        }
+    }
+    auto node_neighbor_iterator_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count();
+    std::cout << "Num Edges:" << edges.size() << std::endl;
+    EXPECT_EQ(graph.edges()*2, edges.size());
+
+    edges.clear();
+    start = std::chrono::high_resolution_clock::now();
     for (auto edge = graph.first_edge(); edge != graph.last_edge(); ++edge) {
         edges.emplace_back(edge.srcId, edge.dstId);
     }
@@ -204,14 +217,23 @@ TEST(GraphIteratorsTestSuite, ExampleRuntimeIterator){
     std::cout << "Num Edges:" << edges.size() << std::endl;
     EXPECT_EQ(graph.edges(), edges.size());
 
+    edges.clear();
+    start = std::chrono::high_resolution_clock::now();
+    for (auto edge = graph.first_edge_directed(); edge != graph.last_edge_directed(); ++edge) {
+        edges.emplace_back(edge.srcId, edge.dstId);
+    }
+    auto edge_iterator_directed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count();
+    std::cout << "Num Edges:" << edges.size() << std::endl;
+    EXPECT_EQ(graph.edges()*2, edges.size());
+
     std::cout << "Iterating over all edges (for loop) is: " << (double) edge_for_time / (double) 1e9 << std::endl;
-    std::cout << "For time for iterating over all edges is: " << (double) edge_for_time / (double) 1e9 << std::endl;
-    std::cout << "For time for iterating over all edges using the neighbor iterator is: " << (double) neighbor_iterator_time / (double) 1e9 << std::endl;
-    std::cout << "For time for iterating over all edges using the edge iterator is: " << (double) edge_iterator_time / (double) 1e9 << std::endl;
+    std::cout << "Iterating over all edges (node iterator) is: " << (double) edge_node_iterator / (double) 1e9 << std::endl;
+    std::cout << "Iterating over all edges (for loop + neighbor iterator): " << (double) neighbor_iterator_time / (double) 1e9 << std::endl;
+    std::cout << "Iterating over all edges (node iterator + neighbor iterator): " << (double) node_neighbor_iterator_time / (double) 1e9 << std::endl;
+    std::cout << "Iterating over all edges (undirected edge iterator): " << (double) edge_iterator_time / (double) 1e9 << std::endl;
+    std::cout << "Iterating over all edges (directed edge iterator): " << (double) edge_iterator_directed_time / (double) 1e9 << std::endl;
 
     // NeighborIterators
-
-
 }
 
 

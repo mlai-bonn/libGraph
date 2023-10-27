@@ -42,14 +42,64 @@ struct SaveParams{
 
 struct GraphStruct{
 public:
+    /**
+     * Default constructor
+     */
     GraphStruct()= default;
-    explicit GraphStruct(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "", const std::string& format = "", const std::string& search_name = "");
+    
+    /**
+     * Constructor for creating a graph with the given size and labels
+     * @param size number of nodes
+     * @param labels labels of the nodes
+     */
     GraphStruct(NodeId size, const Labels& labels);
-
+    
+    /**
+     * Constructor for loading a graph from a file
+     * @param graphPath path to the graph file
+     * @param relabeling if true the nodes will be relabeled from 0 to n-1
+     * @param withLabels if true the graph will be loaded with labels
+     * @param labelPath path to the label file
+     * @param format format of the graph file
+     * @param search_name if not empty only graphs with the given name will be loaded
+     */
+    explicit GraphStruct(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "", const std::string& format = "", const std::string& search_name = "");
+    
+    /**
+     * Function for loading a graph from a file
+     * @param graphPath path to the graph file
+     * @param relabeling if true the nodes will be relabeled from 0 to n-1
+     * @param withLabels if true the graph will be loaded with labels
+     * @param labelPath path to the label file
+     * @param format format of the graph file
+     * @param search_name if not empty only graphs with the given name will be loaded
+     */
     void Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format = "", const std::string& search_name = "");
+    
+    /**
+     * Function for saving the graph to a file
+     * @param saveParams parameters for saving the graph
+     */
     virtual void Save(const SaveParams& saveParams);
 
+    /**
+     * Function for initializing the graph
+     * @param name 
+     * @param size 
+     * @param edges 
+     * @param nodeFeatures 
+     * @param edgeFeatures 
+     * @param nodeFeatureNames 
+     * @param edgeFeatureNames 
+     */
     virtual void Init(const std::string& name, int size, int edges, int nodeFeatures, int edgeFeatures, const std::vector<std::string>& nodeFeatureNames, const std::vector<std::string>& edgeFeatureNames);
+
+    /**
+     * Reset the graph to an empty graph with the given size
+     * @param size 
+     */
+    void Reset(INDEX size);
+    
     virtual void ReadNodeFeatures(double value, int pos, const std::string& nodeFeatureName);
     virtual bool ReadEdges(INDEX Src, INDEX Dst, std::vector<double>& edgeData);
 
@@ -57,21 +107,33 @@ public:
     virtual void WriteNodeFeatures(std::ofstream& Out,const SaveParams& saveParams);
     virtual void WriteEdges(std::ofstream& Out,const SaveParams& saveParams);
 
+    
+    // Setters and Getters
     void SetName(const std::string& name);
     std::string GetName() const{return _name;};
+    
     void SetNumLabels(int numLabels){_numLabels = numLabels;};
     int GetNumLabels() const{return _numLabels;};
+    
+    void SetPath(const std::string& path){_path = path;};
     std::string GetPath(){return _path;};
+
+    void SetType(GraphType type);
+    GraphType GetType();
+
+
 
     void write_graph_nodes(const std::string& graphPath, const std::string& fileName, const Nodes& nodes);
     void CreateGraph(NodeId size, const Labels& labels);
     void UpdateGraphLabels(LABEL_TYPE label);
-
+    
     const std::vector<Nodes>& graph() const {return _graph;};
+
     INDEX nodes() const;
+
     INDEX edges() const;
-    void set_graph(const std::vector<Nodes>& nodes);
-    void set_edges(INDEX edges){_edges=edges;};
+    void set_edge_num(INDEX edges){ _edges=edges;};
+
     INDEX degree(NodeId nodeId) const;
     INDEX degree(NodeId nodeId, Label label);
     const std::vector<INDEX>& degreeByLabel(NodeId nodeId);
@@ -214,20 +276,31 @@ public:
     struct EdgeIteratorDirected{
         // Prefix increment
         void operator++() {
-            if (neighborIdx < _graph->degree(srcId) - 1)
-            {
-                ++neighborIdx;
-            }
-            else
-            {
-                ++srcId; while(srcId != this->_graph->nodes() && this->_graph->degree(srcId) == 0){++srcId;} neighborIdx = 0;
+            ++neighborIdx;
+            bool condition = neighborIdx >= _graph->degree(srcId);
+            while(condition){
+                ++srcId;
+                neighborIdx = 0;
+                if (srcId >= this->_graph->nodes()){
+                    return;
+                }
+                condition = neighborIdx >= _graph->degree(srcId);
             }
             dstId = this->_graph->neighbor(srcId, neighborIdx);
         };
-        const std::pair<NodeId, NodeId> operator*() const { return {srcId, dstId}; }
-        friend bool operator== (const EdgeIteratorDirected& a, std::pair<NodeId, INDEX> b) { return a.srcId == b.first && a.neighborIdx == b.second;};
-        friend bool operator!= (const EdgeIteratorDirected& a, std::pair<NodeId, INDEX> b) { return a.srcId != b.first || a.neighborIdx != b.second;};
-        friend bool operator!= (const EdgeIteratorDirected& a, NodeId b) { return a.srcId != b;};
+
+        std::pair<NodeId, NodeId> operator*() const {
+            return {dstId, srcId};
+        }
+        friend bool operator== (const EdgeIteratorDirected& a, std::pair<NodeId, INDEX> b) {
+            return a.srcId == b.first && a.neighborIdx == b.second;
+        };
+        friend bool operator!= (const EdgeIteratorDirected& a, std::pair<NodeId, INDEX> b) {
+            return a.srcId != b.first || a.neighborIdx != b.second;
+        };
+        friend bool operator!= (const EdgeIteratorDirected& a, NodeId b) {
+            return a.srcId != b;
+        };
 
 
         const GraphStruct* _graph{};
@@ -237,11 +310,27 @@ public:
 
     };
 
-    [[nodiscard]] EdgeIteratorDirected first_edge_directed() const { if (edges() == 0){return EdgeIteratorDirected(this, 1, 0,0);} NodeId startNode = 0; while (this->degree(startNode) == 0){++startNode;} return EdgeIteratorDirected{this, startNode, this->_graph[0][0], 0}; }
+    [[nodiscard]] EdgeIteratorDirected first_edge_directed() const {
+        if (edges() == 0){
+            return EdgeIteratorDirected(this, this->nodes(), 0,0);
+        }
+        NodeId startNode = 0;
+        INDEX neighborIdx = 0;
+        bool condition = neighborIdx >= this->degree(startNode);
+        while(condition){
+            ++startNode;
+            neighborIdx = 0;
+            if (startNode >= this->nodes()){
+                break;
+            }
+            condition = neighborIdx >= this->degree(startNode);
+        }
+        return EdgeIteratorDirected{this,startNode, this->_graph[startNode][neighborIdx],  0};
+    }
+
     [[nodiscard]] NodeId last_edge_directed() const {
         return this->nodes();
     }
-
 
     struct NeighborIterator{
         // Prefix increment
@@ -372,13 +461,15 @@ protected:
     std::vector<std::vector<Nodes>> labeledVectorGraph{};
     std::vector<std::unordered_map<Label, Nodes>> labeledMapGraph{};
 
+    void set_graph(const std::vector<Nodes>& nodes);
+
+
 public :
     [[deprecated]]
     void Save_0(const std::string & graphPath = "", GraphFormat Format = GraphFormat::BINARY, bool Labeled = false, bool OnlyGraph = true, const std::string& Name = "") const;
 
 
-    void set_type(GraphType type);
-    GraphType get_type();
+
 };
 
 
@@ -477,7 +568,7 @@ void GraphData<T>::LoadBGF(std::vector<T> &graphs, const std::string &graphPath,
                     ++added_edges;
                 }
             }
-            graph.set_edges(added_edges);
+            graph.set_edge_num(added_edges);
             graph.InitLabels();
         }
     }
@@ -778,7 +869,7 @@ void GraphData<T>::Load(const std::string &graphPath) {
                             ++added_edges;
                         }
                     }
-                    graph.set_edges(added_edges);
+                    graph.set_edge_num(added_edges);
                     graph.InitLabels();
                 }
             }
@@ -2201,7 +2292,7 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
 
     this->sortNeighborIds();
     if (CheckTree()){
-        this->set_type(GraphType::TREE);
+        this->SetType(GraphType::TREE);
     }
 
 }
@@ -2652,10 +2743,10 @@ void GraphStruct::ReorderGraph(GraphStruct &graph, const Nodes &nodeOrder) {
 
 }
 
-void GraphStruct::set_type(GraphType type) {
+void GraphStruct::SetType(GraphType type) {
     this->graphType = type;
 }
-GraphType GraphStruct::get_type() {
+GraphType GraphStruct::GetType() {
     return this->graphType;
 }
 
@@ -2671,6 +2762,18 @@ bool GraphStruct::remove_edge(NodeId source, NodeId destination) {
         return true;
     }
     return false;
+}
+
+void GraphStruct::Reset(INDEX size) {
+    this->_graph.resize(size);
+    this->_degrees.resize(size);
+    this->_nodes = size;
+    this->_edges = 0;
+
+    for (int i = 0; i < this->nodes(); ++i) {
+        this->_graph[i].clear();
+        this->_degrees[i] = 0;
+    }
 }
 
 

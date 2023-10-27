@@ -14,7 +14,7 @@
  * @param tree The resulting spanning tree.
  * @param root_node_id The root node of the spanning tree.
  * @param deterministic If true, the algorithm will use the neighbors in the order they are stored in the _graph, otherwise it will use a random order. The random order is a little bit slower. If the order does not play a role deterministic = true should be used.
- * @param seed The seed for the random number generator. Only used if deterministic = false.
+ * @param seed The _seed for the random number generator. Only used if deterministic = false.
  * @return The number of components in the _graph.
  */
 static int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId root_node_id, std::vector<bool>& visited, std::vector<INDEX>& distances, bool deterministic = true, int seed = 0);
@@ -25,7 +25,7 @@ static int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
  * @param tree The resulting spanning tree.
  * @param root_node_id The root node of the spanning tree.
  * @param deterministic If true, the algorithm will use the neighbors in the order they are stored in the _graph, otherwise it will use a random order. The random order is a little bit slower. If the order does not play a role deterministic = true should be used.
- * @param seed The seed for the random number generator. Only used if deterministic = false.
+ * @param seed The _seed for the random number generator. Only used if deterministic = false.
   * @return The number of components in the _graph.
  */
 static int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId root_node_id, std::vector<bool>& visited, std::vector<INDEX>& distances, bool deterministic = true, int seed = 0);
@@ -131,7 +131,7 @@ inline int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
         }
     }
     if (components == 1) {
-        tree.set_type(GraphType::TREE);
+        tree.SetType(GraphType::TREE);
     }
     return components;
 }
@@ -232,7 +232,7 @@ inline int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
         }
     }
     if (components == 1) {
-        tree.set_type(GraphType::TREE);
+        tree.SetType(GraphType::TREE);
     }
     return components;
 }

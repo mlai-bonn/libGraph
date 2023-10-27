@@ -13,7 +13,7 @@
  * The algorithm is a probabilistic algorithm that finds the geodesic core of a graph, in each run it chooses some random nodes and then calculates the closure of the set of nodes. The algorithm stops either if the intersection of the closed sets computed so far gets stable (core iterations = -1) or if the number of iterations is reached (core iterations = n).
  * generator_size: size of the random input set
  * core_iterations: number of iterations of the algorithm, if -1 the algorithm stops if the intersection of the closed sets computed so far gets stable
- * seed: seed for the random number generator
+ * _seed: _seed for the random number generator
  * _print: if true prints the growth steps and the closure size
  * save: if true saves the core nodes vector
  * output_path: path to the output file

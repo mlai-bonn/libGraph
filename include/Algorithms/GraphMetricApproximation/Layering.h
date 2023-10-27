@@ -147,7 +147,7 @@ LayeringPartition::LayeringPartition(const GraphStruct &graph, NodeId root_node_
     this->partitions[0].clusters.back().emplace_back(root_node_id);
 }
 
-/* Creates a layering tree of the _graph with the given root node id based on a seed value if the root node is not given a random one is chosen
+/* Creates a layering tree of the _graph with the given root node id based on a _seed value if the root node is not given a random one is chosen
  *
  */
 
@@ -186,7 +186,7 @@ LayeringTree::LayeringTree(GraphStruct &graph, int seed, NodeId root_node_id) : 
             }
         }
     }
-    this->tree.set_type(GraphType::TREE);
+    this->tree.SetType(GraphType::TREE);
 }
 
 #endif //TESTGRAPHLIB_LAYERING_H

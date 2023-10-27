@@ -45,7 +45,7 @@ void OuterplanarGraphData::set() {
     if (nodeToComponents.empty()){
         this->init_outerplanar();
     }
-    bbTree.tree.set_type(GraphType::TREE);
+    bbTree.tree.SetType(GraphType::TREE);
     std::vector<std::vector<NodeId>> components;
     GetBiconnectedComponents(static_cast<GraphStruct>(*this), components);
     //StaticFunctions::printComponents(components);
@@ -54,7 +54,7 @@ void OuterplanarGraphData::set() {
         if (currentComponent.size() > 2) {
             Components.emplace_back();
             Components.back().component = SubGraph(static_cast<GraphStruct>(*this), currentComponent);
-            Components.back().component.set_type(GraphType::OUTERPLANAR);
+            Components.back().component.SetType(GraphType::OUTERPLANAR);
             Components.back().getInnerFaces();
         }
         for (int j = 0; j < currentComponent.size(); ++j) {

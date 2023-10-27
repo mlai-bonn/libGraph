@@ -66,7 +66,7 @@ public:
 private:
     /// Preprocess the pattern, mainly create rooted pattern from some pattern spanning tree and returns the label type for the run
     /// @param spanTree id of the _graph used for estimation
-    /// @param pattern_seed seed for some randomness of the spanning tree of the pattern
+    /// @param pattern_seed _seed for some randomness of the spanning tree of the pattern
     LABEL_TYPE PatternPreprocessing(const DGraphStruct & spanTree, int pattern_seed = 0);
     void InitEstimation(unsigned int& id, RunProps& runProps, const std::vector<NodeId>& PatternRootImages, bool random = true);
     /// Main function for the estimation of how often an unlabeled pattern occurs in the big _graph
@@ -287,7 +287,7 @@ inline LABEL_TYPE Hops::PatternPreprocessing(const DGraphStruct & spanTree, int 
         //Generate the rooted pattern from the pattern _graph
         this->rootedPattern = RootedPattern(this->spanningTree, PatternRootNode, this->runParameters.labelType);
 
-        if (this->currentPattern->get_type() != GraphType::TREE) {
+        if (this->currentPattern->GetType() != GraphType::TREE) {
             this->nonTreeEdges = std::vector<EDGES>(this->currentPattern->nodes(), EDGES());
             for (NodeId nodeId = 0; nodeId < this->currentPattern->nodes(); ++nodeId) {
                 NodeId Source = nodeId;
@@ -429,7 +429,7 @@ void Hops::FastRun(long double accumulatedMean, long double accumulatedStd,
             nodeStd = 0;
             //reset iteration to zero for the
             runProps.current_iteration_step = 0;
-            //set the seed for this node
+            //set the _seed for this node
             runProps.gen.seed(runProps.seed + currentNode);
             for (int iter = 0; iter < runParameters.iteration_per_node.back(); ++iter) {
                 //get estimation of one embedding

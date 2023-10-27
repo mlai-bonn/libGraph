@@ -103,8 +103,7 @@ public:
     //Copy constructor
     OuterplanarSubgraphDFS(const OuterplanarSubgraphDFS& other);
 
-    void generate(GraphStruct& subgraph, int seed, bool p) override;
-    void generate(OuterplanarGraphData& subgraph, int seed, bool p);
+    void generate(int seed, bool p) override;
     void get_next_node(std::mt19937_64& gen);
     static bool CheckLeft(const NodeStruct& src, const NodeStruct& dst) ;
     static bool CheckRight(const NodeStruct& src, const NodeStruct& dst) ;
@@ -135,7 +134,6 @@ private:
     std::vector<int> swaps;
     bool print = false;
     bool dfs_tree = false;
-    GraphStruct _subgraph;
 
     void UpdateNodeParameters(NodeStruct &currentNode);
 };
@@ -151,11 +149,8 @@ OuterplanarSubgraphDFS::OuterplanarSubgraphDFS(const GraphStruct & graph) : Oute
     std::iota(neighborIds.begin(), neighborIds.end(), 0);
 }
 
-void OuterplanarSubgraphDFS::generate(GraphStruct& subgraph, int seed, bool p) {
-    // call super generate function
-    OuterplanarSubgraph::generate(subgraph, seed, p);
-    subgraph.set_type(GraphType::OUTERPLANAR);
-    this->_subgraph = subgraph;
+void OuterplanarSubgraphDFS::generate(int seed, bool p) {
+    std::mt19937_64 _gen(seed);
     this->print = p;
     this->reset();
     dfs_root_node = std::uniform_int_distribution<INDEX>(0, this->_graph.nodes() - 1)(_gen);
@@ -186,7 +181,7 @@ void OuterplanarSubgraphDFS::get_next_node(std::mt19937_64 & gen) {
         //Check if get_node is not the root node
         if (currentNodeId != dfs_root_node) {
             //Add tree edge to the _graph
-            _subgraph.add_edge(currentNodeId, currentNode.dfs_parent->node_id);
+            _outerPlanarSubGraph.add_edge(currentNodeId, currentNode.dfs_parent->node_id);
             UpdateNodeParameters(currentNode);
         }
 
@@ -329,8 +324,10 @@ void OuterplanarSubgraphDFS::AddEdges(const std::vector<DirectedEdgeStruct>& edg
 
 
 void OuterplanarSubgraphDFS::reset() {
+    //Empty the _subgraph
+    _outerPlanarSubGraph.Reset(_graph.nodes());
+    _outerPlanarSubGraph.SetType(GraphType::OUTERPLANAR);
     for (int i = 0; i < this->_graph.nodes(); ++i) {
-        _subgraph.add_node();;
         this->graphNodes[i].reset();
     }
     dfs_stack.clear();
@@ -405,12 +402,8 @@ void OuterplanarSubgraphDFS::AddGraphEdges(const std::vector<DirectedEdgeStruct>
                 std::cout << " " << src.node_id << "--R" << dst.node_id << " ";
             }
         }
-        this->_subgraph.add_edge(src.node_id, dst.node_id);
+        this->_outerPlanarSubGraph.add_edge(src.node_id, dst.node_id);
     }
-}
-
-void OuterplanarSubgraphDFS::generate(OuterplanarGraphData &subgraph, int seed, bool p) {
-    generate(dynamic_cast<GraphStruct &>(subgraph), seed, p);
 }
 
 

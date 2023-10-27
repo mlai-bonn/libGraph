@@ -15,7 +15,7 @@
  * num_runs: number of runs of the algorithm
  * grow_steps: number of growth steps per run, i.e. the number of elements added in the iterative growth process
  * core_percentage: percentage of runs in which a node has to be in the core to be considered a core node
- * seed: seed for the random number generator
+ * _seed: _seed for the random number generator
  * _print: if true prints the growth steps and the closure size
  * save: if true saves the core nodes vector
  * output_path: path to the output file
@@ -58,7 +58,7 @@ private:
 void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
     // set start time
     auto start = std::chrono::high_resolution_clock::now();
-    // set the generator using the seed
+    // set the generator using the _seed
     std::mt19937 generator(parameters.seed);
     // neighbors of the core nodes (in fact the out_edges thus duplicates are possible)
     std::vector<NodeId> core_neighbors = std::vector<NodeId>();

@@ -104,7 +104,7 @@ public:
 class OuterPlanarSubgraphMitchell : public OuterplanarSubgraph {
 public:
     explicit OuterPlanarSubgraphMitchell(const GraphStruct& graph);
-    void generate(GraphStruct& subgraph, int seed, bool print) override;
+    void generate(int seed, bool print) override;
 
     class PrintSteps {
     public:
@@ -123,11 +123,11 @@ private:
                           int neighborIdx, NodeId &neighborId);
     int nodeIdToComponentId(NodeId nodeId) const;
     void GetBiconnectedComponentsMitchell();
-    void BiconnectedComponentSampling(GraphStruct& subgraph, BiconnectedComponent& biCom);
+    void BiconnectedComponentSampling(BiconnectedComponent& biCom, std::mt19937_64& _gen);
     void Init();
     void UpdateDegrees(NodeId id);
-    void DeleteRandomEdge(const PrintSteps& printing);
-    void CollapseTriangle(GraphStruct& component, AlgorithmEdge& edgeA, AlgorithmEdge& edgeB, NodePair& triangulationPair, const PrintSteps& printing);
+    void DeleteRandomEdge(const PrintSteps& printing, std::mt19937_64& _gen);
+    void CollapseTriangle(GraphStruct& component, AlgorithmEdge& edgeA, AlgorithmEdge& edgeB, NodePair& triangulationPair, const PrintSteps& printing, std::mt19937_64& _gen);
     void UpdateTriangulationForest(const NodePair &triangulationEdge, const NodePair &edgeA, const NodePair &edgeB, NodeId v);
     void DeleteEdges(std::vector<TriangulationForest::TFNode*>& path, const PrintSteps& printSteps, bool includingFirstEdge = false);
 
@@ -145,6 +145,8 @@ private:
     std::vector<TriangulationForest::TFNode*> _path2;
 
 
+    bool _print;
+    int _seed;
 };
 
 OuterPlanarSubgraphMitchell::OuterPlanarSubgraphMitchell(const GraphStruct& graph)  : OuterplanarSubgraph(graph) {
@@ -225,8 +227,10 @@ void OuterPlanarSubgraphMitchell::GetBiconnectedComponentsMitchell() {
 
 }
 
-void OuterPlanarSubgraphMitchell::generate(GraphStruct& subgraph, int seed, bool p) {
-    OuterplanarSubgraph::generate(subgraph, seed, p);
+void OuterPlanarSubgraphMitchell::generate(int seed, bool p) {
+    this->_seed = seed;
+    this->_print = p;
+    std::mt19937_64 _gen(seed);
     //Run spanning tree to mark non-deletable edges, TODO give spanning tree as parameter
     GraphStruct tree;
     std::vector<bool> visited;
@@ -234,13 +238,13 @@ void OuterPlanarSubgraphMitchell::generate(GraphStruct& subgraph, int seed, bool
     BFSSpanningTree(_graph, tree, 0, visited, distances, false, seed);
     //GraphFunctions::bfsRandomSubtree(_graph, spanningTreeEdges, _gen);
     std::unordered_map<NodePair, bool, hashNodePair> edgesInSpanningTree;
-    if (this->_print){
+    if (p){
         std::cout << "Spanning Tree: " << std::endl;
     }
 
     for (auto edge = tree.first_edge(); edge != tree.last_edge(); ++edge){
         edgesInSpanningTree[NodePair(*edge, false)] = true;
-        if (this->_print){
+        if (p){
             NodePair(*edge, false).print();
         }
     }
@@ -253,14 +257,14 @@ void OuterPlanarSubgraphMitchell::generate(GraphStruct& subgraph, int seed, bool
             bool b = edgesInSpanningTree.find(nodePair) != edgesInSpanningTree.end();
             edgeInfo.setTreeEdge(b);
         }
-        BiconnectedComponentSampling(subgraph, biCom);
+        BiconnectedComponentSampling(biCom, _gen);
         for (auto nodeId : biCom.nodeIds) {
             nodeToComponentAndId[nodeId].pop_front();
         }
     }
 }
 
-void OuterPlanarSubgraphMitchell::BiconnectedComponentSampling(GraphStruct& subgraph, BiconnectedComponent& biCom) {
+void OuterPlanarSubgraphMitchell::BiconnectedComponentSampling(BiconnectedComponent& biCom, std::mt19937_64& _gen) {
     GraphStruct& component = biconnectedComponents[biCom.componentId];
     INDEX nodeNum = component.nodes();
     currentComponent = biCom;
@@ -313,7 +317,7 @@ void OuterPlanarSubgraphMitchell::BiconnectedComponentSampling(GraphStruct& subg
         }
         if (!degree2Nodes.empty()){
             int rnd = std::uniform_int_distribution<int>(0, (int) degree2Nodes.size() - 1)(_gen);
-            int v = degree2Nodes[rnd];
+            NodeId v = degree2Nodes[rnd];
             std::swap(degree2Nodes[rnd], degree2Nodes.back());
             degree2Nodes.pop_back();
             if (currentComponent.nodeDegrees[nodeIdToComponentId(v)] == 2){
@@ -330,7 +334,7 @@ void OuterPlanarSubgraphMitchell::BiconnectedComponentSampling(GraphStruct& subg
                 AlgorithmEdge& algorithmEdgeA = currentComponent.algorithmEdges[edgeA];
                 AlgorithmEdge& algorithmEdgeB = currentComponent.algorithmEdges[edgeB];
                 NodePair triangulationEdge = NodePair(x, y);
-                CollapseTriangle(component, algorithmEdgeA, algorithmEdgeB, triangulationEdge, printing);
+                CollapseTriangle(component, algorithmEdgeA, algorithmEdgeB, triangulationEdge, printing, _gen);
                 UpdateTriangulationForest(triangulationEdge, edgeA, edgeB, v);
             }
             else{
@@ -351,7 +355,7 @@ void OuterPlanarSubgraphMitchell::BiconnectedComponentSampling(GraphStruct& subg
 
         }
         else {
-            DeleteRandomEdge(printing);
+            DeleteRandomEdge(printing, _gen);
         }
         if (this->_print) {
             printing.printTriangulationForest();
@@ -360,12 +364,12 @@ void OuterPlanarSubgraphMitchell::BiconnectedComponentSampling(GraphStruct& subg
     //Add all undeleted edges to the _subgraph
     for (auto const& [edge, valid] : currentComponent.edges) {
         if (valid) {
-            subgraph.add_edge(edge.first(), edge.second());
+            this->_outerPlanarSubGraph.add_edge(edge.first(), edge.second());
         }
     }
 }
 
-void OuterPlanarSubgraphMitchell::DeleteRandomEdge(const PrintSteps& printing) {
+void OuterPlanarSubgraphMitchell::DeleteRandomEdge(const PrintSteps& printing, std::mt19937_64& _gen) {
     while(!removableEdges.empty()){
         //Get random edge from all the edges which can be removed
         int idx = std::uniform_int_distribution<int>(0, (int) removableEdges.size() - 1)(_gen);
@@ -431,7 +435,7 @@ void OuterPlanarSubgraphMitchell::UpdateDegrees(NodeId id) {
     }
 }
 
-void OuterPlanarSubgraphMitchell::CollapseTriangle(GraphStruct& component, AlgorithmEdge& edgeA, AlgorithmEdge& edgeB, NodePair& triangulationPair, const PrintSteps& printing) {
+void OuterPlanarSubgraphMitchell::CollapseTriangle(GraphStruct& component, AlgorithmEdge& edgeA, AlgorithmEdge& edgeB, NodePair& triangulationPair, const PrintSteps& printing, std::mt19937_64& _gen) {
     AlgorithmEdge* triangulationEdge = nullptr;
     edgeA.set_valid(false);
     edgeB.set_valid(false);

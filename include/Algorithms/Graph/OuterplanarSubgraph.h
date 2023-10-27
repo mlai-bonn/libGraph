@@ -9,22 +9,27 @@
 
 class OuterplanarSubgraph {
 public:
-    OuterplanarSubgraph() = default;
     explicit OuterplanarSubgraph(const GraphStruct & graph) : _graph(graph) {};
-    OuterplanarSubgraph(const OuterplanarSubgraph &other) : _graph(other._graph), _print(other._print){};
 
     //copying
     //OuterplanarSubgraph(const OuterplanarSubgraph& other){};
 
-    virtual void generate(GraphStruct& subgraph, int seed, bool print){
-        _gen = std::mt19937_64(seed);
-        this->_print = print;
-    };
+    virtual void generate(int seed, bool print) = 0;
+
+    GraphStruct& subgraph(int seed, bool print){
+        generate(seed, print);
+        return _outerPlanarSubGraph;
+    }
+    OuterplanarGraphData& subgraph_extended(int seed, bool print){
+        generate(seed, print);
+        return _outerPlanarSubGraphData;
+    }
+
 
 protected:
-    const GraphStruct _graph;
-    bool _print = false;
-    std::mt19937_64 _gen;
+    GraphStruct _outerPlanarSubGraph;
+    const GraphStruct& _graph;
+    OuterplanarGraphData _outerPlanarSubGraphData;
 };
 
 

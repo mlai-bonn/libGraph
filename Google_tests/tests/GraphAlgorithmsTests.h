@@ -15,7 +15,7 @@ TEST(SpanningSubgraphsTestSuite, ExampleBFSTreeUnconnected){
     int components = BFSSpanningTree(graph, tree, 0, visited, distances);
     EXPECT_EQ(tree.nodes(), 0);
     EXPECT_EQ(tree.edges(), 0);
-    EXPECT_NE(tree.get_type(), GraphType::TREE);
+    EXPECT_NE(tree.GetType(), GraphType::TREE);
     EXPECT_EQ(components, 0);
     for (int i = 0; i < graph.nodes(); ++i) {
         EXPECT_EQ(visited[i], true);
@@ -25,7 +25,7 @@ TEST(SpanningSubgraphsTestSuite, ExampleBFSTreeUnconnected){
     components = BFSSpanningTree(graph, tree, 0, visited, distances);
     EXPECT_EQ(tree.nodes(), 10);
     EXPECT_EQ(tree.edges(), 0);
-    EXPECT_NE(tree.get_type(), GraphType::TREE);
+    EXPECT_NE(tree.GetType(), GraphType::TREE);
     EXPECT_EQ(components, 10);
     for (int i = 0; i < graph.nodes(); ++i) {
         EXPECT_EQ(distances[i], 0);
@@ -40,7 +40,7 @@ TEST(SpanningSubgraphsTestSuite, ExampleBFSTreeUnconnected){
     components = BFSSpanningTree(graph, tree, 0, visited, distances);
     EXPECT_EQ(tree.nodes(), 4);
     EXPECT_EQ(tree.edges(), 2);
-    EXPECT_NE(tree.get_type(), GraphType::TREE);
+    EXPECT_NE(tree.GetType(), GraphType::TREE);
     EXPECT_EQ(components, 2);
     EXPECT_EQ(distances[0], 0);
     EXPECT_EQ(distances[1], 1);
@@ -57,7 +57,7 @@ TEST(SpanningSubgraphsTestSuite, ExampleRandomBFSTree){
     int components = BFSSpanningTree(graph, tree, 0, visited, distances, false, 0);
     EXPECT_EQ(tree.nodes(), 10);
     EXPECT_EQ(tree.edges(), 9);
-    EXPECT_EQ(tree.get_type(), GraphType::TREE);
+    EXPECT_EQ(tree.GetType(), GraphType::TREE);
     EXPECT_EQ(components, 1);
     for (int i = 0; i < graph.nodes(); ++i) {
         EXPECT_EQ(visited[i], true);
@@ -72,7 +72,7 @@ TEST(SpanningSubgraphsTestSuite, ExampleDeterministicBFSTree){
     int components = BFSSpanningTree(graph, tree, 0, visited, distances, true);
     EXPECT_EQ(tree.nodes(), 10);
     EXPECT_EQ(tree.edges(), 9);
-    EXPECT_EQ(tree.get_type(), GraphType::TREE);
+    EXPECT_EQ(tree.GetType(), GraphType::TREE);
     EXPECT_EQ(components, 1);
     for (int i = 0; i < graph.nodes(); ++i) {
         EXPECT_EQ(visited[i], true);
@@ -87,7 +87,7 @@ TEST(SpanningSubgraphsTestSuite, ExampleRandomDFSTree){
     int components = DFSSpanningTree(graph, tree, 0, visited, distances, false, 0);
     EXPECT_EQ(tree.nodes(), 10);
     EXPECT_EQ(tree.edges(), 9);
-    EXPECT_EQ(tree.get_type(), GraphType::TREE);
+    EXPECT_EQ(tree.GetType(), GraphType::TREE);
     EXPECT_EQ(components, 1);
     for (int i = 0; i < graph.nodes(); ++i) {
         EXPECT_EQ(visited[i], true);
@@ -102,7 +102,7 @@ TEST(SpanningSubgraphsTestSuite, ExampleDeterministicDFSTree){
     int components = DFSSpanningTree(graph, tree, 0, visited, distances, true);
     EXPECT_EQ(tree.nodes(), 10);
     EXPECT_EQ(tree.edges(), 9);
-    EXPECT_EQ(tree.get_type(), GraphType::TREE);
+    EXPECT_EQ(tree.GetType(), GraphType::TREE);
     EXPECT_EQ(components, 1);
     EXPECT_EQ(distances[0], 0);
     for (int i = 0; i < graph.nodes(); ++i) {
@@ -118,7 +118,7 @@ TEST(SpanningSubgraphsTestSuite, ExampleDFSTreeUnconnected){
     int components = BFSSpanningTree(graph, tree, 0, visited, distances);
     EXPECT_EQ(tree.nodes(), 0);
     EXPECT_EQ(tree.edges(), 0);
-    EXPECT_NE(tree.get_type(), GraphType::TREE);
+    EXPECT_NE(tree.GetType(), GraphType::TREE);
     EXPECT_EQ(components, 0);
     for (int i = 0; i < graph.nodes(); ++i) {
         EXPECT_EQ(visited[i], true);
@@ -128,7 +128,7 @@ TEST(SpanningSubgraphsTestSuite, ExampleDFSTreeUnconnected){
     components = DFSSpanningTree(graph, tree, 0, visited, distances);
     EXPECT_EQ(tree.nodes(), 10);
     EXPECT_EQ(tree.edges(), 0);
-    EXPECT_NE(tree.get_type(), GraphType::TREE);
+    EXPECT_NE(tree.GetType(), GraphType::TREE);
     EXPECT_EQ(components, 10);
     for (int i = 0; i < graph.nodes(); ++i) {
         EXPECT_EQ(distances[i], 0);
@@ -143,7 +143,7 @@ TEST(SpanningSubgraphsTestSuite, ExampleDFSTreeUnconnected){
     components = DFSSpanningTree(graph, tree, 0, visited, distances);
     EXPECT_EQ(tree.nodes(), 4);
     EXPECT_EQ(tree.edges(), 2);
-    EXPECT_NE(tree.get_type(), GraphType::TREE);
+    EXPECT_NE(tree.GetType(), GraphType::TREE);
     EXPECT_EQ(components, 2);
     EXPECT_EQ(distances[0], 0);
     for (int i = 0; i < graph.nodes(); ++i) {
@@ -175,7 +175,7 @@ TEST(OuterplanarSubgraphTestSuite, ExampleOuterplanarGraphData) {
     GraphStruct bi_conn_wiki_graph = Bi_Conn_Wiki_Graph();
     OuterplanarGraphData outerplanarGraphData = OuterplanarGraphData(bi_conn_wiki_graph);
     EXPECT_EQ(outerplanarGraphData.Components.size(), 2);
-    EXPECT_EQ(outerplanarGraphData.get_bbTree().get_type(), GraphType::TREE);
+    EXPECT_EQ(outerplanarGraphData.get_bbTree().GetType(), GraphType::TREE);
 }
 
 

@@ -144,7 +144,7 @@ inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closure
     }
 
     // If the _graph type is tree or outerplanar only preclosure is needed
-    if (_graph.get_type() == GraphType::TREE || _graph.get_type() == GraphType::OUTERPLANAR) {
+    if (_graph.GetType() == GraphType::TREE || _graph.GetType() == GraphType::OUTERPLANAR) {
         closureParameters.onlyPreClosure = true;
     }
 
@@ -159,6 +159,7 @@ inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closure
     std::unordered_set<NodeId> generatedElements;
     std::deque<NodeId> bfsQueue;
     // set closed set to input set
+    closureParameters.closed_set.clear();
     closureParameters.closed_set = closureParameters.input_set;
     // clear added elements
     closureParameters.added_elements.clear();
@@ -216,7 +217,7 @@ inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closure
         ++_iterations;
 //}
         // if the _graph is a tree and the threshold is infinite one bfs is enough to find the closure
-        if (_graph.get_type() == GraphType::TREE && closureParameters.threshold == std::numeric_limits<int>::max()) {
+        if (_graph.GetType() == GraphType::TREE && closureParameters.threshold == std::numeric_limits<int>::max()) {
             break;
         }
         set_break_condition(break_condition, newElements, closureParameters);
@@ -314,7 +315,7 @@ inline void GraphClosure::bfs_backward(GraphClosureParameters &closureParameters
                 }
             }
             else{
-                if (_graph.get_type() == GraphType::TREE){
+                if (_graph.GetType() == GraphType::TREE){
                     generatedElements.insert(NeighborNodeId);
                 }
             }

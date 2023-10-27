@@ -23,6 +23,7 @@ public:
     static GraphStruct Path(int i, Labels *labels = nullptr, int num_labels = 2);
     static GraphStruct ErdosRenyi(int size, int edges, int seed = 0, bool connected = false);
 
+    static GraphStruct FullyBipartite(int partitionASize, int partitionBSize);
 };
 
 inline GraphStruct SimplePatterns::Triangle(const Labels* labels, int num_labels) {
@@ -75,7 +76,7 @@ inline GraphStruct SimplePatterns::Path(int i, Labels *labels, int num_labels) {
         G.add_edge(j, j + 1);
     }
     G.SetName("path_" + std::to_string(i));
-    G.set_type(GraphType::TREE);
+    G.SetType(GraphType::TREE);
 
     if (labels != nullptr){
         G.SetNumLabels(num_labels);
@@ -94,7 +95,7 @@ inline GraphStruct SimplePatterns::Circle(int size, const Labels *labels, int nu
         G.add_edge(i, (i + 1) % size);
     }
     G.SetName("circle_" + std::to_string(size));
-    G.set_type(GraphType::OUTERPLANAR);
+    G.SetType(GraphType::OUTERPLANAR);
     if (labels != nullptr){
         G.SetNumLabels(num_labels);
         G.set_labels(labels);
@@ -112,7 +113,7 @@ inline GraphStruct SimplePatterns::StarGraph(int size, const Labels *labels, int
         G.add_edge(0, i + 1);
     }
     G.SetName("star_" + std::to_string(size));
-    G.set_type(GraphType::TREE);
+    G.SetType(GraphType::TREE);
     if (labels != nullptr){
         G.SetNumLabels(num_labels);
         G.set_labels(labels);
@@ -176,6 +177,17 @@ GraphStruct SimplePatterns::MaxPreClosure(int i, Labels *labels, int num_labels)
             G.SetName(G.GetName() + std::to_string(l));
         }
     }
+    return G;
+}
+
+GraphStruct SimplePatterns::FullyBipartite(int partitionASize, int partitionBSize) {
+    GraphStruct G = GraphStruct(partitionASize + partitionBSize, Labels());
+    for (int i = 0; i < partitionASize; ++i) {
+        for (int j = partitionASize; j < partitionASize + partitionBSize; ++j) {
+            G.add_edge(i, j);
+        }
+    }
+    G.SetName("fully_bipartite_" + std::to_string(partitionASize) + "_" + std::to_string(partitionBSize));
     return G;
 }
 

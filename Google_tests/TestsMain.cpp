@@ -9,6 +9,7 @@
 #include "tests/GraphAlgorithmsTests.h"
 #include "tests/GraphClosureTests.h"
 #include "tests/GraphCoreTests.h"
+#include "tests/OuterplanarSubgraphsTests.h"
 
 int main(int argc, char **argv)
 {
