@@ -57,7 +57,7 @@ TEST(GraphEdgesTestSuite, ExampleAddEdge){
 TEST(GraphEdgesTestSuite, ExampleAddEdgeNoCheck){
     GraphStruct graph = GraphStruct(10, {});
 
-    graph.add_edge_no_check(0, 1);
+    graph.add_edge(0, 1, false);
 
     EXPECT_EQ(graph.nodes(), 10);
     EXPECT_EQ(graph.edges(), 1);
@@ -81,6 +81,20 @@ TEST(GraphEdgesTestSuite, ExampleRemoveEdge){
     for (int i = 0; i < graph.nodes(); ++i) {
         EXPECT_EQ(graph.degree(i), 0);
     }
+}
+
+TEST(GraphEdgesTestSuite, ExampleCopy){
+    GraphStruct graph = GraphStruct(10, {});
+
+    GraphStruct copy = graph;
+    copy.add_edge(0, 1);
+    EXPECT_EQ(graph.nodes(), 10);
+    EXPECT_EQ(graph.edges(), 0);
+    EXPECT_EQ(copy.nodes(), 10);
+    EXPECT_EQ(copy.edges(), 1);
+    graph.add_edge(1,2);
+    EXPECT_EQ(graph.edges(), 1);
+    EXPECT_EQ(copy.edges(), 1);
 }
 
 TEST(GraphIteratorsTestSuite, ExampleIterateOverNodes){

@@ -25,7 +25,8 @@ struct DGraphStruct : public GraphStruct{
 
     bool edge(NodeId source, NodeId destination) const override;
     bool edge(NodeId source, NodeId destination, bool directed) const;
-    bool add_edge(NodeId source, NodeId destination) override;
+    bool add_edge(NodeId source, NodeId destination);
+    bool add_edge(NodeId source, NodeId destination, bool check_existence) override;
     static DGraphStruct GetBFSTree(const GraphStruct& graph, NodeId rootNodeId);
     INDEX out_degree(NodeId node);
     INDEX in_degree(NodeId node);
@@ -90,8 +91,8 @@ inline DGraphStruct::DGraphStruct(INDEX size, const Labels &labels) : GraphStruc
 /// \param source
 /// \param destination
 /// \return
-inline bool DGraphStruct::add_edge(NodeId source, NodeId destination) {
-    if (!edge(source, destination)){
+inline bool DGraphStruct::add_edge(NodeId source, NodeId destination, bool check_existence) {
+    if (!check_existence || !edge(source, destination)){
         this->_graph[source].emplace_back(destination);
         NodeId ElementId = (NodeId) this->_graph[source].size() - 1;
         while (ElementId > 0 && this->_graph[source][ElementId] < this->_graph[source][ElementId - 1]){
@@ -447,6 +448,10 @@ void DGraphStruct::WriteEdges(std::ofstream& Out, const SaveParams& saveParams){
         }
         ++Src;
     }
+}
+
+bool DGraphStruct::add_edge(NodeId source, NodeId destination) {
+    return add_edge(source, destination, true);
 }
 
 

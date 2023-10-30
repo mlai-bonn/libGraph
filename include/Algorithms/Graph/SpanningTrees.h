@@ -102,7 +102,7 @@ inline int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
                             visited[neighbor] = true;
                             queue.push(neighbor);
                             distances[neighbor] = distances[current_node] + 1;
-                            tree.add_edge_no_check(current_node, neighbor);
+                            tree.add_edge(current_node, neighbor, false);
                         }
                     }
                 } else {
@@ -117,7 +117,7 @@ inline int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
                             visited[neighbor] = true;
                             queue.push(neighbor);
                             distances[neighbor] = distances[current_node] + 1;
-                            tree.add_edge_no_check(current_node, neighbor);
+                            tree.add_edge(current_node, neighbor, false);
                         }
                     }
                     // undo the swaps
@@ -202,7 +202,7 @@ inline int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
                         if (!visited[neighbor]) {
                             stack.push(neighbor);
                             visited[neighbor] = true;
-                            tree.add_edge_no_check(current_node, neighbor);
+                            tree.add_edge(current_node, neighbor, false);
                             distances[neighbor] = distances[current_node] + 1;
                         }
                     }
@@ -217,7 +217,7 @@ inline int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
                         if (!visited[neighbor]) {
                             stack.push(neighbor);
                             visited[neighbor] = true;
-                            tree.add_edge_no_check(current_node, neighbor);
+                            tree.add_edge(current_node, neighbor, false);
                             distances[neighbor] = distances[current_node] + 1;
                         }
                     }

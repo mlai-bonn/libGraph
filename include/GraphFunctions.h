@@ -10,6 +10,7 @@
 #include <unordered_set>
 #include <deque>
 #include <queue>
+#include "GraphDataStructures/GraphStructs.h"
 
 
 class GraphStruct;
@@ -23,7 +24,6 @@ public:
     static void GetNodesByLabel(Labels& nodeLabels, Label label, Nodes& nodesByLabel);
     static Labels GetLabelsByNodes(Nodes& nodeIds, const Labels& graphLabels);
     static std::unordered_set<Label> GetUniqueLabelsByNodes(Nodes& nodeIds, const Labels& GraphLabels);
-
 };
 
 inline std::unordered_map<Label, Nodes> GraphFunctions::GetGraphLabelMap(Labels& nodeLabels) {

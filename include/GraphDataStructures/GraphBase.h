@@ -145,23 +145,6 @@ public:
     NodeId neighbor(NodeId nodeId, INDEX neighborIdx) const;
     NodeId neighbor(NodeId nodeId, INDEX neighborIdx, Label label);
     NodeId random_neighbor_in_range(NodeId nodeId, INDEX minIdx, std::mt19937_64& gen);
-    virtual bool edge(NodeId source, NodeId destination) const;
-    virtual bool add_edge(NodeId source, NodeId destination);
-    virtual bool add_edge_no_check(NodeId source, NodeId destination);
-    virtual bool remove_edge(NodeId source, NodeId destination);
-    NodeId add_node(INDEX number = 1, Labels* labels = nullptr);
-    //Get get_neighbors by []
-    const Nodes& operator[](NodeId nodeId){return _graph[nodeId];};
-    void sortNeighborIds();
-    bool has_neighbor_label(NodeId nodeId, Label label);
-
-    bool comp_degree(NodeId i, NodeId j) const{
-        return this->degree(i) < this->degree(j);
-    };
-
-    void degree_sort(Nodes& nodes){
-        std::sort(nodes.begin(), nodes.end(), [this](NodeId l,NodeId r){return comp_degree(l,r);});
-    }
 
     static bool ReadBGF(const std::string& extension, std::ifstream& In, int& saveVersion, int& graphNumber, std::vector<std::string>& graphsNames,
                          std::vector<GraphType>& graphsTypes,
@@ -438,6 +421,30 @@ public:
     //for labels
     std::unordered_map<Label, Nodes> labelMap{};
     std::unordered_map<Label, INDEX> labelFrequencyMap{};
+
+    virtual bool edge(NodeId source, NodeId destination) const;
+    virtual bool edge(const std::pair<NodeId, NodeId>& _edge) const;
+    virtual bool edge(const EdgeIterator& edge) const;
+    virtual bool add_edge(NodeId source, NodeId destination, bool check_existence = true);
+    virtual bool add_edge(const std::pair<NodeId, NodeId>& edge, bool check_existence = true);
+    virtual bool add_edge(const EdgeIterator& edge, bool check_existence = true);
+    virtual bool remove_edge(NodeId source, NodeId destination);
+    virtual bool remove_edge(const std::pair<NodeId, NodeId>& edge);
+    virtual bool remove_edge(const EdgeIterator& edge);
+    NodeId add_node(INDEX number = 1, Labels* labels = nullptr);
+    //Get get_neighbors by []
+    const Nodes& operator[](NodeId nodeId){return _graph[nodeId];};
+    void sortNeighborIds();
+    bool has_neighbor_label(NodeId nodeId, Label label);
+
+    bool comp_degree(NodeId i, NodeId j) const{
+        return this->degree(i) < this->degree(j);
+    };
+
+    void degree_sort(Nodes& nodes){
+        std::sort(nodes.begin(), nodes.end(), [this](NodeId l,NodeId r){return comp_degree(l,r);});
+    }
+
 
 
 protected:
@@ -990,6 +997,22 @@ inline bool GraphStruct::edge(NodeId source, NodeId destination) const {
     }
 }
 
+/// Check if a _graph contains some _edge
+/// \param source
+/// \param destination
+/// \return
+inline bool GraphStruct::edge(const std::pair<NodeId, NodeId>& _edge) const {
+    return edge(_edge.first, _edge.second);
+}
+
+/// Check if a _graph contains some edge
+/// \param source
+/// \param destination
+/// \return
+inline bool GraphStruct::edge(const EdgeIterator& _edge) const {
+    return edge(*_edge);
+}
+
 /// Get all neighbors of a _graph node (const)
 /// \param nodeId
 /// \return
@@ -1008,8 +1031,8 @@ inline Nodes &GraphStruct::neighbors(NodeId nodeId) {
 /// \param source
 /// \param destination
 /// \return
-inline bool GraphStruct::add_edge(NodeId source, NodeId destination) {
-    if (!edge(source, destination)){
+inline bool GraphStruct::add_edge(NodeId source, NodeId destination, bool check_existence) {
+    if (!check_existence || !edge(source, destination)){
         INDEX ElementId;
 
         this->_graph[source].emplace_back(destination);
@@ -1035,31 +1058,20 @@ inline bool GraphStruct::add_edge(NodeId source, NodeId destination) {
     return false;
 }
 
-/// Add an edge to an undirected _graph without testing duplicates. This is faster than the original add edge function but the function is only correct if the edge does not exist before
+/// Add an edge to an undirected _graph
 /// \param source
 /// \param destination
 /// \return
-inline bool GraphStruct::add_edge_no_check(NodeId source, NodeId destination) {
-        INDEX ElementId;
-        this->_graph[source].emplace_back(destination);
-        ElementId = (INDEX) this->_graph[source].size() - 1;
-        while (ElementId > 0 && this->_graph[source][ElementId] < this->_graph[source][ElementId - 1]){
-            std::swap(this->_graph[source][ElementId], this->_graph[source][ElementId - 1]);
-            --ElementId;
-        }
+inline bool GraphStruct::add_edge(const std::pair<NodeId, NodeId>& edge, bool check_existence) {
+    return add_edge(edge.first, edge.second, check_existence);
+}
 
-        this->_graph[destination].emplace_back(source);
-        ElementId = (INDEX) this->_graph[destination].size() - 1;
-        while (ElementId > 0 && this->_graph[destination][ElementId] < this->_graph[destination][ElementId - 1]){
-            std::swap(this->_graph[destination][ElementId], this->_graph[destination][ElementId - 1]);
-            --ElementId;
-        }
-
-        ++this->_edges;
-        ++this->_degrees[source];
-        ++this->_degrees[destination];
-        this->maxDegree = std::max(this->maxDegree, (int) std::max(this->degree(source), this->degree(destination)));
-        return true;
+/// Add an edge to an undirected _graph
+/// \param source
+/// \param destination
+/// \return
+inline bool GraphStruct::add_edge(const EdgeIterator& edge, bool check_existence) {
+    return add_edge(*edge, check_existence);
 }
 
 void GraphStruct::set_graph(const std::vector<Nodes> &nodes) {
@@ -2762,6 +2774,14 @@ bool GraphStruct::remove_edge(NodeId source, NodeId destination) {
         return true;
     }
     return false;
+}
+
+bool GraphStruct::remove_edge(const std::pair<NodeId, NodeId> &edge) {
+    return remove_edge(edge.first, edge.second);
+}
+
+bool GraphStruct::remove_edge(const EdgeIterator &edge) {
+    return remove_edge(*edge);
 }
 
 void GraphStruct::Reset(INDEX size) {

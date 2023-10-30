@@ -5,8 +5,6 @@
 #ifndef CLOSURES_OUTERPLANARSUBGRAPH_H
 #define CLOSURES_OUTERPLANARSUBGRAPH_H
 
-#include "../include/Algorithms/Graph/GraphAlgorithms.h"
-
 class OuterplanarSubgraph {
 public:
     explicit OuterplanarSubgraph(const GraphStruct & graph) : _graph(graph) {};
@@ -31,6 +29,7 @@ protected:
     const GraphStruct& _graph;
     OuterplanarGraphData _outerPlanarSubGraphData;
 };
+
 
 
 
@@ -87,6 +86,10 @@ void OuterplanarGraphStatistics::evaluate(std::vector<std::string> &headers, std
               std::to_string(StaticFunctionsLib::mean(FaceNumbers)),
               std::to_string(StaticFunctionsLib::standard_deviation(FaceNumbers))};
 }
+
+
+
+
 
 
 #endif //CLOSURES_OUTERPLANARSUBGRAPH_H

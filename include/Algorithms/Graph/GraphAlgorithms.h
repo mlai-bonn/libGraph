@@ -6,6 +6,7 @@
 #define LIBGRAPH_GRAPHALGORITHMS_H
 
 #include <stack>
+#include "GraphDataStructures/GraphStructs.h"
 
 /**
  * @brief Computes the bi-connected components of a _graph
@@ -18,6 +19,13 @@ static void GetBiconnectedComponents(const GraphStruct& graph, std::vector<Graph
 static void GetBiconnectedOuterplanarFaces(const GraphStruct &component, OuterplanarComponent& outerplanarComponent);
 static void GetBiconnectedOuterplanarFaceNum(GraphStruct &component, int &face_num);
 
+static void CheckingOuterpanarity(const GraphStruct &graph, const GraphStruct &outerplanarSubgraph, int &notOuterplanarSubgraphs,
+                                  int &notMaximalSubgraphs, std::vector<int> &nonOuterplanarSeeds,
+                                  std::vector<int> &nonMaximalSeeds, std::vector<double> &algorithmMissingEdges,
+                                  std::vector<double> &maximalEdges, int seed = 0);
+
+static bool IsOuterPlanar(const GraphStruct &graph, NodeId src=-1, NodeId dst=-1);
+static bool IsMaximalOuterplanarSubgraph(const GraphStruct &graph, const GraphStruct &subgraph, std::vector<NodePair> &missingEdges);
 
 
 inline void GetBiconnectedComponents(const GraphStruct& graph, std::vector<std::vector<NodeId>>& components){
@@ -185,7 +193,7 @@ inline void GetBiconnectedOuterplanarFaces(const GraphStruct &component, Outerpl
             if (component.edge(n1, n2)) {
                 NodeId newNode1 = currentFace.back().add_node();
                 NodeId newNode2 = currentFace.back().add_node();
-                currentFace.back().add_edge_no_check(newNode1, newNode2);
+                currentFace.back().add_edge(newNode1, newNode2, false);
                 ++face_num;
                 currentFace.pop_back();
                 //Update degreeTwo nodes
@@ -196,8 +204,8 @@ inline void GetBiconnectedOuterplanarFaces(const GraphStruct &component, Outerpl
                 NodeId newNode1 = currentFace.back().add_node();
                 NodeId newNode2 = currentFace.back().add_node();
 
-                currentFace.back().add_edge_no_check(newCurrent, newNode1);
-                currentFace.back().add_edge_no_check(newCurrent, newNode2);
+                currentFace.back().add_edge(newCurrent, newNode1, false);
+                currentFace.back().add_edge(newCurrent, newNode2, false);
             }
             if (degrees[n1] == 2 || degrees[n2] == 2) {
                 if (degrees[n1] == 2) {
@@ -267,6 +275,146 @@ inline void GetBiconnectedOuterplanarFaceNum(GraphStruct &component, int &face_n
         }
     }
 }
+
+void CheckingOuterpanarity(const GraphStruct &graph, const GraphStruct &outerplanarSubgraph, int &notOuterplanarSubgraphs,
+                           int &notMaximalSubgraphs, std::vector<int> &nonOuterplanarSeeds,
+                           std::vector<int> &nonMaximalSeeds, std::vector<double> &algorithmMissingEdges,
+                           std::vector<double> &maximalEdges, int seed) {
+//GraphFunctions::print(_subgraph);
+    bool outerplanar = IsOuterPlanar(outerplanarSubgraph);
+    std::vector<NodePair> missingEdges;
+    bool maximalOuterplanar = IsMaximalOuterplanarSubgraph(graph, outerplanarSubgraph, missingEdges);
+    std::string answer;
+    std::string maximalAnswer;
+    if (outerplanar) {
+        answer = "Yes";
+    } else {
+        ++notOuterplanarSubgraphs;
+        nonOuterplanarSeeds.emplace_back(seed);
+        answer = "No";
+    }
+    if (maximalOuterplanar) {
+        maximalAnswer = "Yes";
+
+    } else {
+        ++notMaximalSubgraphs;
+        nonMaximalSeeds.emplace_back(seed);
+        maximalAnswer = "No";
+    }
+    algorithmMissingEdges.emplace_back(missingEdges.size());
+//    if (printLevel == PrintLevel::ALL) {
+//        std::cout << "Outerplanar: " << answer << ", maximal: " << maximalAnswer << std::endl;
+//
+//        if (!maximalOuterplanar) {
+//            std::cout << "Missing Edges ";
+//            for (auto const &edge: missingEdges) {
+//                std::cout << "(" << edge.first() << ", " << edge.second() << ")";
+//            }
+//            std::cout << std::endl;
+//        }
+//        std::cout << "//////////////////////////////////////" << std::endl;
+//    }
+    maximalEdges.emplace_back(outerplanarSubgraph.edges() + missingEdges.size());
+}
+
+bool IsOuterPlanar(const GraphStruct &graph, NodeId src, NodeId dst) {
+    std::vector<std::vector<NodeId>> components;
+    GetBiconnectedComponents(graph, components);
+    for (const auto& component : components) {
+        if (component.size() > 2) {
+            if (src == -1 || dst == -1 || (std::find(component.begin(), component.end(), src) != component.end() && std::find(component.begin(), component.end(), src) != component.end())) {
+                GraphStruct componentGraph = GraphStruct::SubGraph(graph, component);
+                if (componentGraph.edges() > 2 * componentGraph.nodes() - 3) {
+                    return false;
+                } else {
+                    GraphStruct algorithmGraph;
+                    Nodes degree2Nodes;
+                    std::unordered_map<NodePair, int, hashNodePair> triangulationCount;
+                    std::vector<NodePair> pairs;
+                    std::vector<NodePair> edges;
+                    //Preprocessing on get_node degrees
+                    for (auto node : componentGraph) {
+                        algorithmGraph.add_node();
+                        INDEX degree = componentGraph.degree(node);
+                        if (degree == 2) {
+                            degree2Nodes.emplace_back(node);
+                        }
+                    }
+                    for (auto edge = componentGraph.first_edge(); edge != componentGraph.last_edge(); ++edge) {
+                        algorithmGraph.add_edge(*edge);
+                        triangulationCount[NodePair(*edge, false)] = 0;
+                    }
+                    while (!degree2Nodes.empty()) {
+                        NodeId cNode = degree2Nodes.back();
+                        degree2Nodes.pop_back();
+                        if (algorithmGraph.degree(cNode) == 2) {
+                            NodeId near = algorithmGraph[cNode][0];
+                            NodeId next = algorithmGraph[cNode][1];
+                            NodePair nodePair = NodePair(near, next);
+                            algorithmGraph.remove_edge(cNode, near);
+                            algorithmGraph.remove_edge(cNode, next);
+                            if (!algorithmGraph.edge(near, next)) {
+                                algorithmGraph.add_edge(near, next);
+                                triangulationCount[nodePair] = std::max(1, std::max(
+                                        triangulationCount[NodePair(cNode, near)],
+                                        triangulationCount[NodePair(cNode, next)]));
+                                if (triangulationCount[nodePair] > 2) {
+                                    return false;
+                                }
+                            } else {
+                                triangulationCount[nodePair] += 1;
+                                if (triangulationCount[nodePair] > 2 ||
+                                    triangulationCount[NodePair(cNode, near)] == 2 ||
+                                    triangulationCount[NodePair(cNode, next)] == 2) {
+                                    return false;
+                                }
+                                if (algorithmGraph.degree(near) == 2) {
+                                    degree2Nodes.emplace_back(near);
+                                }
+                                if (algorithmGraph.degree(next) == 2) {
+                                    degree2Nodes.emplace_back(next);
+                                }
+                            }
+                        }
+                    }
+                    if (algorithmGraph.edges() > 1) {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
+bool IsMaximalOuterplanarSubgraph(const GraphStruct &graph, const GraphStruct & subgraph, std::vector<NodePair>& missingEdges) {
+    bool outerplanar = IsOuterPlanar(subgraph);
+    if (!outerplanar){
+        return false;
+    }
+    bool additionalEdge = false;
+    missingEdges.clear();
+
+    GraphStruct check_graph = subgraph;
+
+    for (auto edge = graph.first_edge(); edge != graph.last_edge(); ++edge) {
+        if (!check_graph.edge(*edge)){
+            check_graph.add_edge(*edge);
+            additionalEdge = IsOuterPlanar(check_graph, (*edge).first, (*edge).second);
+            if (additionalEdge){
+                missingEdges.emplace_back(*edge, false);
+            }
+            else{
+                check_graph.remove_edge(*edge);
+            }
+        }
+    }
+    if (missingEdges.empty()){
+        return true;
+    }
+    return false;
+}
+
 
 
 #endif //LIBGRAPH_GRAPHALGORITHMS_H
