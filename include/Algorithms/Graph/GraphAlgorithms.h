@@ -39,6 +39,8 @@ public:
     static void BCCUtil(const GraphStruct &graph, std::vector<std::vector<NodeId>> &components, NodeId u, std::vector<NodeId> &disc,
                  std::vector<NodeId> &low, std::vector<std::pair<NodeId, NodeId>> &edges, std::vector<NodeId> &parents,
                  std::vector<NodeId> &visitedId, int &discovery_time);
+
+    static void AddRandomEdges(GraphStruct &graph, INDEX edgeNum, int seed);
 };
 
 inline void GraphAlgorithms::GetBiconnectedComponents(const GraphStruct &graph, std::vector<GraphStruct> &components) {
@@ -415,5 +417,21 @@ inline void GraphAlgorithms::GetBiconnectedComponents(const GraphStruct& graph, 
     }
 }
 
+inline void GraphFunctions::AddRandomEdges(GraphStruct &graph, INDEX edgeNum, int seed) {
+    std::mt19937_64 gen(seed);
+    if (edgeNum > (graph.nodes() * graph.nodes() - 1) / 2 - graph.edges()){
+        throw std::range_error("Cannot add " + std::to_string(edgeNum) + " edges! Number of edges must be smaller than " + std::to_string((data.nodes() * data.nodes() - 1) / 2 - data.edges()));
+    }
+    for (INDEX i = 1; i < edgeNum + 1; ++i) {
+        NodeId src = std::uniform_int_distribution<NodeId>(0, graph.nodes() - 1)(gen);
+        NodeId dst = std::uniform_int_distribution<NodeId>(0, graph.nodes() - 1)(gen);
+        if (src != dst && graph.add_edge(src, dst)){
+            continue;
+        }
+        else{
+            --i;
+        }
+    }
+}
 
 #endif //LIBGRAPH_GRAPHALGORITHMS_H

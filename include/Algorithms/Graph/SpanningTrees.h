@@ -34,7 +34,7 @@ static int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
 
 inline int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId root_node_id, std::vector<bool>& visited, std::vector<INDEX>& distances, bool deterministic, int seed){
     int components = 0;
-    tree = GraphStruct(graph.nodes(), {});
+    tree.Reset(graph.nodes());
     if (graph.nodes() > 0) {
         ++components;
 
