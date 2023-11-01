@@ -150,6 +150,22 @@ TEST(GraphClosureTestSuite, ExampleClosureThetaTest){
             EXPECT_EQ(closureParameters.closed_set, std::set<NodeId>({1, 2, 3, 4, 5, 6, 7, 8}));
         }
     }
+    for (int threshold = 10; threshold >= 0; --threshold) {
+        closureParameters.threshold = threshold;
+        graphClosureTestGraph.closure(closureParameters);
+        if (threshold < 2){
+            EXPECT_EQ(closureParameters.closed_set.size(), 4);
+            EXPECT_EQ(closureParameters.closed_set, closureParameters.input_set);
+        }
+        else if (threshold == 2){
+            EXPECT_EQ(closureParameters.closed_set.size(), 6);
+            EXPECT_EQ(closureParameters.closed_set, std::set<NodeId>({1, 2, 3, 6, 7, 8}));
+        }
+        else {
+            EXPECT_EQ(closureParameters.closed_set.size(), 8);
+            EXPECT_EQ(closureParameters.closed_set, std::set<NodeId>({1, 2, 3, 4, 5, 6, 7, 8}));
+        }
+    }
 
 }
 

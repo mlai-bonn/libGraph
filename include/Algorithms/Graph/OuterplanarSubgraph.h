@@ -5,6 +5,8 @@
 #ifndef CLOSURES_OUTERPLANARSUBGRAPH_H
 #define CLOSURES_OUTERPLANARSUBGRAPH_H
 
+
+
 class OuterplanarSubgraph {
 public:
     explicit OuterplanarSubgraph(const GraphStruct & graph) : _graph(graph) {};
@@ -53,7 +55,7 @@ struct OuterplanarGraphStatistics{
 
 void OuterplanarGraphStatistics::getStatistics(const GraphStruct &outerplanarGraph) {
     std::vector<GraphStruct> components;
-    GetBiconnectedComponents(outerplanarGraph, components);
+    GraphAlgorithms::GetBiconnectedComponents(outerplanarGraph, components);
     this->ComponentSizes.clear();
     this->ComponentFaces.clear();
     this->ComponentSizes.emplace_back(0);
@@ -62,7 +64,7 @@ void OuterplanarGraphStatistics::getStatistics(const GraphStruct &outerplanarGra
         if (component.nodes() > 2) {
             this->ComponentSizes.back().emplace_back(component.nodes());
             this->ComponentFaces.back().emplace_back(0.0);
-            GetBiconnectedOuterplanarFaceNum(component, this->ComponentFaces.back().back());
+            GraphAlgorithms::GetBiconnectedOuterplanarFaceNum(component, this->ComponentFaces.back().back());
         }
     }
     this->ComponentNumber.emplace_back(static_cast<int>(this->ComponentSizes.back().size()));

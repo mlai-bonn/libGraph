@@ -47,7 +47,7 @@ void OuterplanarGraphData::set() {
     }
     bbTree.tree.SetType(GraphType::TREE);
     std::vector<std::vector<NodeId>> components;
-    GetBiconnectedComponents(static_cast<GraphStruct>(*this), components);
+    GraphAlgorithms::GetBiconnectedComponents(static_cast<GraphStruct>(*this), components);
     //StaticFunctions::printComponents(components);
     for (int i = 0; i < components.size(); ++i) {
         auto & currentComponent = components[i];

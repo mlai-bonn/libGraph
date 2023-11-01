@@ -153,6 +153,7 @@ inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closure
     std::fill(_graph_distances.begin(), _graph_distances.end(), -2);
     _graph_containment_list.resize(_graph.nodes(), 0);
     _graph_predecessors.resize(_graph.nodes(), std::vector<NodeId>());
+    std::fill(_graph_predecessors.begin(), _graph_predecessors.end(), std::vector<NodeId>());
     _graph_bfs_list.resize(_graph.nodes(), 0);
 
 

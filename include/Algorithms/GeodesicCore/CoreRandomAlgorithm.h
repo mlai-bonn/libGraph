@@ -5,9 +5,6 @@
 #ifndef TESTGRAPHLIB_COREALGORITHM_H
 #define TESTGRAPHLIB_COREALGORITHM_H
 
-#include "../../typedefs.h"
-#include "../../GraphDataStructures/GraphBase.h"
-
 /**
  * @brief Input parameters for the core algorithm introduced by Seiffarth et al. in their paper "A Fast Heuristic for Computing Geodesic Cores in Large Networks" (2022)
  * The algorithm is a probabilistic algorithm that finds the geodesic core of a graph, in each run it chooses some random nodes and then calculates the closure of the set of nodes. The algorithm stops either if the intersection of the closed sets computed so far gets stable (core iterations = -1) or if the number of iterations is reached (core iterations = n).

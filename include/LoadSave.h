@@ -8,7 +8,6 @@
 #include <string>
 #include <set>
 #include <unordered_map>
-#include "typedefs.h"
 #include "GraphDataStructures/GraphBase.h"
 
 

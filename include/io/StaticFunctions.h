@@ -100,7 +100,7 @@ public:
 };
 
 template <class T1, class T2>
-std::string StaticFunctionsLib::print(T1& Object) {
+inline std::string StaticFunctionsLib::print(T1& Object) {
 
 
     return "{" + std::accumulate(std::begin(Object),
@@ -113,7 +113,7 @@ std::string StaticFunctionsLib::print(T1& Object) {
 }
 
 template<class T1, class T2>
-std::string StaticFunctionsLib::print(T1 &Object, bool pair) {
+inline std::string StaticFunctionsLib::print(T1 &Object, bool pair) {
     if (pair) {
         return std::accumulate(std::begin(Object),
                                std::end(Object),
@@ -127,17 +127,17 @@ std::string StaticFunctionsLib::print(T1 &Object, bool pair) {
 }
 
 template<class T2>
-std::string StaticFunctionsLib::pairToString(const T2 &object) {
+inline std::string StaticFunctionsLib::pairToString(const T2 &object) {
     return "(" + std::to_string(object.first) + "," + std::to_string(object.second) + ")";
 }
 
 template<class T>
-T StaticFunctionsLib::mean(const std::vector<T> &vector) {
+inline T StaticFunctionsLib::mean(const std::vector<T> &vector) {
     return std::accumulate(vector.begin(),  vector.end(), 0.0)/(double) vector.size();
 }
 
 template<class T>
-T StaticFunctionsLib::standard_deviation(const std::vector<T> &vector) {
+inline T StaticFunctionsLib::standard_deviation(const std::vector<T> &vector) {
     T m = StaticFunctionsLib::mean(vector);
     double accum = 0.0;
     std::for_each (vector.begin(),  vector.end(), [&](const double d) {
@@ -147,7 +147,7 @@ T StaticFunctionsLib::standard_deviation(const std::vector<T> &vector) {
 }
 
 template<class T>
-T StaticFunctionsLib::median(std::vector<T> &vector) {
+inline T StaticFunctionsLib::median(std::vector<T> &vector) {
     if (vector.size() % 2 == 0) {
         const auto median_it1 = vector.begin() + vector.size() / 2 - 1;
         const auto median_it2 = vector.begin() + vector.size() / 2;
@@ -434,7 +434,7 @@ inline void StaticFunctionsLib::saveValuesToFile(const std::string& path, const 
     fs.close();
 }
 
-std::vector<std::string> StaticFunctionsLib::directory_paths(const std::string& path, const std::vector<std::string>& names) {
+inline std::vector<std::string> StaticFunctionsLib::directory_paths(const std::string& path, const std::vector<std::string>& names) {
     // search path for directories that match with entries in names
     std::vector<std::string> paths;
     // iterate recursively over the directory
@@ -451,7 +451,7 @@ std::vector<std::string> StaticFunctionsLib::directory_paths(const std::string& 
     return paths;
 }
 
-std::vector<std::string>
+inline std::vector<std::string>
 StaticFunctionsLib::file_paths(const std::string &path, const std::vector<std::string> &names, const std::vector<std::string> &extensions) {
     // search path for files that match with entries in names
     std::vector<std::string> paths;
@@ -492,7 +492,7 @@ StaticFunctionsLib::file_paths(const std::string &path, const std::vector<std::s
 
 
 template<class T1>
-void StaticFunctionsLib::stringToVector(std::vector<T1>& out, std::string &string) {
+inline void StaticFunctionsLib::stringToVector(std::vector<T1>& out, std::string &string) {
     string.erase(remove(string.begin(), string.end(), '['), string.end());
     string.erase(remove(string.begin(), string.end(), ']'), string.end());
 

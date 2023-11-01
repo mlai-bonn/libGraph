@@ -5,6 +5,8 @@
 #ifndef TESTGRAPHLIB_GRAPHDIRECTEDBASE_H
 #define TESTGRAPHLIB_GRAPHDIRECTEDBASE_H
 
+#include "GraphBase.h"
+
 struct DGraphStruct : public GraphStruct{
     //Constructors
     DGraphStruct()= default;
@@ -161,7 +163,7 @@ inline DGraphStruct DGraphStruct::GetBFSTree(const GraphStruct &graph, NodeId ro
     return BFSTree;
 }
 
-void DGraphStruct::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format) {
+inline void DGraphStruct::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format) {
     if (std::filesystem::is_regular_file(graphPath)) {
         int Version = 1;
         int graphId = 0;
@@ -335,7 +337,7 @@ void DGraphStruct::Load(const std::string &graphPath, bool relabeling, bool with
     }
 }
 
-void DGraphStruct::Save(const SaveParams& saveParams) {
+inline void DGraphStruct::Save(const SaveParams& saveParams) {
     std::string saveName;
     if (saveParams.graphPath.empty()) {
         if (!this->_path.empty()) {
@@ -410,7 +412,7 @@ void DGraphStruct::Save(const SaveParams& saveParams) {
     }
 }
 
-void DGraphStruct::Init(const std::string &name, int size, int edges, int nodeFeatures, int edgeFeatures,
+inline void DGraphStruct::Init(const std::string &name, int size, int edges, int nodeFeatures, int edgeFeatures,
                         const std::vector<std::string> &nodeFeatureNames,
                         const std::vector<std::string> &edgeFeatureNames) {
     GraphStruct::Init(name, size, edges, nodeFeatures, edgeFeatures, nodeFeatureNames, edgeFeatureNames);
@@ -419,15 +421,15 @@ void DGraphStruct::Init(const std::string &name, int size, int edges, int nodeFe
     this->_out_degrees.resize(_nodes);
 }
 
-bool DGraphStruct::ReadEdges(INDEX Src, INDEX Dst, std::vector<double> &edgeData) {
+inline bool DGraphStruct::ReadEdges(INDEX Src, INDEX Dst, std::vector<double> &edgeData) {
     return this->add_edge(Src, Dst);
 }
 
-void DGraphStruct::ReadNodeFeatures(double value, int pos, const std::string &nodeFeatureName) {
+inline void DGraphStruct::ReadNodeFeatures(double value, int pos, const std::string &nodeFeatureName) {
     GraphStruct::ReadNodeFeatures(value, pos, nodeFeatureName);
 }
 
-void DGraphStruct::WriteEdges(std::ofstream& Out, const SaveParams& saveParams){
+inline void DGraphStruct::WriteEdges(std::ofstream& Out, const SaveParams& saveParams){
     INDEX Src = 0;
     for (auto const &edges: this->_graph) {
         for (auto Dst: edges) {
@@ -450,7 +452,7 @@ void DGraphStruct::WriteEdges(std::ofstream& Out, const SaveParams& saveParams){
     }
 }
 
-bool DGraphStruct::add_edge(NodeId source, NodeId destination) {
+inline bool DGraphStruct::add_edge(NodeId source, NodeId destination) {
     return add_edge(source, destination, true);
 }
 

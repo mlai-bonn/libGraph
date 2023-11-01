@@ -5,6 +5,10 @@
 #ifndef GOOGLE_TESTS_GRAPHSTRUCTS_H
 #define GOOGLE_TESTS_GRAPHSTRUCTS_H
 
+#import "typedefs.h"
+#import <iostream>
+
+
 struct NodePair{
     NodePair() = default;
     NodePair(NodeId src, NodeId dst, bool sort = true){

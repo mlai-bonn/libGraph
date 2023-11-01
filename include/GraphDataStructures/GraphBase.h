@@ -5,8 +5,6 @@
 #ifndef HOPS_GRAPHBASE_H
 #define HOPS_GRAPHBASE_H
 #include <vector>
-#include "../typedefs.h"
-#include "../GraphFunctions.h"
 #include <set>
 #include <random>
 #include <unordered_map>
@@ -14,6 +12,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include "typedefs.h"
+#include "GraphFunctions.h"
 
 enum class GraphType{
     GENERAL,
@@ -32,7 +32,13 @@ enum class GraphFormat{
     AIDS,
 };
 
-
+/**
+ * Struct for saving the graph to a file
+ * graphPath: path to the graph file
+ * Name: name of the graph
+ * Format: format of the graph file
+ * Labeled: if true the graph will be saved with labels
+ */
 struct SaveParams{
     std::string graphPath;
     std::string Name;
@@ -1620,14 +1626,13 @@ inline void GraphStruct::GetLargestComponent(const GraphStruct& graph, Nodes &no
 
 inline GraphStruct GraphStruct::SubGraph(const GraphStruct& graph, const Nodes& nodeIds){
     GraphStruct g = GraphStruct((INDEX) nodeIds.size(), {});
-    std::unordered_map<INDEX, INDEX> idMap = std::unordered_map<INDEX, INDEX>();
     for (INDEX i = 0; i < nodeIds.size(); ++i) {
-        idMap[nodeIds[i]] = i;
+        g.IdsToOriginalIds.emplace(nodeIds[i], i);
     }
     for (INDEX srcNode : nodeIds) {
         for (INDEX dstNode : graph.graph()[srcNode]) {
             if (std::find(nodeIds.begin(), nodeIds.end(), dstNode) != nodeIds.end()){
-                g.add_edge(idMap[srcNode], idMap[dstNode]);
+                g.add_edge(g.IdsToOriginalIds[srcNode], g.IdsToOriginalIds[dstNode]);
             }
         }
     }

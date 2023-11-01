@@ -215,7 +215,7 @@ void OuterPlanarSubgraphMitchell::Init() {
 
 void OuterPlanarSubgraphMitchell::GetBiconnectedComponentsMitchell() {
     std::vector<std::vector<NodeId>> components;
-    GetBiconnectedComponents(_graph, components);
+    GraphAlgorithms::GetBiconnectedComponents(_graph, components);
     for (auto component : components) {
         if (component.size() == 2){
             treeEdges.emplace_back(NodePair(component[0], component[1]));

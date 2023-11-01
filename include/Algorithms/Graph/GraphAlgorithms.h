@@ -8,162 +8,49 @@
 #include <stack>
 #include "GraphDataStructures/GraphStructs.h"
 
+class GraphAlgorithms {
+public:
+
 /**
  * @brief Computes the bi-connected components of a _graph
  * @param graph The input _graph
  * @param components The output components (each component is a vector of node ids)
  */
-static void GetBiconnectedComponents(const GraphStruct& graph, std::vector<std::vector<NodeId>>& components);
-static void GetBiconnectedComponents(const GraphStruct& graph, std::vector<GraphStruct>& components);
+    static void GetBiconnectedComponents(const GraphStruct &graph, std::vector<std::vector<NodeId>> &components);
 
-static void GetBiconnectedOuterplanarFaces(const GraphStruct &component, OuterplanarComponent& outerplanarComponent);
-static void GetBiconnectedOuterplanarFaceNum(GraphStruct &component, int &face_num);
+    static void GetBiconnectedComponents(const GraphStruct &graph, std::vector<GraphStruct> &components);
 
-static void CheckingOuterpanarity(const GraphStruct &graph, const GraphStruct &outerplanarSubgraph, int &notOuterplanarSubgraphs,
-                                  int &notMaximalSubgraphs, std::vector<int> &nonOuterplanarSeeds,
-                                  std::vector<int> &nonMaximalSeeds, std::vector<double> &algorithmMissingEdges,
-                                  std::vector<double> &maximalEdges, int seed = 0);
+    static void
+    GetBiconnectedOuterplanarFaces(const GraphStruct &component, OuterplanarComponent &outerplanarComponent);
 
-static bool IsOuterPlanar(const GraphStruct &graph, NodeId src=-1, NodeId dst=-1);
-static bool IsMaximalOuterplanarSubgraph(const GraphStruct &graph, const GraphStruct &subgraph, std::vector<NodePair> &missingEdges);
+    static void GetBiconnectedOuterplanarFaceNum(GraphStruct &component, int &face_num);
 
+    static void CheckingOuterpanarity(const GraphStruct &graph, const GraphStruct &outerplanarSubgraph,
+                                      int &notOuterplanarSubgraphs,
+                                      int &notMaximalSubgraphs, std::vector<int> &nonOuterplanarSeeds,
+                                      std::vector<int> &nonMaximalSeeds, std::vector<double> &algorithmMissingEdges,
+                                      std::vector<double> &maximalEdges, int seed = 0);
 
-inline void GetBiconnectedComponents(const GraphStruct& graph, std::vector<std::vector<NodeId>>& components){
-    // Algorithm of Hopcroft and Tarjan
-    // https://en.wikipedia.org/wiki/Biconnected_component
+    static bool IsOuterPlanar(const GraphStruct &graph, NodeId src = -1, NodeId dst = -1);
 
-    std::vector<NodeId> lowPoint(graph.nodes(), 0);
-    std::vector<NodeId> depth(graph.nodes(), 0);
-    std::stack<NodeId> stack;
-    std::vector<bool> visited(graph.nodes(), false);
-    std::vector<bool> backtracked(graph.nodes(), false);
-    std::vector<bool> articulationPoints(graph.nodes(), false);
-    std::vector<NodeId> leaves;
+    static bool IsMaximalOuterplanarSubgraph(const GraphStruct &graph, const GraphStruct &subgraph,
+                                             std::vector<NodePair> &missingEdges);
 
-    std::vector<NodeId> parent(graph.nodes(), 0);
-    components.clear();
+    static void BCCUtil(const GraphStruct &graph, std::vector<std::vector<NodeId>> &components, NodeId u, std::vector<NodeId> &disc,
+                 std::vector<NodeId> &low, std::vector<std::pair<NodeId, NodeId>> &edges, std::vector<NodeId> &parents,
+                 std::vector<NodeId> &visitedId, int &discovery_time);
+};
 
-    // initialize the root vertex
-    stack.push(0);
-    depth[0] = 0;
-    parent[0] = -1;
-
-    while (!stack.empty()){
-        NodeId current_node = stack.top();
-        if (!visited[current_node]) {
-            visited[current_node] = true;
-            int count_visited_neighbors = 0;
-            for (auto neighbor : graph.get_neighbors(current_node)) {
-                if (!visited[neighbor]) {
-                    depth[neighbor] = depth[current_node] + 1;
-                    lowPoint[neighbor] = depth[neighbor];
-                    stack.push(neighbor);
-                    parent[neighbor] = current_node;
-                    ++count_visited_neighbors;
-                }
-            }
-            if (count_visited_neighbors == 0) {
-                leaves.emplace_back(current_node);
-            }
-        }
-        else {
-            if (!backtracked[current_node]) {
-                backtracked[current_node] = true;
-                // we are backtracking
-                if (current_node != 0) {
-                    // check the neighbors with lower depth
-                    for (auto neighbor: graph.get_neighbors(current_node)) {
-                        if (neighbor != parent[current_node]) {
-                            lowPoint[current_node] = std::min(lowPoint[current_node], depth[neighbor]);
-                            if (depth[neighbor] - 1 == depth[current_node]) {
-                                lowPoint[current_node] = std::min(lowPoint[current_node], lowPoint[neighbor]);
-                            }
-                            if (lowPoint[neighbor] >= depth[current_node]) {
-                                articulationPoints[current_node] = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-                // handle the root vertex separately
-                else {
-                    int children = 0;
-                    for (auto neighbor: graph.get_neighbors(current_node)) {
-                        if (depth[neighbor] == 1) {
-                            ++children;
-                        }
-                        if (children > 1) {
-                            articulationPoints[current_node] = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            stack.pop();
-        }
-    }
-    // compute the components using the leaves the parents and the articulation points
-    std::fill(visited.begin(), visited.end(), false);
-    components.emplace_back();
-    while (!leaves.empty()) {
-        NodeId current_node = leaves.back();
-        leaves.pop_back();
-        if (current_node != 0 && !visited[current_node]) {
-            if (articulationPoints[current_node] && articulationPoints[parent[current_node]]){
-                components.back().emplace_back(current_node);
-                visited[current_node] = true;
-                components.back().emplace_back(parent[current_node]);
-                visited[current_node] = true;
-                components.emplace_back();
-                current_node = parent[current_node];
-                if (!visited[current_node]) {
-                    leaves.emplace_back(current_node);
-                }
-            }
-            else if (articulationPoints[current_node] && !articulationPoints[parent[current_node]]){
-                components.back().emplace_back(current_node);
-                visited[current_node] = true;
-                current_node = parent[current_node];
-                if (!visited[current_node]) {
-                    leaves.emplace_back(current_node);
-                }
-            }
-            else{
-                while (current_node != 0 && !articulationPoints[current_node]) {
-                    visited[current_node] = true;
-                    components.back().emplace_back(current_node);
-                    current_node = parent[current_node];
-                    if (articulationPoints[current_node]){
-                        if (!visited[current_node]) {
-                            leaves.emplace_back(current_node);
-
-                            leaves.emplace_back(current_node);
-                            components.back().emplace_back(current_node);
-                            components.emplace_back();
-                        }
-                        else{
-                            components.back().emplace_back(current_node);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return;
-}
-
-void GetBiconnectedComponents(const GraphStruct &graph, std::vector<GraphStruct> &components) {
+inline void GraphAlgorithms::GetBiconnectedComponents(const GraphStruct &graph, std::vector<GraphStruct> &components) {
     std::vector<std::vector<NodeId>> component_nodes;
-    GetBiconnectedComponents(graph, component_nodes);
+    GraphAlgorithms::GetBiconnectedComponents(graph, component_nodes);
     components.clear();
     for (const auto& component : component_nodes){
-        if (component.size() > 2) {
             components.emplace_back(GraphStruct::SubGraph(graph, component));
-        }
     }
 }
 
-inline void GetBiconnectedOuterplanarFaces(const GraphStruct &component, OuterplanarComponent &outerplanarComponent) {
+inline void GraphAlgorithms::GetBiconnectedOuterplanarFaces(const GraphStruct &component, OuterplanarComponent &outerplanarComponent) {
     std::vector<std::vector<NodeId>> neighbors = std::vector<std::vector<NodeId>>(component.nodes());
     std::vector<GraphStruct> currentFace;
     int face_num = 0;
@@ -240,7 +127,7 @@ inline void GetBiconnectedOuterplanarFaces(const GraphStruct &component, Outerpl
     }
 }
 
-inline void GetBiconnectedOuterplanarFaceNum(GraphStruct &component, int &face_num) {
+inline void GraphAlgorithms::GetBiconnectedOuterplanarFaceNum(GraphStruct &component, int &face_num) {
     face_num = 0;
     Nodes degree2Nodes;
     //Preprocessing on get_node degrees
@@ -276,7 +163,7 @@ inline void GetBiconnectedOuterplanarFaceNum(GraphStruct &component, int &face_n
     }
 }
 
-void CheckingOuterpanarity(const GraphStruct &graph, const GraphStruct &outerplanarSubgraph, int &notOuterplanarSubgraphs,
+void GraphAlgorithms::CheckingOuterpanarity(const GraphStruct &graph, const GraphStruct &outerplanarSubgraph, int &notOuterplanarSubgraphs,
                            int &notMaximalSubgraphs, std::vector<int> &nonOuterplanarSeeds,
                            std::vector<int> &nonMaximalSeeds, std::vector<double> &algorithmMissingEdges,
                            std::vector<double> &maximalEdges, int seed) {
@@ -317,7 +204,7 @@ void CheckingOuterpanarity(const GraphStruct &graph, const GraphStruct &outerpla
     maximalEdges.emplace_back(outerplanarSubgraph.edges() + missingEdges.size());
 }
 
-bool IsOuterPlanar(const GraphStruct &graph, NodeId src, NodeId dst) {
+bool GraphAlgorithms::IsOuterPlanar(const GraphStruct &graph, NodeId src, NodeId dst) {
     std::vector<std::vector<NodeId>> components;
     GetBiconnectedComponents(graph, components);
     for (const auto& component : components) {
@@ -387,7 +274,7 @@ bool IsOuterPlanar(const GraphStruct &graph, NodeId src, NodeId dst) {
     return true;
 }
 
-bool IsMaximalOuterplanarSubgraph(const GraphStruct &graph, const GraphStruct & subgraph, std::vector<NodePair>& missingEdges) {
+bool GraphAlgorithms::IsMaximalOuterplanarSubgraph(const GraphStruct &graph, const GraphStruct & subgraph, std::vector<NodePair>& missingEdges) {
     bool outerplanar = IsOuterPlanar(subgraph);
     if (!outerplanar){
         return false;
@@ -415,6 +302,118 @@ bool IsMaximalOuterplanarSubgraph(const GraphStruct &graph, const GraphStruct & 
     return false;
 }
 
+
+// A C++ program to find biconnected components in a given undirected graph
+
+// A recursive function that finds and prints strongly connected
+// components using DFS traversal
+// u --> The vertex to be visited next
+// disc[] --> Stores discovery times of visited vertices
+// low[] -- >> earliest visited vertex (the vertex with minimum
+// discovery time) that can be reached from subtree
+// rooted with current vertex
+// *st -- >> To store visited edges
+void GraphAlgorithms::BCCUtil(const GraphStruct& graph, std::vector<std::vector<NodeId>>& components, NodeId u, std::vector<NodeId>& disc, std::vector<NodeId>& low, std::vector<std::pair<NodeId, NodeId>>& edges, std::vector<NodeId>& parents, std::vector<NodeId>& visitedId, int& discovery_time)
+{
+
+    // Initialize discovery time and low value
+    disc[u] = low[u] = ++discovery_time;
+    int children = 0;
+
+    // Go through all vertices adjacent to this
+    for (NodeId i = 0; i < graph.degree(u); ++i) {
+        NodeId v = graph.neighbor(u, i); // v is current adjacent of 'u'
+
+        // If v is not visited yet, then recur for it
+        if (disc[v] == -1) {
+            children++;
+            parents[v] = u;
+            // store the edge in stack
+            edges.emplace_back(u, v);
+            BCCUtil(graph, components, v, disc, low, edges, parents, visitedId, discovery_time);
+
+            // Check if the subtree rooted with 'v' has a
+            // connection to one of the ancestors of 'u'
+            // Case 1 -- per Strongly Connected Components Article
+            low[u] = std::min(low[u], low[v]);
+
+            // If u is an articulation point,
+            // pop all edges from stack till u -- v
+            if ((disc[u] == 1 && children > 1) || (disc[u] > 1 && low[v] >= disc[u])) {
+                components.emplace_back();
+                while (edges.back().first != u || edges.back().second != v) {
+                    if (visitedId[edges.back().first] != discovery_time) {
+                        components.back().emplace_back(edges.back().first);
+                        visitedId[edges.back().first] = discovery_time;
+                    }
+                    if (visitedId[edges.back().second] != discovery_time) {
+                        components.back().emplace_back(edges.back().second);
+                        visitedId[edges.back().second] = discovery_time;
+                    }
+                    edges.pop_back();
+                }
+                if (visitedId[edges.back().first] != discovery_time) {
+                    components.back().emplace_back(edges.back().first);
+                    visitedId[edges.back().first] = discovery_time;
+                }
+                if (visitedId[edges.back().second] != discovery_time) {
+                    components.back().emplace_back(edges.back().second);
+                    visitedId[edges.back().second] = discovery_time;
+                }
+                edges.pop_back();
+                discovery_time++;
+            }
+        }
+
+        // Update low value of 'u' only of 'v' is still in stack
+        // (i.e. it's a back edge, not cross edge).
+        // Case 2 -- per Strongly Connected Components Article
+        else if (v != parents[u]) {
+            low[u] = std::min(low[u], disc[v]);
+            if (disc[v] < disc[u]) {
+                edges.emplace_back(u, v);
+            }
+        }
+    }
+}
+
+// The function to do DFS traversal. It uses BCCUtil()
+inline void GraphAlgorithms::GetBiconnectedComponents(const GraphStruct& graph, std::vector<std::vector<NodeId>>& components)
+{
+    components.clear();
+    std::vector<NodeId> disc = std::vector<NodeId>(graph.nodes(), -1);
+    std::vector<NodeId> low = std::vector<NodeId>(graph.nodes(), -1);
+    std::vector<NodeId> parents = std::vector<NodeId>(graph.nodes(), -1);
+    std::vector<std::pair<NodeId, NodeId>> edges;
+    std::vector<NodeId> visitedId = std::vector<NodeId>(graph.nodes(), -1);
+    int discovery_time = 0;
+
+    for (int i = 0; i < graph.nodes(); i++) {
+        if (disc[i] == -1) {
+            GraphAlgorithms::BCCUtil(graph, components, i, disc, low, edges, parents, visitedId, discovery_time);
+        }
+        if (!edges.empty()) {
+            int j = 0;
+            components.emplace_back();
+            // If stack is not empty, pop all edges from stack
+            while (!edges.empty()) {
+                j = 1;
+                if (visitedId[edges.back().first] != discovery_time) {
+                    components.back().emplace_back(edges.back().first);
+                    visitedId[edges.back().first] = discovery_time;
+                }
+                if (visitedId[edges.back().second] != discovery_time) {
+                    components.back().emplace_back(edges.back().second);
+                    visitedId[edges.back().second] = discovery_time;
+                }
+                edges.pop_back();
+            }
+            if (j == 1) {
+                discovery_time++;
+            }
+        }
+    }
+}
 
 
 #endif //LIBGRAPH_GRAPHALGORITHMS_H

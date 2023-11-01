@@ -5,9 +5,6 @@
 #ifndef GCOREAPPROXIMATION_COREGROWALGORITHM_H
 #define GCOREAPPROXIMATION_COREGROWALGORITHM_H
 
-#include "../../typedefs.h"
-#include "../../GraphDataStructures/GraphBase.h"
-#include "../../Closures/GraphClosures.h"
 
 /**
  * Input parameters for the core grow algorithm introduced by Marc and Subelj in their paper "Convexity in Complex Networks" (2016)
