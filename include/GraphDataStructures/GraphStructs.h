@@ -5,8 +5,8 @@
 #ifndef GOOGLE_TESTS_GRAPHSTRUCTS_H
 #define GOOGLE_TESTS_GRAPHSTRUCTS_H
 
-#import "typedefs.h"
-#import <iostream>
+#include "typedefs.h"
+#include <iostream>
 
 
 struct NodePair{
