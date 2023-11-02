@@ -76,7 +76,8 @@ public:
         };
     };
 
-    static void save(const std::string &path, const std::vector<double> &values, const std::string &extension);
+    template<class T>
+    static void save(const std::string &path, const std::vector<T> &values, const std::string &extension);
 
     static void load(const std::string &path, std::vector<double> &values);
 
@@ -190,8 +191,8 @@ inline std::string StaticFunctionsLib::printMap(const std::map<int, int> &map) {
 }
 
 
-
-inline void StaticFunctionsLib::save(const std::string &path,const std::vector<double> &values, const std::string& extension) {
+template<class T>
+inline void StaticFunctionsLib::save(const std::string &path,const std::vector<T> &values, const std::string& extension) {
     std::string complete_path = path + extension;
 
     if (extension.find("bin") != std::string::npos){
@@ -199,7 +200,7 @@ inline void StaticFunctionsLib::save(const std::string &path,const std::vector<d
         size_t size = (values.size());
         file.write((char*) (&size), sizeof(size_t));
         for (auto const val: values) {
-            file.write((char*) (&val), sizeof(double));
+            file.write((char*) (&val), sizeof(T));
         }
         file.close();
     }
