@@ -85,8 +85,7 @@ private:
      * @param bfsElements
      * @param generatedElements
      */
-    void bfs_backward(GraphClosureParameters &closureParameters,
-                      std::deque<NodeId> &bfsQueue, std::deque<NodeId>& bfsElements, std::unordered_set<NodeId>& generatedElements);
+    void bfs_backward(GraphClosureParameters &closureParameters,bool use_only_preclosure, std::deque<NodeId> &bfsQueue, std::deque<NodeId>& bfsElements, std::unordered_set<NodeId>& generatedElements);
 
     void set_break_condition(bool &break_condition, std::deque<NodeId> &newElements, GraphClosureParameters &closureParameters);
 
@@ -132,6 +131,7 @@ inline void GraphClosure::closure(ClosureParameters& closureParameters) {
 }
 
 inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closureParameters) {
+    bool use_only_pre_closure = closureParameters.onlyPreClosure;
     // Check validity of input set
     if (closureParameters.input_set.empty()) {
         return;
@@ -145,7 +145,7 @@ inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closure
 
     // If the _graph type is tree or outerplanar only preclosure is needed
     if (_graph.GetType() == GraphType::TREE || _graph.GetType() == GraphType::OUTERPLANAR) {
-        closureParameters.onlyPreClosure = true;
+        use_only_pre_closure = true;
     }
 
     //Initialize variables
@@ -214,7 +214,7 @@ inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closure
 //                    }
 //                } else {
         bfs_forward(closureParameters, bfsStart, bfsQueue);
-        bfs_backward(closureParameters, bfsQueue, newElements, generatedElements);
+        bfs_backward(closureParameters, use_only_pre_closure, bfsQueue, newElements, generatedElements);
         ++_iterations;
 //}
         // if the _graph is a tree and the threshold is infinite one bfs is enough to find the closure
@@ -278,7 +278,7 @@ inline void GraphClosure::bfs_forward(GraphClosureParameters& closureParameters,
     }
 }
 
-inline void GraphClosure::bfs_backward(GraphClosureParameters &closureParameters,
+inline void GraphClosure::bfs_backward(GraphClosureParameters &closureParameters, bool use_only_pre_closure,
                                        std::deque<NodeId> &bfsQueue, std::deque<NodeId>& bfsElements, std::unordered_set<NodeId>& generatedElements) {
     //Backward search
     ++Id;
@@ -311,7 +311,7 @@ inline void GraphClosure::bfs_backward(GraphClosureParameters &closureParameters
                 bfsQueue.push_back(NeighborNodeId);
 
                 // Add the newly found elements to the bfs start nodes if not only the preclosure is computed
-                if (!closureParameters.onlyPreClosure){
+                if (!use_only_pre_closure){
                     bfsElements.push_back(NeighborNodeId);
                 }
             }
