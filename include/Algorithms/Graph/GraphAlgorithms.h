@@ -417,10 +417,10 @@ inline void GraphAlgorithms::GetBiconnectedComponents(const GraphStruct& graph, 
     }
 }
 
-inline void GraphFunctions::AddRandomEdges(GraphStruct &graph, INDEX edgeNum, int seed) {
+inline void GraphAlgorithms::AddRandomEdges(GraphStruct &graph, INDEX edgeNum, int seed) {
     std::mt19937_64 gen(seed);
     if (edgeNum > (graph.nodes() * graph.nodes() - 1) / 2 - graph.edges()){
-        throw std::range_error("Cannot add " + std::to_string(edgeNum) + " edges! Number of edges must be smaller than " + std::to_string((data.nodes() * data.nodes() - 1) / 2 - data.edges()));
+        throw std::range_error("Cannot add " + std::to_string(edgeNum) + " edges! Number of edges must be smaller than " + std::to_string((graph.nodes() * graph.nodes() - 1) / 2 - graph.edges()));
     }
     for (INDEX i = 1; i < edgeNum + 1; ++i) {
         NodeId src = std::uniform_int_distribution<NodeId>(0, graph.nodes() - 1)(gen);

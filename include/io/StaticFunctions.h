@@ -48,7 +48,16 @@ public:
     static void load_csv(const std::string &path, std::vector<std::vector<std::string>>& out, const char& delimiter = ',');
     static void load_csv(const std::string &path, std::map<std::string, std::vector<std::string>>& out, const char& delimiter = ',');
 
+    /**
+     * Get k random elements from a set of n elements.
+     * @param output
+     * @param k
+     * @param n
+     * @param seed
+     * @param input
+     */
     static void get_k_from_n(std::vector<int>& output, int k, int n, int seed = 0, std::vector<int>* input = nullptr);
+    static void get_k_from_n(std::set<NodeId>& output, NodeId k, NodeId n, int seed = 0, std::vector<NodeId>* input = nullptr);
 
     static size_t get_vector_position(const std::vector<size_t>& vector_lengths, const std::vector<int>& positions);
 
@@ -308,6 +317,27 @@ inline void StaticFunctionsLib::get_k_from_n(std::vector<int> &output, int k, in
         for (int i = 0; i < k; ++i) {
             int rand = std::uniform_int_distribution<int>(i, n-1)(gen);
             output.emplace_back(vec[rand]);
+            std::swap(vec[rand], vec[i]);
+        }
+    }
+}
+
+inline void StaticFunctionsLib::get_k_from_n(std::set<NodeId> &output, NodeId k, NodeId n, int seed, std::vector<NodeId> *input) {
+    std::mt19937_64 gen(seed);
+    if (input != nullptr && input->size() == n){
+        for (NodeId i = 0; i < k; ++i) {
+            NodeId rand = std::uniform_int_distribution<NodeId>(i, n-1)(gen);
+            output.insert((*input)[rand]);
+            std::swap((*input)[rand], (*input)[i]);
+        }
+    }
+    else{
+        std::vector<NodeId> vec = std::vector<NodeId>(n, 0);
+        std::iota(vec.begin(), vec.end(), 0);
+        output.clear();
+        for (NodeId i = 0; i < k; ++i) {
+            NodeId rand = std::uniform_int_distribution<NodeId>(i, n-1)(gen);
+            output.insert(vec[rand]);
             std::swap(vec[rand], vec[i]);
         }
     }

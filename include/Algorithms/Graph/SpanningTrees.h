@@ -55,6 +55,9 @@ inline int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
 
         std::mt19937_64 generator(seed);
         tree = GraphStruct(graph.nodes(), {});
+        if (root_node_id == -1){
+            root_node_id = std::uniform_int_distribution<NodeId>(0, graph.nodes() - 1)(generator);
+        }
         std::queue<NodeId> queue;
         INDEX number_nodes_visited = 0;
         std::vector<NodeId> unvisited_nodes;
