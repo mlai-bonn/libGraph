@@ -25,10 +25,12 @@ struct CoreAlgorithmParameters {
     int core_iterations = -1;
     int seed = 0;
     bool print = false;
-    bool save = false;
-    std::string output_path;
+    bool save = true;
+
 
     // Output parameters
+    FileEvaluation core_evaluation;
+    FileEvaluation detailed_evaluation;
     std::vector<NodeId> core_nodes = std::vector<NodeId>();
     std::vector<int> intersection_loss = std::vector<int>();
     double runtime = 0.0;
@@ -50,15 +52,14 @@ public:
         }
 
         // save the results
-        auto evaluation = FileEvaluation(parameters.output_path, "cores");
+        parameters.core_evaluation = FileEvaluation();
+        parameters.detailed_evaluation = FileEvaluation();
 
         // save the details of the algorithm
         // start timer
         auto start = std::chrono::high_resolution_clock::now();
         int iteration_count = 0;
         for (int i = 0; i < c_iterations; ++i) {
-            auto detailedEvaluation = FileEvaluation(parameters.output_path, "details_random_core_" + _graph.GetName());
-
             std::cout << "\tIteration " << std::to_string(i) << " of _graph " << _graph.GetName() << " started"
                       << std::endl;
 
@@ -95,13 +96,21 @@ public:
                           << std::to_string(((double) std::chrono::duration_cast<std::chrono::microseconds>(
                                   std::chrono::high_resolution_clock::now() - start).count() / 1000000.0)) << "s"
                           << std::endl << std::endl;
-                if (parameters.core_iterations == -1 && parameters.intersection_loss.back() == 0) {
-                    break;
-                }
             }
-            detailedEvaluation.headerValueInsert({"Graph", "Size", "Edges", "Parameters", "GeneratorSize", "CoreIterations", "Seed", "Results", "Iteration", "ClosureSize", "CoreSize", "Runtime"},
-                                                 {_graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "", std::to_string(parameters.generator_size), std::to_string(parameters.core_iterations), std::to_string(parameters.seed), "", std::to_string(i), std::to_string(closureParameters.closed_set.size()), std::to_string(overlap.size()), std::to_string(((double) std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count() / 1000000.0))});
-            detailedEvaluation.save();
+            if (parameters.save) {
+                parameters.detailed_evaluation.headerValueInsert(
+                        {"Graph", "Size", "Edges", "Parameters", "GeneratorSize", "CoreIterations", "Seed", "Results",
+                         "Iteration", "ClosureSize", "CoreSize", "Total Runtime"},
+                        {_graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "",
+                         std::to_string(parameters.generator_size), std::to_string(parameters.core_iterations),
+                         std::to_string(i + c_iterations * parameters.seed), "", std::to_string(i),
+                         std::to_string(closureParameters.closed_set.size()), std::to_string(overlap.size()),
+                         std::to_string(((double) std::chrono::duration_cast<std::chrono::microseconds>(
+                                 std::chrono::high_resolution_clock::now() - start).count() / 1000000.0))});
+            }
+            if (i != 0 && parameters.core_iterations == -1 && parameters.intersection_loss.back() == 0) {
+                break;
+            }
             ++iteration_count;
         }
         parameters.core_nodes.clear();
@@ -112,9 +121,15 @@ public:
         parameters.runtime = ((double) std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::high_resolution_clock::now() - start).count() /
                                     1000000.0);
-        evaluation.headerValueInsert({"Method", "Graph", "Size", "Edges", "Parameters", "NumIterations", "GrowSteps", "CorePercentage", "GeneratorSize", "Seed", "Results", "CoreSize", "Iterations", "Runtime"},
-                                             {"RandomCore", _graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "", std::to_string(parameters.core_iterations), "", "", std::to_string(parameters.generator_size), std::to_string(parameters.seed), "", std::to_string(parameters.core_nodes.size()), std::to_string(iteration_count), std::to_string(parameters.runtime)});
-        evaluation.save();
+        if (parameters.save) {
+            parameters.core_evaluation.headerValueInsert(
+                    {"Method", "Graph", "Size", "Edges", "Parameters", "NumIterations", "GrowSteps", "CorePercentage",
+                     "GeneratorSize", "Seed", "Results", "CoreSize", "Iterations", "Runtime"},
+                    {"RandomCore", _graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "",
+                     std::to_string(parameters.core_iterations), "", "", std::to_string(parameters.generator_size),
+                     std::to_string(parameters.seed), "", std::to_string(parameters.core_nodes.size()),
+                     std::to_string(iteration_count), std::to_string(parameters.runtime)});
+        }
     }
 
     GraphStruct& _graph;

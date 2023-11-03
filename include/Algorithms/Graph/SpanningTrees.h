@@ -30,6 +30,28 @@ static int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
  */
 static int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId root_node_id, std::vector<bool>& visited, std::vector<INDEX>& distances, bool deterministic = true, int seed = 0);
 
+/**
+ * @brief Generates a breadth first search spanning tree of the given _graph.
+ * @param graph The _graph to generate the spanning tree from.
+ * @param tree The resulting spanning tree.
+ * @param root_node_id The root node of the spanning tree.
+ * @param deterministic If true, the algorithm will use the neighbors in the order they are stored in the _graph, otherwise it will use a random order. The random order is a little bit slower. If the order does not play a role deterministic = true should be used.
+ * @param seed The _seed for the random number generator. Only used if deterministic = false.
+ * @return The number of components in the _graph.
+ */
+static int BFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_node_id, bool deterministic = true, int seed = 0);
+
+/**
+ * @brief Generates a depth first search spanning tree of the given _graph.
+ * @param graph The _graph to generate the spanning tree from.
+ * @param tree The resulting spanning tree.
+ * @param root_node_id The root node of the spanning tree.
+ * @param deterministic If true, the algorithm will use the neighbors in the order they are stored in the _graph, otherwise it will use a random order. The random order is a little bit slower. If the order does not play a role deterministic = true should be used.
+ * @param seed The _seed for the random number generator. Only used if deterministic = false.
+  * @return The number of components in the _graph.
+ */
+static int DFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_node_id, bool deterministic = true, int seed = 0);
+
 
 
 inline int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId root_node_id, std::vector<bool>& visited, std::vector<INDEX>& distances, bool deterministic, int seed){
@@ -139,6 +161,100 @@ inline int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
     return components;
 }
 
+inline int BFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_node_id, bool deterministic, int seed){
+    int components = 0;
+    tree.Reset(graph.nodes());
+    if (graph.nodes() > 0) {
+        ++components;
+        graph.ResetSearchInformation();
+
+        std::mt19937_64 generator(seed);
+        tree = GraphStruct(graph.nodes(), {});
+        if (root_node_id == -1){
+            root_node_id = std::uniform_int_distribution<NodeId>(0, graph.nodes() - 1)(generator);
+        }
+        std::queue<NodeId> queue;
+        INDEX number_nodes_visited = 0;
+        std::vector<NodeId> unvisited_nodes;
+        queue.push(root_node_id);
+        graph._distances[root_node_id] = 0;
+        graph._visited[root_node_id] = graph._visited_id;
+
+
+        std::vector<NodeId> non_deterministic = std::vector<NodeId>();
+        std::deque<std::pair<NodeId, NodeId>> swap_pairs;
+        if (!deterministic) {
+            non_deterministic.resize(graph.maxDegree, 0);
+            std::iota(non_deterministic.begin(), non_deterministic.end(), 0);
+        }
+
+        while (!queue.empty() || number_nodes_visited < graph.nodes()) {
+            if (queue.empty()) {
+                if (components == 1) {
+                    for (int i = 0; i < graph.nodes(); ++i) {
+                        if (graph._visited[i] != graph._visited_id) {
+                            unvisited_nodes.push_back(i);
+                        }
+                    }
+                }
+                ++components;
+                while (graph._visited[unvisited_nodes.back()] == graph._visited_id) {
+                    unvisited_nodes.pop_back();
+                }
+                if (!unvisited_nodes.empty()) {
+                    queue.push(unvisited_nodes.back());
+                    graph._distances[unvisited_nodes.back()] = 0;
+                    graph._visited[unvisited_nodes.back()] = graph._visited_id;
+                } else {
+                    break;
+                }
+            } else {
+                NodeId current_node = queue.front();
+                if (graph._visited[current_node] == graph._visited_id) {
+                    ++number_nodes_visited;
+                }
+                queue.pop();
+                if (deterministic) {
+                    for (auto neighbor: graph.get_neighbors(current_node)) {
+                        if (graph._visited[neighbor] != graph._visited_id) {
+                            graph._visited[neighbor] = graph._visited_id;
+                            queue.push(neighbor);
+                            graph._distances[neighbor] = graph._distances[current_node] + 1;
+                            tree.add_edge(current_node, neighbor, false);
+                        }
+                    }
+                } else {
+                    // iterate randomly over the neighbors of the current node
+                    INDEX degree = graph.degree(current_node);
+                    for (NodeId i = 0; i < degree; ++i) {
+                        NodeId rand_idx = std::uniform_int_distribution<NodeId>(i, degree - 1)(generator);
+                        NodeId neighbor = graph.get_neighbors(current_node)[non_deterministic[rand_idx]];
+                        std::swap(non_deterministic[rand_idx], non_deterministic[i]);
+                        swap_pairs.emplace_back(rand_idx, i);
+                        if (graph._visited[neighbor] != graph._visited_id) {
+                            graph._visited[neighbor] = graph._visited_id;
+                            queue.push(neighbor);
+                            graph._distances[neighbor] = graph._distances[current_node] + 1;
+                            tree.add_edge(current_node, neighbor, false);
+                        }
+                    }
+                    // undo the swaps
+                    while (!swap_pairs.empty()) {
+                        std::pair<NodeId, NodeId> swap_pair = swap_pairs.back();
+                        std::swap(non_deterministic[swap_pair.first], non_deterministic[swap_pair.second]);
+                        swap_pairs.pop_back();
+                    }
+                }
+            }
+        }
+    }
+    if (components == 1) {
+        tree.SetType(GraphType::TREE);
+    }
+    return components;
+}
+
+
 inline int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId root_node_id, std::vector<bool>& visited, std::vector<INDEX>& distances, bool deterministic, int seed){
     int components = 0;
     tree = GraphStruct(graph.nodes(), {});
@@ -222,6 +338,95 @@ inline int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
                             visited[neighbor] = true;
                             tree.add_edge(current_node, neighbor, false);
                             distances[neighbor] = distances[current_node] + 1;
+                        }
+                    }
+                    // undo the swaps
+                    while (!swap_pairs.empty()) {
+                        std::pair<NodeId, NodeId> swap_pair = swap_pairs.back();
+                        std::swap(non_deterministic[swap_pair.first], non_deterministic[swap_pair.second]);
+                        swap_pairs.pop_back();
+                    }
+                }
+            }
+        }
+    }
+    if (components == 1) {
+        tree.SetType(GraphType::TREE);
+    }
+    return components;
+}
+
+inline int DFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_node_id, bool deterministic, int seed){
+    int components = 0;
+    tree = GraphStruct(graph.nodes(), {});
+    if (graph.nodes() > 0) {
+        ++components;
+        graph.ResetSearchInformation();
+
+        std::mt19937_64 generator(seed);
+        tree = GraphStruct(graph.nodes(), {});
+        std::stack<NodeId> stack;
+        INDEX number_nodes_visited = 0;
+        std::vector<NodeId> unvisited_nodes;
+        stack.push(root_node_id);
+        graph._distances[root_node_id] = 0;
+        graph._visited[root_node_id] = graph._visited_id;
+
+        std::vector<NodeId> non_deterministic = std::vector<NodeId>();
+        std::deque<std::pair<NodeId, NodeId>> swap_pairs;
+        if (!deterministic) {
+            non_deterministic.resize(graph.maxDegree, 0);
+            std::iota(non_deterministic.begin(), non_deterministic.end(), 0);
+        }
+
+        while (!stack.empty() || number_nodes_visited < graph.nodes()) {
+            if (stack.empty()) {
+                if (components == 1) {
+                    for (int i = 0; i < graph.nodes(); ++i) {
+                        if (graph._visited[i] != graph._visited_id) {
+                            unvisited_nodes.push_back(i);
+                        }
+                    }
+                }
+                ++components;
+                while (graph._visited[unvisited_nodes.back()] == graph._visited_id) {
+                    unvisited_nodes.pop_back();
+                }
+                if (!unvisited_nodes.empty()) {
+                    stack.push(unvisited_nodes.back());
+                    graph._distances[unvisited_nodes.back()] = 0;
+                    graph._visited[unvisited_nodes.back()] = graph._visited_id;
+                } else {
+                    break;
+                }
+            } else {
+                NodeId current_node = stack.top();
+                stack.pop();
+                if (graph._visited[current_node] == graph._visited_id) {
+                    ++number_nodes_visited;
+                }
+                if (deterministic) {
+                    for (auto neighbor: graph.get_neighbors(current_node)) {
+                        if (graph._visited[neighbor] != graph._visited_id) {
+                            stack.push(neighbor);
+                            graph._visited[neighbor] = graph._visited_id;
+                            tree.add_edge(current_node, neighbor, false);
+                            graph._distances[neighbor] = graph._distances[current_node] + 1;
+                        }
+                    }
+                } else {
+                    // iterate randomly over the neighbors of the current node
+                    INDEX degree = graph.degree(current_node);
+                    for (NodeId i = 0; i < degree; ++i) {
+                        NodeId rand_idx = std::uniform_int_distribution<NodeId>(i, degree - 1)(generator);
+                        NodeId neighbor = graph.get_neighbors(current_node)[non_deterministic[rand_idx]];
+                        std::swap(non_deterministic[rand_idx], non_deterministic[i]);
+                        swap_pairs.emplace_back(rand_idx, i);
+                        if (graph._visited[neighbor] != graph._visited_id) {
+                            stack.push(neighbor);
+                            graph._visited[neighbor] = graph._visited_id;
+                            tree.add_edge(current_node, neighbor, false);
+                            graph._distances[neighbor] = graph._distances[current_node] + 1;
                         }
                     }
                     // undo the swaps

@@ -11,17 +11,91 @@
 class GraphAlgorithms {
 public:
 
-/**
- * @brief Computes the bi-connected components of a _graph
- * @param graph The input _graph
- * @param components The output components (each component is a vector of node ids)
- */
+    /**
+     * @brief Computes the connected components of a _graph
+     * @param graph The input _graph
+     * @param connected_components The output components (each component is a vector of node ids)
+     * @return The number of connected components
+     */
+    static INDEX GetConnectedComponents(const GraphStruct &graph, std::vector<std::vector<NodeId>> &connected_components, std::vector<bool>& visited);
+    /**
+     * @brief Computes the connected components of a _graph
+     * @param graph The input _graph
+     * @param connected_components The output components (each component is graph)
+     * @return The number of connected components
+     */
+    static INDEX GetConnectedComponents(const GraphStruct &graph, std::vector<GraphStruct> &connected_components, std::vector<bool>& visited);
+    /**
+     * @brief Computes the largest connected components of a _graph
+     * @param graph The input _graph
+     * @param largest_connected_component The node ids of the largest connected component of the input _graph
+     */
+    static void GetLargestConnectedComponent(const GraphStruct &graph, std::vector<NodeId> &largest_connected_component, std::vector<bool>& visited);
+    /**
+     * @brief Computes the largest connected components of a _graph
+     * @param graph The input _graph
+     * @param largest_connected_component The largest connected component (as graph) of the input _graph
+     */
+    static void GetLargestConnectedComponent(const GraphStruct &graph, GraphStruct &largest_connected_component, std::vector<bool>& visited);
+
+    /**
+     * @brief Computes the connected components of a _graph
+     * @param graph The input _graph
+     * @param connected_components The output components (each component is a vector of node ids)
+     * @return The number of connected components
+     */
+    static INDEX GetConnectedComponents(GraphExtended &graph, std::vector<std::vector<NodeId>> &connected_components);
+    /**
+     * @brief Computes the connected components of a _graph
+     * @param graph The input _graph
+     * @param connected_components The output components (each component is graph)
+     * @return The number of connected components
+     */
+    static INDEX GetConnectedComponents(GraphExtended &graph, std::vector<GraphExtended> &connected_components);
+    /**
+     * @brief Computes the largest connected components of a _graph
+     * @param graph The input _graph
+     * @param largest_connected_component The node ids of the largest connected component of the input _graph
+     */
+    static void GetLargestConnectedComponent(GraphExtended &graph, std::vector<NodeId> &largest_connected_component);
+    /**
+     * @brief Computes the largest connected components of a _graph
+     * @param graph The input _graph
+     * @param largest_connected_component The largest connected component (as graph) of the input _graph
+     */
+    static void GetLargestConnectedComponent(GraphExtended &graph, GraphExtended &largest_connected_component);
+
+
+
+    /**
+     * @brief Computes the bi-connected components of a _graph
+     * @param graph The input _graph
+     * @param components The output components (each component is a vector of node ids)
+     */
+    static void GetBiconnectedComponents(GraphExtended &graph, std::vector<std::vector<NodeId>> &components);
+
+    /**
+     * @brief Computes the bi-connected components of a _graph
+     * @param graph The input _graph
+     * @param components The output components (each component is a graph)
+     */
+    static void GetBiconnectedComponents(GraphExtended &graph, std::vector<GraphExtended> &components);
+
+    /**
+     * @brief Computes the bi-connected components of a _graph
+     * @param graph The input _graph
+     * @param components The output components (each component is a vector of node ids)
+     */
     static void GetBiconnectedComponents(const GraphStruct &graph, std::vector<std::vector<NodeId>> &components);
 
+    /**
+     * @brief Computes the bi-connected components of a _graph
+     * @param graph The input _graph
+     * @param components The output components (each component is a graph)
+     */
     static void GetBiconnectedComponents(const GraphStruct &graph, std::vector<GraphStruct> &components);
 
-    static void
-    GetBiconnectedOuterplanarFaces(const GraphStruct &component, OuterplanarComponent &outerplanarComponent);
+    static void GetBiconnectedOuterplanarFaces(const GraphStruct &component, OuterplanarComponent &outerplanarComponent);
 
     static void GetBiconnectedOuterplanarFaceNum(GraphStruct &component, int &face_num);
 
@@ -41,6 +115,9 @@ public:
                  std::vector<NodeId> &visitedId, int &discovery_time);
 
     static void AddRandomEdges(GraphStruct &graph, INDEX edgeNum, int seed);
+
+    static void BCCUtil(GraphExtended &graph, std::vector<std::vector<NodeId>> &components, NodeId u, std::vector<NodeId> &low,
+                 std::vector<std::pair<NodeId, NodeId>> &edges);
 };
 
 inline void GraphAlgorithms::GetBiconnectedComponents(const GraphStruct &graph, std::vector<GraphStruct> &components) {
@@ -315,7 +392,7 @@ bool GraphAlgorithms::IsMaximalOuterplanarSubgraph(const GraphStruct &graph, con
 // discovery time) that can be reached from subtree
 // rooted with current vertex
 // *st -- >> To store visited edges
-void GraphAlgorithms::BCCUtil(const GraphStruct& graph, std::vector<std::vector<NodeId>>& components, NodeId u, std::vector<NodeId>& disc, std::vector<NodeId>& low, std::vector<std::pair<NodeId, NodeId>>& edges, std::vector<NodeId>& parents, std::vector<NodeId>& visitedId, int& discovery_time)
+inline void GraphAlgorithms::BCCUtil(const GraphStruct& graph, std::vector<std::vector<NodeId>>& components, NodeId u, std::vector<NodeId>& disc, std::vector<NodeId>& low, std::vector<std::pair<NodeId, NodeId>>& edges, std::vector<NodeId>& parents, std::vector<NodeId>& visitedId, int& discovery_time)
 {
 
     // Initialize discovery time and low value
@@ -379,6 +456,81 @@ void GraphAlgorithms::BCCUtil(const GraphStruct& graph, std::vector<std::vector<
     }
 }
 
+// A C++ program to find biconnected components in a given undirected graph
+
+// A recursive function that finds and prints strongly connected
+// components using DFS traversal
+// u --> The vertex to be visited next
+// disc[] --> Stores discovery times of visited vertices
+// low[] -- >> earliest visited vertex (the vertex with minimum
+// discovery time) that can be reached from subtree
+// rooted with current vertex
+// *st -- >> To store visited edges
+void GraphAlgorithms::BCCUtil(GraphExtended& graph, std::vector<std::vector<NodeId>>& components, NodeId u, std::vector<NodeId>& low, std::vector<std::pair<NodeId, NodeId>>& edges)
+{
+
+    // Initialize discovery time and low value
+    graph._distances[u] = low[u] = ++graph._visited_id;
+    int children = 0;
+
+    // Go through all vertices adjacent to this
+    for (NodeId i = 0; i < graph.degree(u); ++i) {
+        NodeId v = graph.neighbor(u, i); // v is current adjacent of 'u'
+
+        // If v is not visited yet, then recur for it
+        if (graph._distances[v] == -1) {
+            children++;
+            graph._parents[v] = u;
+            // store the edge in stack
+            edges.emplace_back(u, v);
+            BCCUtil(graph, components, v, low, edges);
+
+            // Check if the subtree rooted with 'v' has a
+            // connection to one of the ancestors of 'u'
+            // Case 1 -- per Strongly Connected Components Article
+            low[u] = std::min(low[u], low[v]);
+
+            // If u is an articulation point,
+            // pop all edges from stack till u -- v
+            if ((graph._distances[u] == 1 && children > 1) || (graph._distances[u] > 1 && low[v] >= graph._distances[u])) {
+                components.emplace_back();
+                while (edges.back().first != u || edges.back().second != v) {
+                    if (graph._visited[edges.back().first] != graph._visited_id) {
+                        components.back().emplace_back(edges.back().first);
+                        graph._visited[edges.back().first] = graph._visited_id;
+                    }
+                    if (graph._visited[edges.back().second] != graph._visited_id) {
+                        components.back().emplace_back(edges.back().second);
+                        graph._visited[edges.back().second] = graph._visited_id;
+                    }
+                    edges.pop_back();
+                }
+                if (graph._visited[edges.back().first] != graph._visited_id) {
+                    components.back().emplace_back(edges.back().first);
+                    graph._visited[edges.back().first] = graph._visited_id;
+                }
+                if (graph._visited[edges.back().second] != graph._visited_id) {
+                    components.back().emplace_back(edges.back().second);
+                    graph._visited[edges.back().second] = graph._visited_id;
+                }
+                edges.pop_back();
+                graph._visited_id++;
+            }
+        }
+
+            // Update low value of 'u' only of 'v' is still in stack
+            // (i.e. it's a back edge, not cross edge).
+            // Case 2 -- per Strongly Connected Components Article
+        else if (v != graph._parents[u]) {
+            low[u] = std::min(low[u], graph._distances[v]);
+            if (graph._distances[v] < graph._distances[u]) {
+                edges.emplace_back(u, v);
+            }
+        }
+    }
+}
+
+
 // The function to do DFS traversal. It uses BCCUtil()
 inline void GraphAlgorithms::GetBiconnectedComponents(const GraphStruct& graph, std::vector<std::vector<NodeId>>& components)
 {
@@ -431,6 +583,231 @@ inline void GraphAlgorithms::AddRandomEdges(GraphStruct &graph, INDEX edgeNum, i
         else{
             --i;
         }
+    }
+}
+
+inline INDEX GraphAlgorithms::GetConnectedComponents(GraphExtended &graph, std::vector<std::vector<NodeId>> &connected_components) {
+    connected_components.clear();
+    if (graph.nodes() > 0) {
+        connected_components.emplace_back();
+        graph.ResetSearchInformation();
+        int root_node_id = 0;
+        std::queue<NodeId> queue;
+        INDEX number_nodes_visited = 0;
+        std::vector<NodeId> unvisited_nodes;
+        queue.push(root_node_id);
+        graph._visited[root_node_id] = graph._visited_id;
+        connected_components.back().emplace_back(root_node_id);
+
+        while (!queue.empty() || number_nodes_visited < graph.nodes()) {
+            if (queue.empty()) {
+                if (connected_components.size() == 1) {
+                    for (int i = 0; i < graph.nodes(); ++i) {
+                        if (graph._visited[i] != graph._visited_id) {
+                            unvisited_nodes.push_back(i);
+                        }
+                    }
+                }
+                connected_components.emplace_back();
+                while (graph._visited[unvisited_nodes.back()] == graph._visited_id) {
+                    unvisited_nodes.pop_back();
+                }
+                if (!unvisited_nodes.empty()) {
+                    queue.push(unvisited_nodes.back());
+                    graph._visited[unvisited_nodes.back()] = graph._visited_id;
+                    connected_components.back().emplace_back(unvisited_nodes.back());
+                } else {
+                    break;
+                }
+            } else {
+                NodeId current_node = queue.front();
+                if (graph._visited[current_node] == graph._visited_id) {
+                    ++number_nodes_visited;
+                }
+                queue.pop();
+                    for (auto neighbor: graph.get_neighbors(current_node)) {
+                        if (graph._visited[neighbor] != graph._visited_id) {
+                            graph._visited[neighbor] = graph._visited_id;
+                            connected_components.back().emplace_back(neighbor);
+                            queue.push(neighbor);
+                        }
+                    }
+            }
+        }
+    }
+    return connected_components.size();
+}
+
+inline INDEX GraphAlgorithms::GetConnectedComponents(GraphExtended &graph, std::vector<GraphExtended> &connected_components) {
+    connected_components.clear();
+    std::vector<std::vector<NodeId>> cmp_vector;
+    GetConnectedComponents(graph, cmp_vector);
+    for (const auto& cmp : cmp_vector){
+        connected_components.emplace_back(GraphExtended::SubGraph(graph, cmp));
+    }
+    return connected_components.size();
+}
+
+inline void GraphAlgorithms::GetLargestConnectedComponent(GraphExtended &graph, std::vector<NodeId> &largest_connected_component)
+{
+    std::vector<std::vector<NodeId>> connected_components;
+    GraphAlgorithms::GetConnectedComponents(graph, connected_components);
+    largest_connected_component.clear();
+    INDEX index_of_largest_connected_component = 0;
+    NodeId size_of_largest_connected_component = 0;
+    for (INDEX i = 0; i < connected_components.size(); ++i){
+        if (connected_components[i].size() > size_of_largest_connected_component){
+            index_of_largest_connected_component = i;
+            size_of_largest_connected_component = connected_components[i].size();
+        }
+    }
+    largest_connected_component = connected_components[index_of_largest_connected_component];
+}
+inline void GraphAlgorithms::GetLargestConnectedComponent(GraphExtended &graph, GraphExtended &largest_connected_component){
+    std::vector<NodeId> largest_connected_component_nodes;
+    GetLargestConnectedComponent(graph, largest_connected_component_nodes);
+    if (largest_connected_component_nodes.size() == graph.nodes()){
+        largest_connected_component = graph;
+    }
+    else {
+        largest_connected_component = GraphExtended(GraphStruct::SubGraph(graph, largest_connected_component_nodes));
+    }
+
+}
+
+inline INDEX GraphAlgorithms::GetConnectedComponents(const GraphStruct &graph, std::vector<std::vector<NodeId>> &connected_components, std::vector<bool>& visited) {
+    connected_components.clear();
+    if (visited.size() != graph.nodes()){
+        visited.resize(graph.nodes(), false);
+    }
+    std::fill(visited.begin(), visited.end(), false);
+    if (graph.nodes() > 0) {
+        connected_components.emplace_back();
+        int root_node_id = 0;
+        std::queue<NodeId> queue;
+        INDEX number_nodes_visited = 0;
+        std::vector<NodeId> unvisited_nodes;
+        queue.push(root_node_id);
+        visited[root_node_id] = true;
+        connected_components.back().emplace_back(root_node_id);
+
+        while (!queue.empty() || number_nodes_visited < graph.nodes()) {
+            if (queue.empty()) {
+                if (connected_components.size() == 1) {
+                    for (int i = 0; i < graph.nodes(); ++i) {
+                        if (!visited[i]) {
+                            unvisited_nodes.push_back(i);
+                        }
+                    }
+                }
+                connected_components.emplace_back();
+                while (visited[unvisited_nodes.back()]) {
+                    unvisited_nodes.pop_back();
+                }
+                if (!unvisited_nodes.empty()) {
+                    queue.push(unvisited_nodes.back());
+                    visited[unvisited_nodes.back()] = true;
+                    connected_components.back().emplace_back(unvisited_nodes.back());
+                } else {
+                    break;
+                }
+            } else {
+                NodeId current_node = queue.front();
+                if (visited[current_node]) {
+                    ++number_nodes_visited;
+                }
+                queue.pop();
+                for (auto neighbor: graph.get_neighbors(current_node)) {
+                    if (!visited[neighbor]) {
+                        visited[neighbor] = true;
+                        connected_components.back().emplace_back(neighbor);
+                        queue.push(neighbor);
+                    }
+                }
+            }
+        }
+    }
+    return connected_components.size();
+}
+
+inline INDEX GraphAlgorithms::GetConnectedComponents(const GraphStruct &graph, std::vector<GraphStruct> &connected_components, std::vector<bool>& visited) {
+    connected_components.clear();
+    std::vector<std::vector<NodeId>> cmp_vector;
+    GetConnectedComponents(graph, cmp_vector, visited);
+    for (const auto& cmp : cmp_vector){
+        connected_components.emplace_back(GraphExtended::SubGraph(graph, cmp));
+    }
+    return connected_components.size();
+}
+
+inline void GraphAlgorithms::GetLargestConnectedComponent(const GraphStruct &graph, std::vector<NodeId> &largest_connected_component, std::vector<bool>& visited)
+{
+    std::vector<std::vector<NodeId>> connected_components;
+    GraphAlgorithms::GetConnectedComponents(graph, connected_components, visited);
+    largest_connected_component.clear();
+    INDEX index_of_largest_connected_component = 0;
+    NodeId size_of_largest_connected_component = 0;
+    for (INDEX i = 0; i < connected_components.size(); ++i){
+        if (connected_components[i].size() > size_of_largest_connected_component){
+            index_of_largest_connected_component = i;
+            size_of_largest_connected_component = connected_components[i].size();
+        }
+    }
+    largest_connected_component = connected_components[index_of_largest_connected_component];
+}
+inline void GraphAlgorithms::GetLargestConnectedComponent(const GraphStruct &graph, GraphStruct &largest_connected_component, std::vector<bool>& visited){
+    std::vector<NodeId> largest_connected_component_nodes;
+    GetLargestConnectedComponent(graph, largest_connected_component_nodes, visited);
+    if (largest_connected_component_nodes.size() == graph.nodes()){
+        largest_connected_component = graph;
+    }
+    else {
+        largest_connected_component = GraphStruct::SubGraph(graph, largest_connected_component_nodes);
+    }
+
+}
+
+
+void GraphAlgorithms::GetBiconnectedComponents(GraphExtended &graph, std::vector<std::vector<NodeId>> &components) {
+    components.clear();
+    graph.ResetSearchInformation();
+    std::vector<NodeId> low = std::vector<NodeId>(graph.nodes(), -1);
+    std::vector<std::pair<NodeId, NodeId>> edges;
+
+    for (int i = 0; i < graph.nodes(); i++) {
+        if (graph._distances[i] == -1) {
+            GraphAlgorithms::BCCUtil(graph, components, i, low, edges);
+        }
+        if (!edges.empty()) {
+            int j = 0;
+            components.emplace_back();
+            // If stack is not empty, pop all edges from stack
+            while (!edges.empty()) {
+                j = 1;
+                if (graph._visited[edges.back().first] != graph._visited_id) {
+                    components.back().emplace_back(edges.back().first);
+                    graph._visited[edges.back().first] = graph._visited_id;
+                }
+                if (graph._visited[edges.back().second] != graph._visited_id) {
+                    components.back().emplace_back(edges.back().second);
+                    graph._visited[edges.back().second] = graph._visited_id;
+                }
+                edges.pop_back();
+            }
+            if (j == 1) {
+                graph._visited_id++;
+            }
+        }
+    }
+
+}
+
+void GraphAlgorithms::GetBiconnectedComponents(GraphExtended &graph, std::vector<GraphExtended> &components) {
+    std::vector<std::vector<NodeId>> component_nodes;
+    GraphAlgorithms::GetBiconnectedComponents(graph, component_nodes);
+    components.clear();
+    for (const auto& component : component_nodes){
+        components.emplace_back(GraphExtended::SubGraph(graph, component));
     }
 }
 

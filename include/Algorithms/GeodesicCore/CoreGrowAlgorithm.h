@@ -26,10 +26,11 @@ struct CoreGrowAlgorithmParameters {
     double core_percentage = 0.9;
     int seed = 0;
     bool print = false;
-    bool save = false;
-    std::string output_path;
+    bool save = true;
 
     // Output parameters
+    FileEvaluation core_evaluation;
+    FileEvaluation detailed_evaluation;
     std::vector<NodeId> core_nodes = std::vector<NodeId>();
     double runtime = 0.0;
 };
@@ -53,6 +54,12 @@ private:
 };
 
 void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
+    // create the _graph closure
+    GraphClosure gc = GraphClosure(_graph);
+    ClosureParameters closureParameters;
+    // save the results
+    parameters.core_evaluation = FileEvaluation();
+    parameters.detailed_evaluation = FileEvaluation();
     // set start time
     auto start = std::chrono::high_resolution_clock::now();
     // set the generator using the _seed
@@ -68,15 +75,9 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
     }
     std::vector<NodeId> core_nodes = std::vector<NodeId>(_graph.nodes(), 0);
 
-    // save the results
-    auto fileEvaluation = FileEvaluation(parameters.output_path, "cores");
-    // create the _graph closure
-    GraphClosure graphClosureSP = GraphClosure(_graph);
-
     // iterate over the number of runs
     for (int i = 0; i < parameters.num_runs; ++i)
     {
-        FileEvaluation detailedEvaluation = FileEvaluation(parameters.output_path, "details_grow_core_" + _graph.GetName());
         // get the start vertex
         NodeId start_vertex = std::uniform_int_distribution<NodeId>(0, _graph.nodes() - 1)(generator);
         core_neighbors.clear();
@@ -86,8 +87,8 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
 
         // get the closure of the start vertex
         std::set<NodeId> start_set = std::set<NodeId>({start_vertex});
-        GraphClosureParameters closureParameters = GraphClosureParameters({.input_set = start_set});
-        graphClosureSP.closure(closureParameters);
+        closureParameters.input_set = start_set;
+        gc.closure(closureParameters);
 
 
         // iterate over the growth steps
@@ -135,7 +136,7 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
                 // calculate the closure of the core + the random element
                 closureParameters.input_set = closureParameters.closed_set;
                 closureParameters.input_set.insert(random_element);
-                graphClosureSP.closure(closureParameters);
+                gc.closure(closureParameters);
                 // add the random element to the added elements
                 closureParameters.added_elements.insert(random_element);
 
@@ -153,9 +154,8 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
             core_nodes[node] += 1;
         }
         // save the results
-        detailedEvaluation.headerValueInsert({"Graph", "Size", "Edges", "Parameters", "NumRuns", "GrowSteps", "CorePercentage", "Seed", "Results", "Iteration", "ClosureSize", "CoreSize", "Runtime"},
+        parameters.detailed_evaluation.headerValueInsert({"Graph", "Size", "Edges", "Parameters", "NumRuns", "GrowSteps", "CorePercentage", "Seed", "Results", "Iteration", "ClosureSize", "CoreSize", "Total Runtime"},
                                              {_graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "", std::to_string(parameters.num_runs), std::to_string(parameters.grow_steps), std::to_string(parameters.core_percentage), std::to_string(parameters.seed), "", std::to_string(i), std::to_string(closureParameters.closed_set.size()), "", std::to_string(parameters.runtime)});
-        detailedEvaluation.save();
     }
     // _print the core nodes vector
     if (parameters.print)
@@ -176,15 +176,13 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
     }
     // set the end time
     parameters.runtime = (double) std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count() / 1e6;
-    FileEvaluation detailedEvaluation = FileEvaluation(parameters.output_path, "details_grow_core_" + _graph.GetName());
-    detailedEvaluation = FileEvaluation(parameters.output_path, "details_grow_core_" + _graph.GetName());
-    detailedEvaluation.headerValueInsert({"Graph", "Size", "Edges", "Parameters", "NumRuns", "GrowSteps", "CorePercentage", "Seed", "Results", "Iteration", "ClosureSize", "CoreSize", "Runtime"},
-                                         {_graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "", std::to_string(parameters.num_runs), std::to_string(parameters.grow_steps), std::to_string(parameters.core_percentage), std::to_string(parameters.seed), "", "", "", std::to_string(parameters.core_nodes.size()), std::to_string(parameters.runtime)});
-    detailedEvaluation.save();
 
-    fileEvaluation.headerValueInsert({"Method", "Graph", "Size", "Edges", "Parameters", "NumIterations", "GrowSteps", "CorePercentage", "GeneratorSize", "Seed", "Results", "CoreSize", "Iterations", "Runtime"},
+    parameters.detailed_evaluation.headerValueInsert({"Graph", "Size", "Edges", "Parameters", "NumRuns", "GrowSteps", "CorePercentage", "Seed", "Results", "Iteration", "ClosureSize", "CoreSize", "Runtime"},
+                                         {_graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "", std::to_string(parameters.num_runs), std::to_string(parameters.grow_steps), std::to_string(parameters.core_percentage), std::to_string(parameters.seed), "", "", "", std::to_string(parameters.core_nodes.size()), std::to_string(parameters.runtime)});
+
+
+    parameters.core_evaluation.headerValueInsert({"Method", "Graph", "Size", "Edges", "Parameters", "NumIterations", "GrowSteps", "CorePercentage", "GeneratorSize", "Seed", "Results", "CoreSize", "Iterations", "Runtime"},
                                      {"GrowCore", _graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "", std::to_string(parameters.num_runs), std::to_string(parameters.grow_steps), std::to_string(parameters.core_percentage), "", std::to_string(parameters.seed), "", std::to_string(parameters.core_nodes.size()), "", std::to_string(parameters.runtime)});
-    fileEvaluation.save();
 }
 
 #endif //GCOREAPPROXIMATION_COREGROWALGORITHM_H

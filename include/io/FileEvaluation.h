@@ -25,6 +25,7 @@ public:
     FileEvaluation()= default;
     explicit FileEvaluation(const std::string& out_path, const std::string& eval_name = "default", const std::string& extension = ".csv") : out_path(out_path), name(eval_name), extension(extension){};
     void save(bool summary = false, bool both = true, std::_Ios_Openmode mode = std::ios_base::app);
+    void save(const std::string& out_path, const std::string& eval_name, const std::string& extension = ".csv", bool summary = false, bool both = true, std::_Ios_Openmode mode = std::ios_base::app);
     void to_latex_table();
 
     void headerValueInsert(const std::vector<std::string>& new_header, const std::vector<std::string>& new_values, int insert_position=-1, bool summary = false, bool both=false);
@@ -206,6 +207,14 @@ inline void FileEvaluation::clear() {
     values_summary.clear();
 }
 
+void FileEvaluation::save(const std::string &out_path, const std::string &eval_name, const std::string &extension,
+                          bool summary, bool both, std::_Ios_Openmode mode) {
+    this->out_path = out_path;
+    this->name = eval_name;
+    this->extension = extension;
+    save(summary, both, mode);
+
+}
 
 
 #endif //CLOSURES_FILEEVALUATION_H

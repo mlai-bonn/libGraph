@@ -223,11 +223,69 @@ TEST(BiconnectedComponentTestSuite, ExampleCircleWithSpikes) {
     EXPECT_EQ(graph_components[3].edges(), 3);
 }
 
+TEST(BiconnectedComponentTestSuite, ExampleCircleWithSpikesGraphExtended) {
+    int size = 3;
+    int spikes = 3;
+    GraphExtended spike_circle = GraphExtended(SimplePatterns::Circle(size));
+    for (int i = 0; i < std::min(size, spikes); ++i) {
+        NodeId new_node = spike_circle.add_node();
+        spike_circle.add_edge(i, new_node);
+    }
+    std::vector<std::vector<NodeId>> components;
+    GraphAlgorithms::GetBiconnectedComponents(spike_circle, components);
+    EXPECT_EQ(components.size(), size + 1);
+    EXPECT_EQ(components[0].size(), 2);
+    EXPECT_EQ(components[1].size(), 2);
+    EXPECT_EQ(components[2].size(), 2);
+    EXPECT_EQ(components[3].size(), 3);
+    std::vector<GraphStruct> graph_components;
+    GraphAlgorithms::GetBiconnectedComponents(spike_circle, graph_components);
+    EXPECT_EQ(graph_components.size(), size + 1);
+    EXPECT_EQ(graph_components[0].nodes(), 2);
+    EXPECT_EQ(graph_components[0].edges(), 1);
+    EXPECT_EQ(graph_components[1].nodes(), 2);
+    EXPECT_EQ(graph_components[1].edges(), 1);
+    EXPECT_EQ(graph_components[2].nodes(), 2);
+    EXPECT_EQ(graph_components[2].edges(), 1);
+    EXPECT_EQ(graph_components[3].nodes(), 3);
+    EXPECT_EQ(graph_components[3].edges(), 3);
+}
+
 TEST(BiconnectedComponentTestSuite, ExampleCirclesWithPathConnections) {
     int size = 3;
     int number = 2;
     int path_length = 3;
     GraphStruct graphStruct = GraphStruct(size*number + (path_length-1)*(number - 1), {});
+
+    // add circle edges
+    for (int i = 0; i < number; ++i) {
+        for (int j = 0; j < size; ++j) {
+            NodeId src = i * size + i * (path_length - 1) + j;
+            NodeId dst = i * size + i * (path_length - 1) + (j + 1) % size;
+            graphStruct.add_edge(src, dst);
+        }
+    }
+    // add path edges
+    for (int i = 0; i < number - 1; ++i) {
+        for (int j = 0; j < path_length; ++j) {
+            NodeId src = i * (size + path_length - 1) + size-1 + j;
+            NodeId dst = src + 1;
+            graphStruct.add_edge(src, dst);
+        }
+    }
+    std::vector<std::vector<NodeId>> components;
+    GraphAlgorithms::GetBiconnectedComponents(graphStruct, components);
+    EXPECT_EQ(components.size(), number + (number - 1) * path_length);
+    std::vector<GraphStruct> graph_components;
+    GraphAlgorithms::GetBiconnectedComponents(graphStruct, graph_components);
+    EXPECT_EQ(graph_components.size(), number + (number - 1) * path_length);
+}
+
+TEST(BiconnectedComponentTestSuite, ExampleCirclesWithPathConnectionsGraphExtended) {
+    int size = 3;
+    int number = 2;
+    int path_length = 3;
+    GraphExtended graphStruct = GraphExtended(size*number + (path_length-1)*(number - 1), {});
 
     // add circle edges
     for (int i = 0; i < number; ++i) {

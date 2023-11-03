@@ -30,10 +30,10 @@ public:
     static T median(std::vector<T>& vector);
 
     template<class T1, class T2>
-    static std::string print(T1 &Object);
+    static std::string print(T1 &Object, const std::string &delimiter = ",");
 
     template<class T1, class T2>
-    static std::string print(T1 &Object, bool pair);
+    static std::string print(T1 &Object, bool pair, const std::string &delimiter);
 
     template<class T2>
     static std::string pairToString(const T2 &object);
@@ -86,51 +86,51 @@ public:
     static void GetkFoldIndices(int kFold, int dataSize, std::vector<std::pair<std::vector<int>, std::vector<int>>>& indices, int seed);
 
     template<class T1, class T2>
-    static std::string mapToString(std::unordered_map<T1, T2> &inputMap);
+    static std::string mapToString(std::unordered_map<T1, T2> &inputMap, const std::string &delimiter = ",");
 
     template<class T1, class T2>
-    static std::string mapToString(std::map<T1, T2> &inputMap);
+    static std::string mapToString(std::map<T1, T2> &inputMap, const std::string &delimiter = ",");
 
     template<class T1, class T2>
-    static void print(std::unordered_map<T1, T2> &inputMap);
+    static void print(std::unordered_map<T1, T2> &inputMap, const std::string &delimiter = ",");
 
     template<class T1, class T2>
-    static void print(std::map<T1, T2> &inputMap);
+    static void print(std::map<T1, T2> &inputMap, const std::string &delimiter = ",");
 
     template<class T1>
-    static std::string vectorToString(std::vector<T1> &inputVector);
+    static std::string vectorToString(std::vector<T1> &inputVector, const std::string &delimiter = ",");
     template<class T1>
     static void stringToVector(std::vector<T1>& out, std::string& string);
 
     template<class T1>
-    static void print(std::vector<T1> &inputVector);
+    static void print(std::vector<T1> &inputVector, const std::string &delimiter = ",");
 
     static void saveValuesToFile(const std::string &path, const std::vector<std::string> &header,
                           const std::vector<std::string> &values, std::_Ios_Openmode mode);
 };
 
 template <class T1, class T2>
-inline std::string StaticFunctionsLib::print(T1& Object) {
+inline std::string StaticFunctionsLib::print(T1& Object, const std::string &delimiter) {
 
 
     return "{" + std::accumulate(std::begin(Object),
                            std::end(Object),
                            std::string{},
-                           [](const std::string &a, const T2 &b) {
+                           [&delimiter](const std::string &a, const T2 &b) {
                                return a.empty() ? std::to_string(b)
-                                                : a + ", " + std::to_string(b);
+                                                : a + delimiter + " " + std::to_string(b);
                            }) + "}";
 }
 
 template<class T1, class T2>
-inline std::string StaticFunctionsLib::print(T1 &Object, bool pair) {
+inline std::string StaticFunctionsLib::print(T1 &Object, bool pair, const std::string &delimiter) {
     if (pair) {
         return std::accumulate(std::begin(Object),
                                std::end(Object),
                                std::string{},
-                               [](const std::string &a, const T2 &b) {
+                               [&delimiter](const std::string &a, const T2 &b) {
                                    return a.empty() ? '"' + pairToString(b) + '"'
-                                                    : a + ", " + '"' + pairToString(b) + '"';
+                                                    : a + delimiter +  " " + '"' + pairToString(b) + '"';
                                });
     }
     return "";
@@ -386,7 +386,7 @@ inline void StaticFunctionsLib::GetkFoldIndices(int kFold, int dataSize, std::ve
 }
 
 template<typename T1, typename T2>
-inline std::string StaticFunctionsLib::mapToString(std::unordered_map<T1, T2> &inputMap) {
+inline std::string StaticFunctionsLib::mapToString(std::unordered_map<T1, T2> &inputMap, const std::string &delimiter) {
     std::stringstream ss;
     ss << std::fixed << "{";
     for (const auto &[k, v] : inputMap) {
@@ -401,7 +401,7 @@ inline std::string StaticFunctionsLib::mapToString(std::unordered_map<T1, T2> &i
     return ss.str();
 }
 template<typename T1, typename T2>
-inline std::string StaticFunctionsLib::mapToString(std::map<T1, T2> &inputMap) {
+inline std::string StaticFunctionsLib::mapToString(std::map<T1, T2> &inputMap, const std::string &delimiter) {
     std::stringstream ss;
     ss << std::fixed << "{";
     for (const auto &[k, v] : inputMap) {
@@ -416,15 +416,15 @@ inline std::string StaticFunctionsLib::mapToString(std::map<T1, T2> &inputMap) {
     return ss.str();
 }
 template<typename T1, typename T2>
-inline void StaticFunctionsLib::print(std::unordered_map<T1, T2> &inputMap) {
-    std::cout << mapToString<T1, T2>(inputMap) << std::endl;
+inline void StaticFunctionsLib::print(std::unordered_map<T1, T2> &inputMap, const std::string &delimiter) {
+    std::cout << mapToString<T1, T2>(inputMap, delimiter) << std::endl;
 }
 template<typename T1, typename T2>
-inline void StaticFunctionsLib::print(std::map<T1, T2> &inputMap) {
-    std::cout << mapToString<T1, T2>(inputMap) << std::endl;
+inline void StaticFunctionsLib::print(std::map<T1, T2> &inputMap, const std::string &delimiter) {
+    std::cout << mapToString<T1, T2>(inputMap, delimiter) << std::endl;
 }
 template<typename T1>
-inline std::string StaticFunctionsLib::vectorToString(std::vector<T1> &inputVector) {
+inline std::string StaticFunctionsLib::vectorToString(std::vector<T1> &inputVector, const std::string &delimiter) {
     std::stringstream ss;
     ss << std::fixed << "[";
     for (const auto &v : inputVector) {
@@ -432,7 +432,7 @@ inline std::string StaticFunctionsLib::vectorToString(std::vector<T1> &inputVect
             ss << v;
         }
         else{
-            ss << " " << v;
+            ss << delimiter << v;
         }
     }
     ss << "]";
@@ -440,8 +440,8 @@ inline std::string StaticFunctionsLib::vectorToString(std::vector<T1> &inputVect
 }
 
 template<typename T1>
-inline void StaticFunctionsLib::print(std::vector<T1> &inputVector) {
-    std::cout << vectorToString<T1>(inputVector) << std::endl;
+inline void StaticFunctionsLib::print(std::vector<T1> &inputVector, const std::string &delimiter) {
+    std::cout << vectorToString<T1>(inputVector, delimiter) << std::endl;
 }
 
 inline void StaticFunctionsLib::saveValuesToFile(const std::string& path, const std::vector<std::string>& header, const std::vector<std::string>& values, std::_Ios_Openmode mode) {
