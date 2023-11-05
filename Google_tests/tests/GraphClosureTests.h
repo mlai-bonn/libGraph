@@ -95,10 +95,14 @@ TEST(GraphClosureTestSuite, ExampleClosureOuterplanarGraph){
 TEST(GraphClosureTestSuite, ExamplePreClosureTest){
     for (int i = 0; i < 20; ++i) {
         GraphStruct testGraph = SimplePatterns::MaxPreClosure(i);
+
         GraphClosure graphClosureTestGraph = GraphClosure(testGraph);
+        GraphClosure graphClosureTestGraph2 = GraphClosure(testGraph);
         for (int j = 0; j < testGraph.nodes(); ++j) {
             for (int k = 0; k < testGraph.nodes(); ++k) {
                 GraphClosureParameters graphClosureParameters = GraphClosureParameters({.input_set = {(NodeId) j, (NodeId) k}});
+                GraphClosureParameters graphClosureParameters2 = GraphClosureParameters({.input_set = {(NodeId) j, (NodeId) k}});
+                graphClosureParameters2.closureType = EGraphClosureType::EXACT_GEODESIC_ITERATIVE;
                 graphClosureTestGraph.closure(graphClosureParameters);
                 if (j==k){
                     EXPECT_EQ(graphClosureParameters.closed_set.size(), 1);
@@ -167,6 +171,41 @@ TEST(GraphClosureTestSuite, ExampleClosureThetaTest){
         }
     }
 
+}
+
+TEST(GraphClosureTestSuite, ExampleIterativeClosure)
+{
+    // generate a random graph with 10000 nodes and 1000000 edges
+    GraphStruct randomGraph = SimplePatterns::ErdosRenyi(10000, 1000000);
+    GraphClosure graphClosureRandomGraph = GraphClosure(randomGraph);
+
+    std::set<NodeId> generator_set = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    // try different types of closures and report their running time
+    GraphClosureParameters closureParameters = GraphClosureParameters({.input_set = generator_set});
+    closureParameters.closureType = EGraphClosureType::EXACT_GEODESIC;
+
+    // original closure
+    auto start = std::chrono::high_resolution_clock::now();
+    graphClosureRandomGraph.closure(closureParameters);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::set<NodeId> original_closure = closureParameters.closed_set;
+    std::chrono::duration<double> elapsed_seconds = end-start;
+    std::cout << "Original Closure: " << elapsed_seconds.count() << "s\n";
+
+    // iterative closure with runtime
+    start = std::chrono::high_resolution_clock::now();
+    closureParameters.closureType = EGraphClosureType::EXACT_GEODESIC_ITERATIVE;
+    graphClosureRandomGraph.closure(closureParameters);
+    end = std::chrono::high_resolution_clock::now();
+    std::set<NodeId> iterative_closure = closureParameters.closed_set;
+    elapsed_seconds = end-start;
+    std::cout << "Iterative Closure: " << elapsed_seconds.count() << "s\n";
+
+    // print sizes of closures
+    std::cout << "Original Closure Size: " << original_closure.size() << "\n";
+    std::cout << "Iterative Closure Size: " << iterative_closure.size() << "\n";
+
+    EXPECT_EQ(original_closure, iterative_closure);
 }
 
 #endif //GOOGLE_TESTS_GRAPHCLOSURETESTS_H

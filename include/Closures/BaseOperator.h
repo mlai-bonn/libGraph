@@ -22,9 +22,10 @@ public:
     double lower_bound = 0.75;
     int iteration_number = 0;
     int target_set_size = 0;
-    int preclosure_depth = 0;
+    int maximum_pre_closure_depth = 0;
     bool detailed_analysis = false;
-    std::map<int, std::vector<NodeId>> preClosureDepthToElements;
+    bool analyze_pre_closure_depth = false;
+    std::map<int, std::vector<NodeId>> pre_closure_depth;
 
     std::set<NodeId> closed_set = std::set<NodeId>();
     std::set<NodeId> added_elements = std::set<NodeId>();
@@ -47,7 +48,7 @@ public:
         this->output_is_all = false;
         lower_bound = 0.75;
         target_set_size = 0;
-        preclosure_depth = 0;
+        maximum_pre_closure_depth = 0;
     };
 
 
@@ -59,7 +60,7 @@ public:
         this->timeConstraint = -1;
         this->closed_set.clear();
         this->added_elements.clear();
-        this->preClosureDepthToElements.clear();
+        this->pre_closure_depth.clear();
         lower_bound = 0.75;
         target_set_size = 0;
         iteration_number = 0;

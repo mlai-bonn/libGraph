@@ -56,7 +56,7 @@ private:
 void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
     // create the _graph closure
     GraphClosure gc = GraphClosure(_graph);
-    ClosureParameters closureParameters;
+    GraphClosureParameters closureParameters;
     // save the results
     parameters.core_evaluation = FileEvaluation();
     parameters.detailed_evaluation = FileEvaluation();

@@ -16,6 +16,7 @@
 
 enum class EGraphClosureType {
     EXACT_GEODESIC,
+    EXACT_GEODESIC_ITERATIVE,
     APPROXIMATION_PRECLOSURE,
     APPROXIMATION_OUTERPLANAR,
     APPROXIMATION_TREE,
@@ -27,11 +28,13 @@ enum class EGraphClosureType {
  * @details The parameters are used to define the closure computation
  * @see ClosureParameters
  * @param closureType defines the closure function
+ * @param element_to_add defines the element to add to the input set, works only if the input set is already closed
  * @param number_of_substructures defines the number of substructures used for the approximation
  * @param relative_threshold defines the relative threshold for the approximation
  */
 struct GraphClosureParameters : ClosureParameters {
     EGraphClosureType closureType = EGraphClosureType::EXACT_GEODESIC;
+    NodeId element_to_add = -1;
 
     // Used only for approximation methods
     int number_of_substructures = 1;
@@ -107,9 +110,19 @@ inline void GraphClosure::closure(ClosureParameters& closureParameters) {
     // check if closureParameters can be casted to GraphClosureParameters
     auto* graphClosureParameters = (GraphClosureParameters*)(&closureParameters);
     if (graphClosureParameters != nullptr){
+        std::set<NodeId> generator_set;
         switch (graphClosureParameters->closureType) {
             case EGraphClosureType::EXACT_GEODESIC:
                 exact_geodesic_closure(*graphClosureParameters);
+                break;
+            case EGraphClosureType::EXACT_GEODESIC_ITERATIVE:
+                generator_set = graphClosureParameters->input_set;
+                for (auto i : generator_set)
+                {
+                    graphClosureParameters->input_set = graphClosureParameters->closed_set;
+                    graphClosureParameters->element_to_add = i;
+                    exact_geodesic_closure(*graphClosureParameters);
+                }
                 break;
             case EGraphClosureType::APPROXIMATION_PRECLOSURE:
                 graphClosureParameters->onlyPreClosure = true;
@@ -125,7 +138,7 @@ inline void GraphClosure::closure(ClosureParameters& closureParameters) {
     }
     else{
         // throw an error message that one should use GraphClosureParameters instead of ClosureParameters
-
+        std::runtime_error("ClosureParameters needs to be of type GraphClosureParameters to compute the closure of a graph");
 
     }
 }
@@ -159,69 +172,82 @@ inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closure
 
     std::unordered_set<NodeId> generatedElements;
     std::deque<NodeId> bfsQueue;
+
     // set closed set to input set
     closureParameters.closed_set.clear();
+    // if element to add is not -1 add it to the input set
+    if (closureParameters.element_to_add != -1){
+        closureParameters.input_set.insert(closureParameters.element_to_add);
+    }
+    // set closed set to input set
     closureParameters.closed_set = closureParameters.input_set;
+
     // clear added elements
     closureParameters.added_elements.clear();
     //Clear params
-    //closureParameters.preClosureDepthToElements.clear();
+    //closureParameters.pre_closure_depth.clear();
 
-    //Variable initialization
-    std::deque<NodeId> newElements = std::deque<NodeId>(closureParameters.input_set.begin(),
-                                                        closureParameters.input_set.end());
+    // determine all elements to start the bfs from
+    std::deque<NodeId> bfs_search_elements;
+    if (closureParameters.element_to_add != -1){
+        // the assumption is that the input set is already closed, i.e., one need to start the bfs search only from the element to add
+        bfs_search_elements.push_back(closureParameters.element_to_add);
+    }
+    else {
+        bfs_search_elements = std::deque<NodeId>(closureParameters.input_set.begin(),
+                                                 closureParameters.input_set.end());
+    }
 
-    closureParameters.preclosure_depth = 0;
-    NodeId LastElemOfPreviousStep = newElements.back();
+    closureParameters.maximum_pre_closure_depth = 0;
     _iterations = 0;
     bool break_condition = false;
     this->time = std::chrono::system_clock::now();
-    set_break_condition(break_condition, newElements, closureParameters);
-    closureParameters.preclosure_depth = 1;
-    NodeId last_pre_closure_element = newElements.back();
+    set_break_condition(break_condition, bfs_search_elements, closureParameters);
+    closureParameters.maximum_pre_closure_depth = 1;
+    NodeId last_pre_closure_element = bfs_search_elements.back();
     bool new_pre_closure_step = false;
     while (!break_condition) {
-        NodeId bfsStart = newElements.front();
+        NodeId bfsStart = bfs_search_elements.front();
 
 //Set detailed closure analysis
 //            if (closureParameters.detailed_analysis) {
-//                if (closureParameters.preClosureDepthToElements.find(closureParameters.preclosure_depth) ==
-//                    closureParameters.preClosureDepthToElements.end()) {
-//                    // insert preclosure depth and empty vector to the map preClosureDepthToElements
-//                    auto insert_pair = std::pair<int, std::vector<int>>(closureParameters.preclosure_depth,
+//                if (closureParameters.pre_closure_depth.find(closureParameters.maximum_pre_closure_depth) ==
+//                    closureParameters.pre_closure_depth.end()) {
+//                    // insert preclosure depth and empty vector to the map pre_closure_depth
+//                    auto insert_pair = std::pair<int, std::vector<int>>(closureParameters.maximum_pre_closure_depth,
 //                                                                        std::vector<int>());
-//                    //closureParameters.preClosureDepthToElements.insert(insert_pair);
+//                    //closureParameters.pre_closure_depth.insert(insert_pair);
 //                }
-//                closureParameters.preClosureDepthToElements[closureParameters.preclosure_depth].emplace_back(bfsStart);
+//                closureParameters.pre_closure_depth[closureParameters.maximum_pre_closure_depth].emplace_back(bfsStart);
 //            }
         if (bfsStart == last_pre_closure_element) {
             new_pre_closure_step = true;
         }
         if (new_pre_closure_step) {
-            last_pre_closure_element = newElements.back();
+            last_pre_closure_element = bfs_search_elements.back();
             new_pre_closure_step = false;
-            ++closureParameters.preclosure_depth;
+            ++closureParameters.maximum_pre_closure_depth;
         }
 
-        newElements.pop_front();
+        bfs_search_elements.pop_front();
 //                if (_graph.graphType == graphType::OUTERPLANAR) {
 //                    auto const it = generatedElements.find(bfsStart);
 //                    if (it == generatedElements.end()) {
 //                        bfs_forward(_graph, closureParameters.closed_set, bfsStart, bfsQueue);
-//                        bfs_backward(_graph, closureParameters.closed_set, closureParameters, bfsQueue, newElements,
+//                        bfs_backward(_graph, closureParameters.closed_set, closureParameters, bfsQueue, bfs_search_elements,
 //                                     generatedElements);
 //                        ++iterations;
 //                    }
 //                } else {
         bfs_forward(closureParameters, bfsStart, bfsQueue);
-        bfs_backward(closureParameters, use_only_pre_closure, bfsQueue, newElements, generatedElements);
+        bfs_backward(closureParameters, use_only_pre_closure, bfsQueue, bfs_search_elements, generatedElements);
         ++_iterations;
 //}
         // if the _graph is a tree and the threshold is infinite one bfs is enough to find the closure
         if (_graph.GetType() == GraphType::TREE && closureParameters.threshold == std::numeric_limits<int>::max()) {
             break;
         }
-        set_break_condition(break_condition, newElements, closureParameters);
+        set_break_condition(break_condition, bfs_search_elements, closureParameters);
     }
 }
 
@@ -309,6 +335,17 @@ inline void GraphClosure::bfs_backward(GraphClosureParameters &closureParameters
                 closureParameters.closed_set.insert(NeighborNodeId);
                 closureParameters.added_elements.insert(NeighborNodeId);
                 bfsQueue.push_back(NeighborNodeId);
+
+                // if analyse preclosure depth then store the depth of the newly found element
+                if (closureParameters.analyze_pre_closure_depth){
+                    if (closureParameters.pre_closure_depth.find(closureParameters.maximum_pre_closure_depth) ==
+                        closureParameters.pre_closure_depth.end()) {
+                        closureParameters.pre_closure_depth[closureParameters.maximum_pre_closure_depth] = std::vector<NodeId>(1, NeighborNodeId);
+                    }
+                    else{
+                        closureParameters.pre_closure_depth[closureParameters.maximum_pre_closure_depth].emplace_back(NeighborNodeId);
+                    }
+                 }
 
                 // Add the newly found elements to the bfs start nodes if not only the preclosure is computed
                 if (!use_only_pre_closure){
