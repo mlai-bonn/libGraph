@@ -1,4 +1,4 @@
-# _graph-lib: A c++ library for different _graph based tasks
+# graph-lib: A c++ library for different graph based tasks
 
 ## Graph Format (.bgfs for graphs with less than 2^32 edges .bgf else)
 
