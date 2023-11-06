@@ -87,8 +87,7 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
 
         // get the closure of the start vertex
         std::set<NodeId> start_set = std::set<NodeId>({start_vertex});
-        closureParameters.input_set = start_set;
-        gc.closure(closureParameters);
+        closureParameters.closed_set = start_set;
 
 
         // iterate over the growth steps
@@ -135,7 +134,7 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
                                                                                              1)(generator)];
                 // calculate the closure of the core + the random element
                 closureParameters.input_set = closureParameters.closed_set;
-                closureParameters.input_set.insert(random_element);
+                closureParameters.element_to_add = random_element;
                 gc.closure(closureParameters);
                 // add the random element to the added elements
                 closureParameters.added_elements.insert(random_element);

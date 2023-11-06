@@ -117,6 +117,7 @@ inline void GraphClosure::closure(ClosureParameters& closureParameters) {
                 break;
             case EGraphClosureType::EXACT_GEODESIC_ITERATIVE:
                 generator_set = graphClosureParameters->input_set;
+                graphClosureParameters->closed_set.clear();
                 for (auto i : generator_set)
                 {
                     graphClosureParameters->input_set = graphClosureParameters->closed_set;
@@ -146,7 +147,7 @@ inline void GraphClosure::closure(ClosureParameters& closureParameters) {
 inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closureParameters) {
     bool use_only_pre_closure = closureParameters.onlyPreClosure;
     // Check validity of input set
-    if (closureParameters.input_set.empty()) {
+    if (closureParameters.input_set.empty() && closureParameters.element_to_add == -1) {
         return;
     }
 

@@ -73,7 +73,7 @@ public:
                 closureParameters.input_set.insert(nodes[rand_idx]);
                 std::swap(nodes[rand_idx], nodes[j]);
             }
-
+            closureParameters.closureType = EGraphClosureType::EXACT_GEODESIC_ITERATIVE;
             // compute the closure
             gc.closure(closureParameters);
             closures.emplace_back(closureParameters.closed_set);
