@@ -104,7 +104,7 @@ public:
 class OuterPlanarSubgraphMitchell : public OuterplanarSubgraph {
 public:
     explicit OuterPlanarSubgraphMitchell(const GraphStruct& graph);
-    void generate(int seed, bool print) override;
+    void generate(GraphStruct& subgraph, int seed, bool print) override;
 
     class PrintSteps {
     public:
@@ -123,7 +123,7 @@ private:
                           int neighborIdx, NodeId &neighborId);
     int nodeIdToComponentId(NodeId nodeId) const;
     void GetBiconnectedComponentsMitchell();
-    void BiconnectedComponentSampling(BiconnectedComponent& biCom, std::mt19937_64& _gen);
+    void BiconnectedComponentSampling(GraphStruct& subgraph, BiconnectedComponent& biCom, std::mt19937_64& _gen);
     void Init();
     void UpdateDegrees(NodeId id);
     void DeleteRandomEdge(const PrintSteps& printing, std::mt19937_64& _gen);
@@ -227,7 +227,7 @@ void OuterPlanarSubgraphMitchell::GetBiconnectedComponentsMitchell() {
 
 }
 
-void OuterPlanarSubgraphMitchell::generate(int seed, bool p) {
+void OuterPlanarSubgraphMitchell::generate(GraphStruct& subgraph, int seed, bool p) {
     this->_seed = seed;
     this->_print = p;
     std::mt19937_64 _gen(seed);
@@ -257,14 +257,14 @@ void OuterPlanarSubgraphMitchell::generate(int seed, bool p) {
             bool b = edgesInSpanningTree.find(nodePair) != edgesInSpanningTree.end();
             edgeInfo.setTreeEdge(b);
         }
-        BiconnectedComponentSampling(biCom, _gen);
+        BiconnectedComponentSampling(subgraph, biCom, _gen);
         for (auto nodeId : biCom.nodeIds) {
             nodeToComponentAndId[nodeId].pop_front();
         }
     }
 }
 
-void OuterPlanarSubgraphMitchell::BiconnectedComponentSampling(BiconnectedComponent& biCom, std::mt19937_64& _gen) {
+void OuterPlanarSubgraphMitchell::BiconnectedComponentSampling(GraphStruct& subgraph, BiconnectedComponent& biCom, std::mt19937_64& _gen) {
     GraphStruct& component = biconnectedComponents[biCom.componentId];
     INDEX nodeNum = component.nodes();
     currentComponent = biCom;
@@ -364,7 +364,7 @@ void OuterPlanarSubgraphMitchell::BiconnectedComponentSampling(BiconnectedCompon
     //Add all undeleted edges to the _subgraph
     for (auto const& [edge, valid] : currentComponent.edges) {
         if (valid) {
-            this->_outerPlanarSubGraph.add_edge(edge.first(), edge.second());
+           subgraph.add_edge(edge.first(), edge.second());
         }
     }
 }

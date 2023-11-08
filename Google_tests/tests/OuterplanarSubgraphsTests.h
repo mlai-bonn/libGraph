@@ -10,7 +10,8 @@ TEST(OuterplanarSubgraphsTestSuite, ExampleOuterplanarDFSCircle){
 
     OuterplanarSubgraphDFS outerplanarSubgraphDFS = OuterplanarSubgraphDFS(circle);
     OuterPlanarSubgraphMitchell outerPlanarSubgraphMitchell = OuterPlanarSubgraphMitchell(circle);
-    GraphStruct& o1 = outerplanarSubgraphDFS.subgraph(0, false);
+    GraphStruct o1;
+    outerplanarSubgraphDFS.generate(o1,0, false);
     //GraphStruct& o2 = outerPlanarSubgraphMitchell.subgraph(0, false);
     EXPECT_EQ(o1.nodes(), circle.nodes());
     EXPECT_EQ(o1.edges(), circle.edges());
@@ -30,7 +31,8 @@ TEST(OuterplanarSubgraphsTestSuite, ExampleOuterplanarDFSCircleWithDiagonals){
     }
 
     OuterplanarSubgraphDFS outerplanarSubgraphDFS = OuterplanarSubgraphDFS(circle_diagonals);
-    GraphStruct& o1 = outerplanarSubgraphDFS.subgraph(0, false);
+    GraphStruct o1;
+    outerplanarSubgraphDFS.generate(o1, 0, false);
     //GraphStruct& o2 = outerPlanarSubgraphMitchell.subgraph(0, false);
     EXPECT_EQ(o1.nodes(), circle_diagonals.nodes());
     EXPECT_EQ(o1.edges(), circle_diagonals.edges());
@@ -49,7 +51,8 @@ TEST(OuterplanarSubgraphsTestSuite, ExampleOuterplanarDFSDoubleTriangle){
 
     OuterplanarSubgraphDFS outerplanarSubgraphDFS = OuterplanarSubgraphDFS(doubleTriangle);
     OuterPlanarSubgraphMitchell outerPlanarSubgraphMitchell = OuterPlanarSubgraphMitchell(doubleTriangle);
-    GraphStruct& o1 = outerplanarSubgraphDFS.subgraph(0, false);
+    GraphStruct o1;
+    outerplanarSubgraphDFS.generate(o1, 0, false);
     //GraphStruct& o2 = outerPlanarSubgraphMitchell.subgraph(0, false);
     EXPECT_EQ(o1.nodes(), doubleTriangle.nodes());
     EXPECT_EQ(o1.edges(), doubleTriangle.edges());
@@ -66,7 +69,8 @@ TEST(OuterplanarSubgraphsTestSuite, ExampleOuterplanarDFSFullyBipartite){
     GraphStruct fullyBipartite = SimplePatterns::FullyBipartite(2,3);
     OuterplanarSubgraphDFS outerplanarSubgraphDFS = OuterplanarSubgraphDFS(fullyBipartite);
     //OuterPlanarSubgraphMitchell outerPlanarSubgraphMitchell = OuterPlanarSubgraphMitchell(fullyBipartite);
-    GraphStruct o1 = outerplanarSubgraphDFS.subgraph(0, false);
+    GraphStruct o1;
+    outerplanarSubgraphDFS.generate(o1, 0, false);
     //GraphStruct o2 = outerPlanarSubgraphMitchell.subgraph(0, false);
     EXPECT_EQ(o1.edges(), 5);
     //EXPECT_EQ(o2.edges(), 5);
@@ -112,7 +116,8 @@ TEST(OuterplanarSubgraphDataTestSuite, ExampleDetailedTest) {
 
     auto start = std::chrono::high_resolution_clock::now();
     auto subgraphGeneration = OuterplanarSubgraphDFS(graph);
-    GraphStruct o1 = subgraphGeneration.subgraph(seed, false);
+    GraphStruct o1;
+    subgraphGeneration.generate(o1, seed, false);
 
     outerplanar_runtime += std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::high_resolution_clock::now() - start).count();
@@ -140,5 +145,30 @@ TEST(OuterplanarSubgraphDataTestSuite, ExampleDetailedTest) {
     EXPECT_EQ(GraphStruct::IsConnected(graph), true);
     EXPECT_EQ(nonOuterPlanarNumber, 0);
 }
+
+TEST(OuterplanarSubgraphDataTestSuite, ExampleOuterplanarGraphData) {
+    // load CA-GrQc graph
+    std::string path = "../../../../GraphData/RealWorld/Collaboration/CA-GrQc_component.bin";
+    // print files in path
+    // check if file exists
+    if (!std::filesystem::exists(path))
+    {
+        std::cout << "File does not exist\n";
+        return;
+    }
+    GraphStruct graph = GraphStruct(path);
+    OuterplanarSubgraphDFS outerplanarSubgraphDFS = OuterplanarSubgraphDFS(graph);
+    std::vector<GraphStruct> subgraphs;
+    std::vector<OuterplanarGraphData> subgraphs_extended;
+    outerplanarSubgraphDFS.subgraphs_extended(10, subgraphs_extended, 0);
+    outerplanarSubgraphDFS.subgraphs(10, subgraphs, 0);
+
+    for (int i = 0; i < 10; ++i) {
+        EXPECT_EQ(subgraphs[i].nodes(), subgraphs_extended[i].nodes());
+        EXPECT_EQ(subgraphs[i].edges(), subgraphs_extended[i].edges());
+    }
+
+}
+
 
 #endif //GOOGLE_TESTS_OUTERPLANARSUBGRAPHSTESTS_H

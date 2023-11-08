@@ -18,7 +18,7 @@ TEST(GraphCoreTestSuite, ExampleCoreRandomAlgorithmErdosRenyi){
 
     parameters = {.generator_size = 5, .core_iterations = 10};
     coreRandomAlgorithm.Run(parameters);
-    parameters.core_evaluation.save("../test/out/", "cores", ".csv");
+    parameters.core_evaluation.save("../tests/out/", "cores", ".csv");
     EXPECT_EQ(parameters.core_nodes.size(), graph.nodes());
 
     parameters = {.generator_size = 1};
@@ -35,7 +35,5 @@ TEST(GraphCoreTestSuite, ExampleCoreGrowAlgorithmErdosRenyi){
     parameters.detailed_evaluation.save("../tests/out/", "details_grow_core_" + graph.GetName(), ".csv");
     EXPECT_EQ(parameters.core_nodes.size(), graph.nodes());
 }
-
-
 
 #endif //GOOGLE_TESTS_GRAPHCORETESTS_H

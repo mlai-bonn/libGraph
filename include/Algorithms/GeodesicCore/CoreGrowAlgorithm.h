@@ -25,6 +25,7 @@ struct CoreGrowAlgorithmParameters {
     int grow_steps = 15;
     double core_percentage = 0.9;
     int seed = 0;
+    GraphClosureParameters closureParameters;
     bool print = false;
     bool save = true;
 
@@ -56,7 +57,6 @@ private:
 void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
     // create the _graph closure
     GraphClosure gc = GraphClosure(_graph);
-    GraphClosureParameters closureParameters;
     // save the results
     parameters.core_evaluation = FileEvaluation();
     parameters.detailed_evaluation = FileEvaluation();
@@ -87,7 +87,7 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
 
         // get the closure of the start vertex
         std::set<NodeId> start_set = std::set<NodeId>({start_vertex});
-        closureParameters.closed_set = start_set;
+        parameters.closureParameters.closed_set = start_set;
 
 
         // iterate over the growth steps
@@ -102,7 +102,7 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
             // delete all core neighbors that are already in the closureParameters.closed_set
             std::vector<NodeId> core_neighbors_copy = std::vector<NodeId>();
             for (auto node : core_neighbors) {
-                if (closureParameters.closed_set.find(node) == closureParameters.closed_set.end())
+                if (parameters.closureParameters.closed_set.find(node) == parameters.closureParameters.closed_set.end())
                 {
                     core_neighbors_copy.emplace_back(node);
                 }
@@ -114,14 +114,14 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
             }
 
             // add the neighbors of all added elements to the core neighbors if the neighbor is not already in the core nodes
-            for (auto added_element : closureParameters.added_elements)
+            for (auto added_element : parameters.closureParameters.added_elements)
             {
                 // get the neighbors of the added element
                 // iterate over the neighbors of the added element
                 for (auto added_element_neighbor : _graph.get_neighbors(added_element))
                 {
                     // add the neighbor to the core neighbors if it is not already in the core nodes
-                    if (closureParameters.closed_set.find(added_element_neighbor) == closureParameters.closed_set.end())
+                    if (parameters.closureParameters.closed_set.find(added_element_neighbor) == parameters.closureParameters.closed_set.end())
                     {
                         core_neighbors.emplace_back(added_element_neighbor);
                     }
@@ -133,28 +133,28 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
                                                                                              (NodeId) core_neighbors.size() -
                                                                                              1)(generator)];
                 // calculate the closure of the core + the random element
-                closureParameters.input_set = closureParameters.closed_set;
-                closureParameters.element_to_add = random_element;
-                gc.closure(closureParameters);
+                parameters.closureParameters.input_set = parameters.closureParameters.closed_set;
+                parameters.closureParameters.element_to_add = random_element;
+                gc.closure(parameters.closureParameters);
                 // add the random element to the added elements
-                closureParameters.added_elements.insert(random_element);
+                parameters.closureParameters.added_elements.insert(random_element);
 
-                core_size_evolution[i][j + 1] = (int) closureParameters.added_elements.size();
+                core_size_evolution[i][j + 1] = (int) parameters.closureParameters.added_elements.size();
             }
         }
         // _print the closure size
         if (parameters.print)
         {
-            std::cout << "Closure size: " << closureParameters.closed_set.size() << std::endl;
+            std::cout << "Closure size: " << parameters.closureParameters.closed_set.size() << std::endl;
         }
         // add the core nodes to the output parameters
-        for (auto node : closureParameters.closed_set)
+        for (auto node : parameters.closureParameters.closed_set)
         {
             core_nodes[node] += 1;
         }
         // save the results
         parameters.detailed_evaluation.headerValueInsert({"Graph", "Size", "Edges", "Parameters", "NumRuns", "GrowSteps", "CorePercentage", "Seed", "Results", "Iteration", "ClosureSize", "CoreSize", "Total Runtime"},
-                                             {_graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "", std::to_string(parameters.num_runs), std::to_string(parameters.grow_steps), std::to_string(parameters.core_percentage), std::to_string(parameters.seed), "", std::to_string(i), std::to_string(closureParameters.closed_set.size()), "", std::to_string(parameters.runtime)});
+                                             {_graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "", std::to_string(parameters.num_runs), std::to_string(parameters.grow_steps), std::to_string(parameters.core_percentage), std::to_string(parameters.seed), "", std::to_string(i), std::to_string(parameters.closureParameters.closed_set.size()), "", std::to_string(parameters.runtime)});
     }
     // _print the core nodes vector
     if (parameters.print)

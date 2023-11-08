@@ -24,8 +24,10 @@ struct CoreAlgorithmParameters {
     int generator_size = 5;
     int core_iterations = -1;
     int seed = 0;
+    GraphClosureParameters closureParameters;
     bool print = false;
     bool save = true;
+    std::string method = "RandomCore";
 
 
     // Output parameters
@@ -41,7 +43,6 @@ public:
     explicit CoreRandomAlgorithm(GraphStruct &graph) : _graph(graph) {};
     void Run(CoreAlgorithmParameters& parameters){
         GraphClosure gc = GraphClosure(_graph);
-        GraphClosureParameters closureParameters;
         std::vector<std::set<NodeId>> closures;
         std::cout << std::endl;
         std::set<NodeId> overlap;
@@ -65,20 +66,19 @@ public:
 
             // generate input set
             std::mt19937_64 generator(i + c_iterations * parameters.seed);
-            closureParameters.input_set.clear();
+            parameters.closureParameters.input_set.clear();
             std::vector<NodeId> nodes(_graph.nodes());
             std::iota(nodes.begin(), nodes.end(), 0);
             for (int j = 0; j < parameters.generator_size; ++j) {
                 int rand_idx = std::uniform_int_distribution<int>(j, ((int) nodes.size()) - 1)(generator);
-                closureParameters.input_set.insert(nodes[rand_idx]);
+                parameters.closureParameters.input_set.insert(nodes[rand_idx]);
                 std::swap(nodes[rand_idx], nodes[j]);
             }
-            closureParameters.closureType = EGraphClosureType::EXACT_GEODESIC_ITERATIVE;
             // compute the closure
-            gc.closure(closureParameters);
-            closures.emplace_back(closureParameters.closed_set);
+            gc.closure(parameters.closureParameters);
+            closures.emplace_back(parameters.closureParameters.closed_set);
             if (i == 0) {
-                overlap = closureParameters.closed_set;
+                overlap = parameters.closureParameters.closed_set;
                 std::cout << "\tIteration " << std::to_string(i) << " of _graph " << _graph.GetName() << " finished after "
                           << std::to_string(((double) std::chrono::duration_cast<std::chrono::microseconds>(
                                   std::chrono::high_resolution_clock::now() - start).count() / 1000000.0)) << "s"
@@ -104,7 +104,7 @@ public:
                         {_graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "",
                          std::to_string(parameters.generator_size), std::to_string(parameters.core_iterations),
                          std::to_string(i + c_iterations * parameters.seed), "", std::to_string(i),
-                         std::to_string(closureParameters.closed_set.size()), std::to_string(overlap.size()),
+                         std::to_string(parameters.closureParameters.closed_set.size()), std::to_string(overlap.size()),
                          std::to_string(((double) std::chrono::duration_cast<std::chrono::microseconds>(
                                  std::chrono::high_resolution_clock::now() - start).count() / 1000000.0))});
             }
@@ -125,7 +125,7 @@ public:
             parameters.core_evaluation.headerValueInsert(
                     {"Method", "Graph", "Size", "Edges", "Parameters", "NumIterations", "GrowSteps", "CorePercentage",
                      "GeneratorSize", "Seed", "Results", "CoreSize", "Iterations", "Runtime"},
-                    {"RandomCore", _graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "",
+                    {parameters.method, _graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "",
                      std::to_string(parameters.core_iterations), "", "", std::to_string(parameters.generator_size),
                      std::to_string(parameters.seed), "", std::to_string(parameters.core_nodes.size()),
                      std::to_string(iteration_count), std::to_string(parameters.runtime)});

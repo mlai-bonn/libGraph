@@ -52,6 +52,11 @@ static int BFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_
  */
 static int DFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_node_id, bool deterministic = true, int seed = 0);
 
+static void BFSSpanningTrees(const GraphStruct& graph, std::vector<GraphStruct>& trees, int tree_number, int seed, const std::string& output_path = "");
+
+static void BFSSpanningTrees(GraphExtended& graph, std::vector<GraphStruct>& trees, int tree_number, int seed, const std::string& output_path = "");
+
+
 
 
 inline int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId root_node_id, std::vector<bool>& visited, std::vector<INDEX>& distances, bool deterministic, int seed){
@@ -443,6 +448,75 @@ inline int DFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_
         tree.SetType(GraphType::TREE);
     }
     return components;
+}
+
+void BFSSpanningTrees(GraphExtended &graph, std::vector<GraphStruct> &subtrees, int tree_number, int seed, const std::string& out_path) {
+
+    std::mt19937_64 gen(seed);
+    std::uniform_int_distribution<NodeId> root_node_dist(0, graph.nodes() - 1);
+    std::uniform_int_distribution<int> dist(0, std::numeric_limits<int>::max());
+
+    if (out_path.empty()) {
+        subtrees.clear();
+        // generate 100 random subtrees of the graph
+        for (int i = 0; i < tree_number; ++i) {
+            subtrees.emplace_back();
+            NodeId root = root_node_dist(gen);
+            BFSSpanningTree(graph, subtrees.back(), root, false, dist(gen));
+        }
+    }
+    else{
+        // delete all .bgfs files in the output directory
+        for (const auto &entry : std::filesystem::directory_iterator(out_path)) {
+            if (entry.path().extension() == ".bgfs") {
+                std::filesystem::remove(entry.path());
+            }
+        }
+        // generate 100 random subtrees of the graph and save them to the output directory
+        GraphStruct tree;
+        for (int i = 0; i < tree_number; ++i) {
+            NodeId root = root_node_dist(gen);
+            SaveParams saveParams = {.graphPath = out_path, .Name = "tree_" + std::to_string(i), .Format = GraphFormat::BGFS};
+            BFSSpanningTree(graph, tree, root, false, dist(gen));
+            tree.Save(saveParams);
+        }
+    }
+}
+
+void BFSSpanningTrees(const GraphStruct &graph, std::vector<GraphStruct> &subtrees, int tree_number, int seed, const std::string& output_path) {
+
+    std::mt19937_64 gen(seed);
+    std::uniform_int_distribution<NodeId> root_node_dist(0, graph.nodes() - 1);
+    std::uniform_int_distribution<int> dist(0, std::numeric_limits<int>::max());
+    std::vector<bool> visited;
+    std::vector<INDEX> distances;
+
+    if (output_path.empty()) {
+        subtrees.clear();
+        // generate 100 random subtrees of the graph
+        for (int i = 0; i < tree_number; ++i) {
+            subtrees.emplace_back();
+            NodeId root = root_node_dist(gen);
+            BFSSpanningTree(graph, subtrees.back(), root, visited, distances, false, dist(gen));
+        }
+    }
+    else{
+        // delete all .bgfs files in the output directory
+        for (const auto &entry : std::filesystem::directory_iterator(output_path)) {
+            if (entry.path().extension() == ".bgfs") {
+                std::filesystem::remove(entry.path());
+            }
+        }
+        // generate 100 random subtrees of the graph and save them to the output directory
+        GraphStruct tree;
+
+        for (int i = 0; i < tree_number; ++i) {
+            SaveParams saveParams = {.graphPath = output_path, .Name = "tree_" + std::to_string(i), .Format = GraphFormat::BGFS};
+            NodeId root = root_node_dist(gen);
+            BFSSpanningTree(graph, tree, root, visited, distances, false, dist(gen));
+            tree.Save(saveParams);
+        }
+    }
 }
 
 

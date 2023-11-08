@@ -14,22 +14,55 @@ public:
     //copying
     //OuterplanarSubgraph(const OuterplanarSubgraph& other){};
 
-    virtual void generate(int seed, bool print) = 0;
+    virtual void generate(GraphStruct& subgraph, int seed, bool print) = 0;
 
-    GraphStruct& subgraph(int seed, bool print){
-        generate(seed, print);
-        return _outerPlanarSubGraph;
+    void subgraphs(int num_subgraphs, std::vector<GraphStruct>& subgraphs, int seed, const std::string& out_path = ""){
+        std::mt19937_64 generator(seed);
+        std::uniform_int_distribution<int> distribution(0, std::numeric_limits<int>::max());
+
+        if (out_path.empty()) {
+            subgraphs.clear();
+            for (int i = 0; i < num_subgraphs; ++i) {
+                subgraphs.emplace_back();
+                generate(subgraphs.back(), distribution(generator), false);
+            }
+        }
+        else{
+            // delete all files in the directory that end with .bgfs
+            for (const auto & entry : std::filesystem::directory_iterator(out_path)){
+                if (entry.path().extension() == ".bgfs"){
+                    std::filesystem::remove(entry.path());
+                }
+            }
+            for (int i = 0; i < num_subgraphs; ++i) {
+                GraphStruct subgraph;
+                SaveParams saveParams = {.graphPath = out_path, .Name = "subgraph_" + std::to_string(i)};
+                generate(subgraph, distribution(generator), false);
+                subgraph.Save(saveParams);
+            }
+        }
     }
-    OuterplanarGraphData& subgraph_extended(int seed, bool print){
-        generate(seed, print);
-        return _outerPlanarSubGraphData;
+
+    void subgraph_extended(GraphStruct& subgraph, OuterplanarGraphData& outerplanarGraphData, int seed, bool print){
+        generate(subgraph, seed, print);
+        outerplanarGraphData = OuterplanarGraphData(subgraph);
     }
+    void subgraphs_extended(int num_subgraphs, std::vector<OuterplanarGraphData>& subgraphs, int seed){
+        std::mt19937_64 generator(seed);
+        std::uniform_int_distribution<int> distribution(0, std::numeric_limits<int>::max());
+        subgraphs.clear();
+        for (int i = 0; i < num_subgraphs; ++i) {
+            GraphStruct subgraph;
+            subgraphs.emplace_back();
+            subgraph_extended(subgraph, subgraphs.back(), distribution(generator), false);
+        }
+    }
+
+
 
 
 protected:
-    GraphStruct _outerPlanarSubGraph;
     const GraphStruct& _graph;
-    OuterplanarGraphData _outerPlanarSubGraphData;
 };
 
 

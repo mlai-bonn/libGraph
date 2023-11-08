@@ -124,7 +124,7 @@ TEST(GraphClosureTestSuite, ExampleClosureThetaTest){
     for (int i = 1; i <= 100; ++i) {
         GraphStruct testGraph = SimplePatterns::Path(i);
         GraphClosure graphClosureTestGraph = GraphClosure(testGraph);
-        GraphClosureParameters closureParameters = GraphClosureParameters({.input_set = {0, (NodeId) i}, .threshold = 50});
+        GraphClosureParameters closureParameters = GraphClosureParameters({.input_set = {0, (NodeId) i}, .theta = 50});
         graphClosureTestGraph.closure(closureParameters);
         if (i <= 50){
             EXPECT_EQ(closureParameters.closed_set.size(), i + 1);
@@ -139,7 +139,7 @@ TEST(GraphClosureTestSuite, ExampleClosureThetaTest){
     GraphClosure graphClosureTestGraph = GraphClosure(testGraph);
     GraphClosureParameters closureParameters = GraphClosureParameters({.input_set = {1, 3, 6, 8}});
     for (int threshold = 0; threshold < 10; ++threshold) {
-        closureParameters.threshold = threshold;
+        closureParameters.theta = threshold;
         graphClosureTestGraph.closure(closureParameters);
         if (threshold < 2){
             EXPECT_EQ(closureParameters.closed_set.size(), 4);
@@ -155,7 +155,7 @@ TEST(GraphClosureTestSuite, ExampleClosureThetaTest){
         }
     }
     for (int threshold = 10; threshold >= 0; --threshold) {
-        closureParameters.threshold = threshold;
+        closureParameters.theta = threshold;
         graphClosureTestGraph.closure(closureParameters);
         if (threshold < 2){
             EXPECT_EQ(closureParameters.closed_set.size(), 4);
@@ -207,5 +207,121 @@ TEST(GraphClosureTestSuite, ExampleIterativeClosure)
 
     EXPECT_EQ(original_closure, iterative_closure);
 }
+
+TEST(GraphClosureTestSuite, ExampleApproximateClosuresTrees)
+{
+    GraphExtended graph = GraphExtended(SimplePatterns::ErdosRenyi(1000, 20000, 0, true));
+    GraphClosure graphClosure = GraphClosure(graph);
+    std::vector<GraphStruct> subtrees;
+    BFSSpanningTrees(graph, subtrees, 100, 0);
+    GraphClosureParameters graphClosureParameters;
+    graphClosureParameters.input_set = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    graphClosureParameters.closureType = EGraphClosureType::EXACT_GEODESIC;
+    graphClosure.closure(graphClosureParameters);
+    std::set<NodeId> exact_closure = graphClosureParameters.closed_set;
+
+    graphClosureParameters.closureType = EGraphClosureType::APPROXIMATION_SUBSTRUCTURE;
+    graphClosureParameters.clear();
+    for (auto& x : subtrees){
+        graphClosureParameters.sub_structures.emplace_back(&x);
+    }
+    graphClosure.closure(graphClosureParameters);
+
+    std::set<NodeId> approx_closure = graphClosureParameters.closed_set;
+    // print Jaccard Similarity between original closure and approximate closure
+    NodeId intersection_size = 0;
+    for (NodeId node : exact_closure)
+    {
+        if (approx_closure.find(node) != approx_closure.end())
+        {
+            intersection_size++;
+        }
+    }
+    double jaccard_similarity = (double) intersection_size / (exact_closure.size() + approx_closure.size() - intersection_size);
+    std::cout << "Jaccard Similarity: " << jaccard_similarity << "\n";
+}
+
+TEST(GraphClosureTestSuite, ExampleApproximateClosuresOuterplanarSubgraphs)
+{
+    GraphExtended graph = GraphExtended(SimplePatterns::ErdosRenyi(1000, 20000, 0, true));
+    GraphClosure graphClosure = GraphClosure(graph);
+    std::vector<GraphStruct> outerplanar_subgraphs;
+    std::vector<OuterplanarGraphData> outerplanar_graph_data;
+    OuterplanarSubgraphDFS outerplanarSubgraphDFS = OuterplanarSubgraphDFS(graph);
+    outerplanarSubgraphDFS.subgraphs(100, outerplanar_subgraphs, 0);
+    outerplanarSubgraphDFS.subgraphs_extended(100, outerplanar_graph_data, 0);
+    GraphClosureParameters graphClosureParameters;
+    graphClosureParameters.input_set = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    graphClosureParameters.closureType = EGraphClosureType::EXACT_GEODESIC;
+    graphClosure.closure(graphClosureParameters);
+    std::set<NodeId> exact_closure = graphClosureParameters.closed_set;
+
+    graphClosureParameters.closureType = EGraphClosureType::APPROXIMATION_SUBSTRUCTURE;
+    // fill substructures with pointers to outerplanar_subgraphs
+    graphClosureParameters.sub_structures.clear();
+    for (auto& x : outerplanar_subgraphs){
+        graphClosureParameters.sub_structures.emplace_back(&x);
+    }
+    graphClosure.closure(graphClosureParameters);
+    std::set<NodeId> approx_closure1 = graphClosureParameters.closed_set;
+
+    graphClosureParameters.sub_structures.clear();
+    for (auto& x : outerplanar_graph_data){
+        graphClosureParameters.sub_structures.emplace_back(&x);
+    }
+    graphClosure.closure(graphClosureParameters);
+    std::set<NodeId> approx_closure2 = graphClosureParameters.closed_set;
+
+    EXPECT_NE(approx_closure1.size(), 0);
+    EXPECT_EQ(approx_closure1, approx_closure2);
+
+    // print Jaccard Similarity between original closure and approximate closure
+    NodeId intersection_size = 0;
+    for (NodeId node : exact_closure)
+    {
+        if (approx_closure1.find(node) != approx_closure1.end())
+        {
+            intersection_size++;
+        }
+    }
+    double jaccard_similarity = (double) intersection_size / (exact_closure.size() + approx_closure1.size() - intersection_size);
+    std::cout << "Jaccard Similarity: " << jaccard_similarity << "\n";
+}
+
+TEST(GraphClosureTestSuite, ExampleApproximateClosuresOuterplanarSubgraphsComparison)
+{
+    // load CA-GrQc graph
+    std::string path = "../../../../GraphData/RealWorld/Collaboration/CA-GrQc_component.bin";
+    // print files in path
+    // check if file exists
+    if (!std::filesystem::exists(path))
+    {
+        std::cout << "File does not exist\n";
+        return;
+    }
+
+    GraphStruct graph = GraphStruct(path);
+    OuterplanarSubgraphDFS outerplanarSubgraphDFS = OuterplanarSubgraphDFS(graph);
+    GraphStruct subgraph;
+    outerplanarSubgraphDFS.generate(subgraph, 0, false);
+    OuterplanarGraphData outerplanarGraphData;
+    outerplanarSubgraphDFS.subgraph_extended(subgraph, outerplanarGraphData, 0, false);
+
+    GraphClosureParameters graphClosureParameters;
+    // get 5 random nodes
+    StaticFunctionsLib::get_k_from_n(graphClosureParameters.input_set, 5, graph.nodes(), 0);
+
+    GraphClosure graphClosure = GraphClosure(subgraph);
+    graphClosure.closure(graphClosureParameters);
+    std::set<NodeId> closure = graphClosureParameters.closed_set;
+
+    GraphClosure graphClosure2 = GraphClosure(outerplanarGraphData);
+    graphClosure2.closure(graphClosureParameters);
+    std::set<NodeId> closure2 = graphClosureParameters.closed_set;
+
+    EXPECT_EQ(closure, closure2);
+
+}
+
 
 #endif //GOOGLE_TESTS_GRAPHCLOSURETESTS_H

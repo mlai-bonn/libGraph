@@ -13,13 +13,13 @@
 #include <map>
 #include <unordered_set>
 #include "BaseOperator.h"
+#include "Algorithms/Graph/OuterplanarSubgraphDFS.h"
 
 enum class EGraphClosureType {
     EXACT_GEODESIC,
     EXACT_GEODESIC_ITERATIVE,
     APPROXIMATION_PRECLOSURE,
-    APPROXIMATION_OUTERPLANAR,
-    APPROXIMATION_TREE,
+    APPROXIMATION_SUBSTRUCTURE,
     APPROXIMATION_LAYERING,
 };
 
@@ -30,16 +30,20 @@ enum class EGraphClosureType {
  * @param closureType defines the closure function
  * @param element_to_add defines the element to add to the input set, works only if the input set is already closed
  * @param number_of_substructures defines the number of substructures used for the approximation
- * @param relative_threshold defines the relative threshold for the approximation
+ * @param relative_threshold defines the relative theta for the approximation
  */
 struct GraphClosureParameters : ClosureParameters {
     EGraphClosureType closureType = EGraphClosureType::EXACT_GEODESIC;
     NodeId element_to_add = -1;
 
     // Used only for approximation methods
-    int number_of_substructures = 1;
     std::string path_to_substructures;
-    double relative_threshold = 0.0;
+    std::vector<GraphStruct*> sub_structures;
+    double relative_threshold = 0;
+    INDEX absolute_threshold = 1;
+    EGraphClosureType closure_on_substructures = EGraphClosureType::EXACT_GEODESIC;
+
+    std::vector<NodeId> frequency;
 };
 
 /**
@@ -64,14 +68,8 @@ public:
      * @param closureParameters defines all necessary parameters for the closure computation
      */
     void closure(ClosureParameters& closureParameters) override;
-    void exact_geodesic_closure(GraphClosureParameters& closureParameters);
 
-    /**
-     * @brief Computes the closure of the input set
-     * @param outerplanarGraphData
-     * @param closureParameters
-     */
-    void outerplanar_closure(GraphClosureParameters &closureParameters);
+
 
 
 private:
@@ -104,12 +102,36 @@ private:
     GraphStruct& _graph;
     std::chrono::time_point<std::chrono::system_clock> time;
     int _iterations = 0;
+
+    void substructure_approximation(GraphClosureParameters& parameters);
+
+    void exact_geodesic_closure(GraphClosureParameters& closureParameters);
+
+    /**
+ * @brief Computes the closure of the input set
+ * @param outerplanarGraphData
+ * @param closureParameters
+ */
+    void outerplanar_closure(GraphClosureParameters &closureParameters);
 };
 
 inline void GraphClosure::closure(ClosureParameters& closureParameters) {
     // check if closureParameters can be casted to GraphClosureParameters
     auto* graphClosureParameters = (GraphClosureParameters*)(&closureParameters);
     if (graphClosureParameters != nullptr){
+        // check if the input set is empty
+        if (closureParameters.input_set.empty()) {
+            if (closureParameters.element_to_add == -1) {
+                return;
+            }
+            else{
+                closureParameters.input_set.insert(closureParameters.element_to_add);
+            }
+        }
+        if (closureParameters.input_set.size() == 1){
+            closureParameters.closed_set = closureParameters.input_set;
+            return;
+        }
         std::set<NodeId> generator_set;
         switch (graphClosureParameters->closureType) {
             case EGraphClosureType::EXACT_GEODESIC:
@@ -122,6 +144,7 @@ inline void GraphClosure::closure(ClosureParameters& closureParameters) {
                 {
                     graphClosureParameters->input_set = graphClosureParameters->closed_set;
                     graphClosureParameters->element_to_add = i;
+                    graphClosureParameters->input_set.insert(i);
                     exact_geodesic_closure(*graphClosureParameters);
                 }
                 break;
@@ -129,9 +152,8 @@ inline void GraphClosure::closure(ClosureParameters& closureParameters) {
                 graphClosureParameters->onlyPreClosure = true;
                 exact_geodesic_closure(*graphClosureParameters);
                 break;
-            case EGraphClosureType::APPROXIMATION_OUTERPLANAR:
-                break;
-            case EGraphClosureType::APPROXIMATION_TREE:
+            case EGraphClosureType::APPROXIMATION_SUBSTRUCTURE:
+                substructure_approximation(*graphClosureParameters);
                 break;
             case EGraphClosureType::APPROXIMATION_LAYERING:
                 break;
@@ -145,12 +167,8 @@ inline void GraphClosure::closure(ClosureParameters& closureParameters) {
 }
 
 inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closureParameters) {
-    bool use_only_pre_closure = closureParameters.onlyPreClosure;
-    // Check validity of input set
-    if (closureParameters.input_set.empty() && closureParameters.element_to_add == -1) {
-        return;
-    }
 
+    bool use_only_pre_closure = closureParameters.onlyPreClosure;
     //Check if outerplanar closure should be computed
     if (dynamic_cast<OuterplanarGraphData *>(&_graph) != nullptr) {
         outerplanar_closure(closureParameters);
@@ -189,26 +207,27 @@ inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closure
     //closureParameters.pre_closure_depth.clear();
 
     // determine all elements to start the bfs from
-    std::deque<NodeId> bfs_search_elements;
+    std::deque<NodeId> bfs_root_elements;
     if (closureParameters.element_to_add != -1){
         // the assumption is that the input set is already closed, i.e., one need to start the bfs search only from the element to add
-        bfs_search_elements.push_back(closureParameters.element_to_add);
+        bfs_root_elements.push_back(closureParameters.element_to_add);
     }
     else {
-        bfs_search_elements = std::deque<NodeId>(closureParameters.input_set.begin(),
-                                                 closureParameters.input_set.end());
+        bfs_root_elements = std::deque<NodeId>(closureParameters.input_set.begin(),
+                                               closureParameters.input_set.end());
     }
 
     closureParameters.maximum_pre_closure_depth = 0;
     _iterations = 0;
     bool break_condition = false;
     this->time = std::chrono::system_clock::now();
-    set_break_condition(break_condition, bfs_search_elements, closureParameters);
+    set_break_condition(break_condition, bfs_root_elements, closureParameters);
     closureParameters.maximum_pre_closure_depth = 1;
-    NodeId last_pre_closure_element = bfs_search_elements.back();
+    NodeId last_pre_closure_element = bfs_root_elements.back();
     bool new_pre_closure_step = false;
     while (!break_condition) {
-        NodeId bfsStart = bfs_search_elements.front();
+        closureParameters.added_elements.clear();
+        NodeId bfsStart = bfs_root_elements.front();
 
 //Set detailed closure analysis
 //            if (closureParameters.detailed_analysis) {
@@ -225,30 +244,30 @@ inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closure
             new_pre_closure_step = true;
         }
         if (new_pre_closure_step) {
-            last_pre_closure_element = bfs_search_elements.back();
+            last_pre_closure_element = bfs_root_elements.back();
             new_pre_closure_step = false;
             ++closureParameters.maximum_pre_closure_depth;
         }
 
-        bfs_search_elements.pop_front();
+        bfs_root_elements.pop_front();
 //                if (_graph.graphType == graphType::OUTERPLANAR) {
 //                    auto const it = generatedElements.find(bfsStart);
 //                    if (it == generatedElements.end()) {
 //                        bfs_forward(_graph, closureParameters.closed_set, bfsStart, bfsQueue);
-//                        bfs_backward(_graph, closureParameters.closed_set, closureParameters, bfsQueue, bfs_search_elements,
+//                        bfs_backward(_graph, closureParameters.closed_set, closureParameters, bfsQueue, bfs_root_elements,
 //                                     generatedElements);
 //                        ++iterations;
 //                    }
 //                } else {
         bfs_forward(closureParameters, bfsStart, bfsQueue);
-        bfs_backward(closureParameters, use_only_pre_closure, bfsQueue, bfs_search_elements, generatedElements);
+        bfs_backward(closureParameters, use_only_pre_closure, bfsQueue, bfs_root_elements, generatedElements);
         ++_iterations;
 //}
-        // if the _graph is a tree and the threshold is infinite one bfs is enough to find the closure
-        if (_graph.GetType() == GraphType::TREE && closureParameters.threshold == std::numeric_limits<int>::max()) {
+        // if the _graph is a tree and the theta is infinite one bfs is enough to find the closure
+        if (_graph.GetType() == GraphType::TREE && closureParameters.theta == std::numeric_limits<int>::max()) {
             break;
         }
-        set_break_condition(break_condition, bfs_search_elements, closureParameters);
+        set_break_condition(break_condition, bfs_root_elements, closureParameters);
     }
 }
 
@@ -279,8 +298,8 @@ inline void GraphClosure::bfs_forward(GraphClosureParameters& closureParameters,
         if ((visitedSize == closureParameters.closed_set.size() && _graph_distances[currentNodeId] > lastDistance)) {
             break;
         }
-        // Use threshold to stop search this corresponds to considering only shortest paths of length <= threshold
-        if (currentDistance + 1 > closureParameters.threshold){
+        // Use theta to stop search this corresponds to considering only shortest paths of length <= theta
+        if (currentDistance + 1 > closureParameters.theta){
             break;
         }
         for (auto neighborId : _graph.get_neighbors(currentNodeId)) {
@@ -366,7 +385,6 @@ inline void GraphClosure::bfs_backward(GraphClosureParameters &closureParameters
 inline void GraphClosure::outerplanar_closure(GraphClosureParameters &closureParameters) {
     auto* graph = dynamic_cast<OuterplanarGraphData *>(&_graph);
     if (graph != nullptr) {
-
         GraphClosureParameters bbTreeParameters;
         for (const auto &elem: closureParameters.input_set) {
             graph->get_bb_tree_ids(elem, bbTreeParameters.input_set);
@@ -438,6 +456,62 @@ void GraphClosure::get_generators(OuterplanarComponent& outerplanarComponent, st
     generator_set = input_set;
 }
 
+void GraphClosure::substructure_approximation(GraphClosureParameters& parameters) {
+    parameters.frequency.clear();
+    parameters.frequency.resize(_graph.nodes(), 0);
+    if (parameters.relative_threshold != 0){
+        parameters.absolute_threshold = (int) ((double) parameters.sub_structures.size() * parameters.relative_threshold);
+    }
+     if (!parameters.path_to_substructures.empty()){
+        //load substructures by getting all graphs parameters.path_to_substructures
+        std::vector<std::string> paths;
+        // iterate over all files in all subdirectories of file_path that end with .bgfs
+        for (const auto &entry: std::filesystem::recursive_directory_iterator(parameters.path_to_substructures)) {
+            if (entry.path().extension() == ".bgfs") {
+                paths.push_back(entry.path().string());
+            }
+        }
+        for (const auto &p: paths) {
+            GraphStruct substructure = GraphStruct(p);
+            GraphClosure substructureClosure = GraphClosure(substructure);
+            EGraphClosureType closureType = parameters.closureType;
+            parameters.closureType = parameters.closure_on_substructures;
+            substructureClosure.closure(parameters);
+            this->closure(parameters);
+            parameters.closureType = closureType;
+            for (auto elem : parameters.closed_set) {
+                ++parameters.frequency[elem];
+            }
+        }
+        parameters.closed_set.clear();
+        for (auto i = 0; i < _graph.nodes(); ++i){
+            if (parameters.frequency[i] > parameters.absolute_threshold){
+                parameters.closed_set.insert(i);
+            }
+        }
+    }
+    else{
+        // compute the closure on each of the substructure
+        for (auto substructure : parameters.sub_structures) {
+            GraphClosure substructureClosure = GraphClosure(*substructure);
+            // ordinary closure
+            EGraphClosureType closureType = parameters.closureType;
+            parameters.closureType = parameters.closure_on_substructures;
+            substructureClosure.closure(parameters);
+            for (auto elem: parameters.closed_set) {
+                ++parameters.frequency[elem];
+            }
+            parameters.closureType = closureType;
+
+        }
+        parameters.closed_set.clear();
+        for (auto i = 0; i < _graph.nodes(); ++i){
+            if (parameters.frequency[i] > parameters.absolute_threshold){
+                parameters.closed_set.insert(i);
+            }
+        }
+    }
+}
 
 
 #endif //CLOSURES_GRAPHCLOSURES_H

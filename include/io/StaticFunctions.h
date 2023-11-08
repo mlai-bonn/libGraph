@@ -70,7 +70,7 @@ public:
     }
 
     static auto above(double threshold) {
-        // This captures a copy of threshold
+        // This captures a copy of theta
         return [=](double value) {
             return value >= threshold;
         };

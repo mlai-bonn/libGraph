@@ -17,7 +17,7 @@ public:
         maxCompSize = std::vector<int>(this->nodes(), 0);
         set();
     };
-    explicit OuterplanarGraphData(const GraphStruct& graph) : GraphStruct(graph){
+    explicit OuterplanarGraphData(GraphStruct& graph) : GraphStruct(graph){
         nodeToComponents = std::vector<std::vector<int>>(graph.nodes());
         maxCompSize = std::vector<int>(graph.nodes(), 0);
         set();
@@ -31,6 +31,8 @@ public:
     int get_component_num(NodeId nodeId){return (int) bbTree.nodeToBBNodes[nodeId].size();};
     int max_component_size(NodeId nodeId){return maxCompSize[nodeId];};
     void get_bb_tree_ids(NodeId nodeId, std::set<NodeId>& ids);
+    void Reset(INDEX size) override;
+    void Regenerate(INDEX size);
 
 private:
     std::vector<std::vector<int>> nodeToComponents;
@@ -40,6 +42,23 @@ private:
     void init_outerplanar();
     void set();
 };
+
+void OuterplanarGraphData::Reset(INDEX size) {
+    GraphStruct::Reset(size);
+    nodeToComponents.clear();
+    maxCompSize.clear();
+    Components.clear();
+    bbTree.tree = GraphStruct();
+    bbTree.nodeToBBNodes.clear();
+    bbTree.BBNodesToNodeOrComponent.clear();
+    this->nodeToComponents = std::vector<std::vector<int>>(size);
+    this->maxCompSize = std::vector<int>(size, 0);
+}
+
+void OuterplanarGraphData::Regenerate(INDEX size) {
+    Reset(size);
+    set();
+}
 
 void OuterplanarGraphData::set() {
     if (nodeToComponents.empty()){

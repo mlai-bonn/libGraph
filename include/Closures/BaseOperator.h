@@ -12,7 +12,7 @@
 struct ClosureParameters {
 public:
     std::set<NodeId> input_set  = std::set<NodeId>();
-    int threshold = std::numeric_limits<int>::max();
+    int theta = std::numeric_limits<int>::max();
     bool output_is_all = false;
     bool output_intersects_forbidden = false;
     NodeId element_to_add = -1;

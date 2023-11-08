@@ -104,7 +104,7 @@ public:
      * Reset the graph to an empty graph with the given size
      * @param size 
      */
-    void Reset(INDEX size);
+    virtual void Reset(INDEX size);
     
     virtual void ReadNodeFeatures(double value, int pos, const std::string& nodeFeatureName);
     virtual bool ReadEdges(INDEX Src, INDEX Dst, std::vector<double>& edgeData);
