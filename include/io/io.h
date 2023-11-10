@@ -54,5 +54,16 @@ static void ArgumentList(char** argv, int argc, int i, std::vector<std::string>&
     }
 }
 
+static void ArgumentList(char** argv, int argc, int i, std::vector<int>& output) {
+    output.clear();
+    for (int j = i + 1; j < argc; ++j) {
+        if (std::string(argv[j]).find("--") != std::string::npos) {
+            break;
+        } else {
+            output.emplace_back(std::stoi(argv[j]));
+        }
+    }
+}
+
 
 #endif

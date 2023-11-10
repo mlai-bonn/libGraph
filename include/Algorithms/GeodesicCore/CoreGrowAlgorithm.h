@@ -57,6 +57,7 @@ private:
 void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
     // create the _graph closure
     GraphClosure gc = GraphClosure(_graph);
+    parameters.closureParameters.closureType = EGraphClosureType::EXACT_GEODESIC;
     // save the results
     parameters.core_evaluation = FileEvaluation();
     parameters.detailed_evaluation = FileEvaluation();
@@ -109,16 +110,14 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
 
             }
             core_neighbors.clear();
-            for (auto node : core_neighbors_copy) {
-                core_neighbors.emplace_back(node);
-            }
+            core_neighbors = core_neighbors_copy;
 
             // add the neighbors of all added elements to the core neighbors if the neighbor is not already in the core nodes
             for (auto added_element : parameters.closureParameters.added_elements)
             {
                 // get the neighbors of the added element
                 // iterate over the neighbors of the added element
-                for (auto added_element_neighbor : _graph.get_neighbors(added_element))
+                for (auto added_element_neighbor : _graph[added_element])
                 {
                     // add the neighbor to the core neighbors if it is not already in the core nodes
                     if (parameters.closureParameters.closed_set.find(added_element_neighbor) == parameters.closureParameters.closed_set.end())
@@ -136,8 +135,6 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
                 parameters.closureParameters.input_set = parameters.closureParameters.closed_set;
                 parameters.closureParameters.element_to_add = random_element;
                 gc.closure(parameters.closureParameters);
-                // add the random element to the added elements
-                parameters.closureParameters.added_elements.insert(random_element);
 
                 core_size_evolution[i][j + 1] = (int) parameters.closureParameters.added_elements.size();
             }
@@ -154,7 +151,7 @@ void CoreGrowAlgorithm::Run(CoreGrowAlgorithmParameters& parameters){
         }
         // save the results
         parameters.detailed_evaluation.headerValueInsert({"Graph", "Size", "Edges", "Parameters", "NumRuns", "GrowSteps", "CorePercentage", "Seed", "Results", "Iteration", "ClosureSize", "CoreSize", "Total Runtime"},
-                                             {_graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "", std::to_string(parameters.num_runs), std::to_string(parameters.grow_steps), std::to_string(parameters.core_percentage), std::to_string(parameters.seed), "", std::to_string(i), std::to_string(parameters.closureParameters.closed_set.size()), "", std::to_string(parameters.runtime)});
+                                             {_graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "", std::to_string(parameters.num_runs), std::to_string(parameters.grow_steps), std::to_string(parameters.core_percentage), std::to_string(parameters.seed), "", std::to_string(i + 1), std::to_string(parameters.closureParameters.closed_set.size()), "", std::to_string(parameters.runtime)});
     }
     // _print the core nodes vector
     if (parameters.print)

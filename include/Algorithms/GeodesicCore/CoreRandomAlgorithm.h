@@ -60,12 +60,11 @@ public:
         // start timer
         auto start = std::chrono::high_resolution_clock::now();
         int iteration_count = 0;
+        std::mt19937_64 generator(parameters.seed);
         for (int i = 0; i < c_iterations; ++i) {
             std::cout << "\tIteration " << std::to_string(i) << " of _graph " << _graph.GetName() << " started"
                       << std::endl;
-
             // generate input set
-            std::mt19937_64 generator(i + c_iterations * parameters.seed);
             parameters.closureParameters.input_set.clear();
             std::vector<NodeId> nodes(_graph.nodes());
             std::iota(nodes.begin(), nodes.end(), 0);
@@ -103,15 +102,15 @@ public:
                          "Iteration", "ClosureSize", "CoreSize", "Total Runtime"},
                         {_graph.GetName(), std::to_string(_graph.nodes()), std::to_string(_graph.edges()), "",
                          std::to_string(parameters.generator_size), std::to_string(parameters.core_iterations),
-                         std::to_string(i + c_iterations * parameters.seed), "", std::to_string(i),
+                         std::to_string(parameters.seed), "", std::to_string(i),
                          std::to_string(parameters.closureParameters.closed_set.size()), std::to_string(overlap.size()),
                          std::to_string(((double) std::chrono::duration_cast<std::chrono::microseconds>(
                                  std::chrono::high_resolution_clock::now() - start).count() / 1000000.0))});
             }
+            ++iteration_count;
             if (i != 0 && parameters.core_iterations == -1 && parameters.intersection_loss.back() == 0) {
                 break;
             }
-            ++iteration_count;
         }
         parameters.core_nodes.clear();
         for (auto elem: overlap) {

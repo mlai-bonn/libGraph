@@ -34,7 +34,6 @@ enum class EGraphClosureType {
  */
 struct GraphClosureParameters : ClosureParameters {
     EGraphClosureType closureType = EGraphClosureType::EXACT_GEODESIC;
-    NodeId element_to_add = -1;
 
     // Used only for approximation methods
     std::string path_to_substructures;
@@ -119,14 +118,14 @@ inline void GraphClosure::closure(ClosureParameters& closureParameters) {
     // check if closureParameters can be casted to GraphClosureParameters
     auto* graphClosureParameters = (GraphClosureParameters*)(&closureParameters);
     if (graphClosureParameters != nullptr){
+        if (closureParameters.element_to_add != -1){
+            closureParameters.input_set.insert(closureParameters.element_to_add);
+            // add the random element to the added elements
+            closureParameters.added_elements.insert(closureParameters.element_to_add);
+        }
         // check if the input set is empty
         if (closureParameters.input_set.empty()) {
-            if (closureParameters.element_to_add == -1) {
-                return;
-            }
-            else{
-                closureParameters.input_set.insert(closureParameters.element_to_add);
-            }
+            return;
         }
         if (closureParameters.input_set.size() == 1){
             closureParameters.closed_set = closureParameters.input_set;
@@ -193,16 +192,13 @@ inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closure
     std::deque<NodeId> bfsQueue;
 
     // set closed set to input set
-    closureParameters.closed_set.clear();
-    // if element to add is not -1 add it to the input set
-    if (closureParameters.element_to_add != -1){
-        closureParameters.input_set.insert(closureParameters.element_to_add);
-    }
-    // set closed set to input set
     closureParameters.closed_set = closureParameters.input_set;
 
     // clear added elements
     closureParameters.added_elements.clear();
+    if (closureParameters.element_to_add != -1){
+        closureParameters.added_elements.insert(closureParameters.element_to_add);
+    }
     //Clear params
     //closureParameters.pre_closure_depth.clear();
 
@@ -226,7 +222,6 @@ inline void GraphClosure::exact_geodesic_closure(GraphClosureParameters& closure
     NodeId last_pre_closure_element = bfs_root_elements.back();
     bool new_pre_closure_step = false;
     while (!break_condition) {
-        closureParameters.added_elements.clear();
         NodeId bfsStart = bfs_root_elements.front();
 
 //Set detailed closure analysis
@@ -290,32 +285,37 @@ inline void GraphClosure::bfs_forward(GraphClosureParameters& closureParameters,
     bfsQueue.clear();
     bfsQueue.push_back(bfs_start);
     int visitedSize = 1;
+    int clean_paths = 0;
     int lastDistance = std::numeric_limits<int>::max();
     while (!bfsQueue.empty()) {
         NodeId currentNodeId = bfsQueue.back();
         bfsQueue.pop_back();
         int currentDistance = _graph_distances[currentNodeId];
-        if ((visitedSize == closureParameters.closed_set.size() && _graph_distances[currentNodeId] > lastDistance)) {
+        if ((visitedSize == closureParameters.closed_set.size() && currentDistance > lastDistance)) {
             break;
         }
         // Use theta to stop search this corresponds to considering only shortest paths of length <= theta
         if (currentDistance + 1 > closureParameters.theta){
             break;
         }
-        for (auto neighborId : _graph.get_neighbors(currentNodeId)) {
+        for (int i = 0; i < _graph.degree(currentNodeId); ++i) {
+            NodeId neighborId = _graph.neighbor(currentNodeId, i);
             //Neighbor is unvisited by bfs
             if (_graph_bfs_list[neighborId] != Id) {
                 _graph_distances[neighborId] = currentDistance + 1;
                 _graph_bfs_list[neighborId] = Id;
                 _graph_predecessors[neighborId].clear();
+                _graph_predecessors[neighborId].push_back(currentNodeId);
                 bfsQueue.push_front(neighborId);
                 //Neighbor is in closed set
                 if (_graph_containment_list[neighborId] == Id) {
                     ++visitedSize;
                 }
             }
-            if (_graph_distances[neighborId] == currentDistance + 1) {
-                _graph_predecessors[neighborId].push_back(currentNodeId);
+            else{
+                if (_graph_distances[neighborId] == currentDistance + 1) {
+                    _graph_predecessors[neighborId].push_back(currentNodeId);
+                }
             }
         }
         if (visitedSize == closureParameters.closed_set.size()) {
