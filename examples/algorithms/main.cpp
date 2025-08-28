@@ -2,6 +2,7 @@
 
 
 #include "SimplePatterns.h"
+#include "test.h"
 #include "Algorithms/GED/GEDApproximation.h"
 #include "GraphDataStructures/GraphBase.h"
 
@@ -26,6 +27,7 @@ GEDApproximationParameters graph_edit_distance_approximation() {
 // main function to run the examples
 
 int main() {
+    test();
     GEDApproximationParameters parameters = graph_edit_distance_approximation();
     return 0;
 }

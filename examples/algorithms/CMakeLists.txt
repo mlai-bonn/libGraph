@@ -14,5 +14,4 @@ include_directories(../../include)
 link_directories(../../include)
 
 # adding the Google_Tests_run target
-add_executable(AlgorithmExamples main.cpp ../../include/libGraph.h)
-add_executable(Test test.cpp ../../include/libGraph.h)
+add_executable(AlgorithmExamples main.cpp test.h ../../include/libGraph.h)
