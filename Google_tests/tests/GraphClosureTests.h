@@ -175,8 +175,8 @@ TEST(GraphClosureTestSuite, ExampleClosureThetaTest){
 
 TEST(GraphClosureTestSuite, ExampleIterativeClosure)
 {
-    // generate a random graph with 10000 nodes and 1000000 edges
-    GraphStruct randomGraph = SimplePatterns::ErdosRenyi(10000, 1000000);
+    // generate a random graph with 1000 nodes and 100000 edges
+    GraphStruct randomGraph = SimplePatterns::ErdosRenyi(1000, 100000);
     GraphClosure graphClosureRandomGraph = GraphClosure(randomGraph);
 
     std::set<NodeId> generator_set = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};

@@ -17,7 +17,7 @@ public:
 
     static void LoadLabelsFromPath(const std::string& Path, std::vector<Labels> &Labels, std::unordered_map<size_t, std::string> &LabelNames, std::set<int>* graphSizes = nullptr, int patternNum = -1);
     template <typename T>
-    static void LoadTUDortmundGraphData(const std::string& path, const std::string& dbName, GraphData<T>& graphs, std::vector<int>& graphLabels, std::vector<std::vector<int>>* graphsEdgeLabels= nullptr, std::vector<std::vector<int>>* graphsNodeAttributes= nullptr, std::vector<std::vector<int>>* graphsEdgeAttributes= nullptr);
+    static void LoadTUDortmundGraphData(const std::string& path, const std::string& dbName, GraphData<T>& graphs, std::vector<int>& graphLabels, std::vector<std::vector<int>>* graphsNodeLabels=nullptr, std::vector<std::vector<int>>* graphsEdgeLabels= nullptr, std::vector<std::vector<int>>* graphsNodeAttributes= nullptr, std::vector<std::vector<int>>* graphsEdgeAttributes= nullptr);
 
 };
 
@@ -68,7 +68,9 @@ inline LoadSave::LoadLabelsFromPath(const std::string& Path, std::vector<Labels>
 
 template<typename T>
 void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::string &dbName, GraphData<T> &graphs,
-                                       std::vector<int> &graphLabels, std::vector<std::vector<int>> *graphsEdgeLabels,
+                                       std::vector<int> &graphLabels,
+                                       std::vector<std::vector<int>> *graphsNodeLabels,
+                                       std::vector<std::vector<int>> *graphsEdgeLabels,
                                        std::vector<std::vector<int>> *graphsNodeAttributes,
                                        std::vector<std::vector<int>> *graphsEdgeAttributes) {
 
@@ -189,16 +191,25 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
         graphs[indicator-1].add_node();
 
         //get node labels
+        if (isNodeLabels && graphsNodeLabels != nullptr) {
+            if (graphsNodeLabels->size() < indicator) {
+                graphsNodeLabels->resize(indicator);
+            }
+            (*graphsNodeLabels)[indicator - 1].emplace_back(nodeLabels[nodeCounter-1]);
+        }
+
+        //get node attributes
         if (isNodeAttributes && graphsNodeAttributes != nullptr){
             if (graphsNodeAttributes->size() < indicator) {
                 graphsNodeAttributes->resize(indicator);
             }
             (*graphsNodeAttributes)[indicator - 1].emplace_back(nodeAttributes[nodeCounter-1]);
         }
+
         idMap.insert({nodeCounter,{graphs.size() - 1, graphNodeCounter - 1}});
     }
 
-
+    // Add edge labels
     if (isEdgeLabels && graphsEdgeLabels != nullptr){
         graphsEdgeLabels->clear();
         for (auto const & graph : graphs.graphData) {

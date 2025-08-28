@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
-project(testGraphLib)
-
+project(GraphExamples)
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_COMPILER /usr/bin/g++-11)
+include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
 find_package(OpenMP)
 if (OPENMP_FOUND)
@@ -11,6 +10,8 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-add_executable(Test test.cpp load_save.h graph_functions.h closures.h ../../include/libGraph.h
-        ../../include/Algorithms/GED/GEDApproximation.h
-        ../../examples/graphs/main.cpp)
+include_directories(../../include)
+link_directories(../../include)
+
+# adding the Google_Tests_run target
+add_executable(GraphExamples main.cpp ../../include/libGraph.h)

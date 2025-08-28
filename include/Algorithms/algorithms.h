@@ -5,6 +5,10 @@
 #ifndef GOOGLE_TESTS_ALGORITHMS_H
 #define GOOGLE_TESTS_ALGORITHMS_H
 
+// GED Algorithms
+#include "GED/GEDApproximation.h"
+
+// GeodesicCore Aglorithms
 #include "GeodesicCore/CoreGrowAlgorithm.h"
 #include "GeodesicCore/CoreRandomAlgorithm.h"
 #include "GraphMetricApproximation/EvaluationGraphMetricApproximation.h"

@@ -7,6 +7,7 @@
 #include <vector>
 #include <set>
 #include <random>
+#include <ranges>
 #include <unordered_map>
 #include <algorithm>
 #include <filesystem>
@@ -15,12 +16,34 @@
 #include "typedefs.h"
 #include "GraphFunctions.h"
 
+/**
+ * Defines the type of the graph (general, tree, outerplanar)
+ * Some algorithms can be optimized if the type is known in advance
+*/
 enum class GraphType{
     GENERAL,
     TREE,
     OUTERPLANAR,
 };
 
+inline std::ostream& operator<<(std::ostream& os, const GraphType& graphType) {
+    switch (graphType) {
+        case GraphType::GENERAL:
+            os << "GENERAL";
+            break;
+        case GraphType::TREE:
+            os << "TREE";
+            break;
+        case GraphType::OUTERPLANAR:
+            os << "OUTERPLANAR";
+            break;
+    }
+    return os;
+}
+
+/**
+ * Defines the format of the graph file (for saving and loading)
+*/
 enum class GraphFormat{
     BGF,
     BGFS,
@@ -31,6 +54,27 @@ enum class GraphFormat{
     DIMACS,
     AIDS,
 };
+
+inline std::ostream& operator<<(std::ostream& os, const GraphFormat& graphFormat) {
+    switch (graphFormat) {
+        case GraphFormat::BGF:
+            os << "BGF";
+            break;
+        case GraphFormat::BGFS:
+            os << "BGFS";
+            break;
+        case GraphFormat::BINARY:
+            os << "BINARY";
+            break;
+        case GraphFormat::EDGES:
+            os << "EDGES";
+
+        default:
+            os << "UNKNOWN";
+            break;
+    }
+    return os;
+}
 
 /**
  * Struct for saving the graph to a file
@@ -48,10 +92,18 @@ struct SaveParams{
 
 struct GraphStruct{
 public:
+    virtual ~GraphStruct() = default;
+
     /**
      * Default constructor
      */
     GraphStruct()= default;
+
+    /**
+     * Constructor for creating a graph with the given name
+     * @param name name of the graph
+     */
+    GraphStruct(std::string& name);
     
     /**
      * Constructor for creating a graph with the given size and labels
@@ -125,7 +177,7 @@ public:
     std::string GetPath(){return _path;};
 
     void SetType(GraphType type);
-    GraphType GetType();
+    GraphType GetType() const;
 
 
 
@@ -186,6 +238,46 @@ public:
     //Static functions
     //compare the given labeled degree vector with the labeled degree vector of the node with Id:srcId of this _graph
     bool isBigger(const std::vector<INDEX>& labeledDegree, NodeId nodeId);
+
+    // overload the << operator for printing the graph
+    friend std::ostream& operator<<(std::ostream& os, const GraphStruct& graph) {
+        // print all the nodes with labels "Nodes: // 1, 0, ... "
+        // print all edges between nodes, one edge per line  "Edges: // start_id -- edge_label[optional] -- [>] (optional if directed) end_id"
+        // Print graph name
+        os << "Graph: " << graph._name << std::endl;
+        os << "\tType: " << graph.GetType() << std::endl;
+        os << "\tLabel Type: " << graph.labelType << std::endl;
+        os << "\t" << "Nodes: " << graph.nodes() << std::endl;
+        // print nodes if there are labels
+        if (graph.labelType != LABEL_TYPE::UNLABELED) {
+            os << "\t" << "Labels: " << std::endl;
+            // check wheter there are labels
+            if (graph.labelType != LABEL_TYPE::UNLABELED) {
+                os << "\t\t";
+                for (INDEX i = 0; i < graph.nodes(); ++i) {
+                    os << graph.label(i) << " ";
+                }
+                os << std::endl;
+            }
+        }
+        os << "\t" << "Edges: " << graph.edges() << std::endl;
+        // iterate over all nodes
+        for (INDEX i = 0; i < graph.nodes(); ++i) {
+            for (INDEX j = 0; j < graph.degree(i); ++j) {
+                os << "\t\t";
+                // print the node id
+                os << i;
+                // TODO print the edge label if given
+                // print directed or undirected edge
+                os << " -- ";
+                // print the neighbor
+                os << graph.neighbor(i, j) << std::endl;
+            }
+        }
+        os << std::endl;
+        return os;
+    }
+
 
     //Iterators
     struct NodeIterator{
@@ -290,6 +382,7 @@ public:
         friend bool operator!= (const EdgeIteratorDirected& a, NodeId b) {
             return a.srcId != b;
         };
+
 
 
         const GraphStruct* _graph{};
@@ -427,6 +520,7 @@ public:
     //for labels
     std::unordered_map<Label, Nodes> labelMap{};
     std::unordered_map<Label, INDEX> labelFrequencyMap{};
+    std::pair<std::unordered_map<Label, Label>, std::unordered_map<Label, Label>> labelMappingPair{};
 
     virtual bool edge(NodeId source, NodeId destination) const;
     virtual bool edge(const std::pair<NodeId, NodeId>& _edge) const;
@@ -450,6 +544,10 @@ public:
     void degree_sort(Nodes& nodes){
         std::sort(nodes.begin(), nodes.end(), [this](NodeId l,NodeId r){return comp_degree(l,r);});
     }
+
+
+
+
 
 
 
@@ -500,7 +598,6 @@ public:
 
     void LoadBGF(std::vector<T>& graphs, const std::string &graphPath, GraphFormat graphFormat);
     void LoadAIDS(std::vector<T>& graphs, const std::string &graphPath);
-
     void Save(const SaveParams& saveParams = SaveParams());
 
     void add_graph(const std::string& graphPath, bool withLabels = false);
@@ -770,6 +867,14 @@ void GraphData<T>::Save(const SaveParams& saveParams) {
     else {
         saveName += "GraphData";
     }
+    // remove the .extension from the path if it exists (do not delete relative path .. !!)
+    std::string::size_type first_pos = saveName.find_first_of('.');
+    std::string::size_type last_pos = saveName.find_last_of('.');
+    if (last_pos != std::string::npos && last_pos-first_pos != 1)
+    {
+        saveName = saveName.substr(0, last_pos);
+    }
+    int counter;
     switch (saveParams.Format) {
         case GraphFormat::BGF: {
             int SaveVersion = 1;
@@ -806,11 +911,29 @@ void GraphData<T>::Save(const SaveParams& saveParams) {
         }
         case GraphFormat::BINARY:
             break;
+
         case GraphFormat::EDGES:
+            // iterate over all graphs and save them as list of edges
+            counter = 0;
+            for (auto &graph: this->graphData) {
+                auto out_name = saveName;
+                // add _id_counter
+                out_name.append("_id_" + std::to_string(counter) + ".edges");
+                std::ofstream Out(out_name, std::ios::out);
+                for (auto beginEdge = graph.first_edge(); beginEdge != graph.last_edge(); ++beginEdge) {
+                    Out << (*beginEdge).first << " " << (*beginEdge).second << std::endl;
+                }
+                Out.close();
+                ++counter;
+            }
             break;
         case GraphFormat::PEREGRINE_DATA:
             break;
         case GraphFormat::PEREGRINE_SMALL:
+            break;
+        case GraphFormat::DIMACS:
+            break;
+        case GraphFormat::AIDS:
             break;
     }
 }
@@ -839,6 +962,7 @@ void GraphData<T>::Load(const std::string &graphPath) {
                     graph.Init(graphsNames[i], (int) graphsSizes[i], (int) graphsEdges[i],
                                    (int) graphsNodeFeatureNames[i].size(), (int) graphsEdgeFeatureNames[i].size(),
                                    graphsNodeFeatureNames[i], graphsEdgeFeatureNames[i]);
+                    graph.SetPath(graphPath);
                     //Read the nodes
                     for (int j = 0; j < graphsSizes[i]; ++j) {
                         for (int k = 0; k < graphsNodeFeatureNames[i].size(); ++k) {
@@ -923,6 +1047,11 @@ inline GraphStruct::GraphStruct(INDEX size, const Labels& labels) {
     CreateGraph(size, labels);
 }
 
+
+inline GraphStruct::GraphStruct(std::string& name) {
+    this->_name = name;
+}
+
 /// Initialize a new undirected _graph
 /// \param size
 /// \param labels
@@ -961,8 +1090,10 @@ inline void GraphStruct::UpdateGraphLabels(LABEL_TYPE label) {
                 }
             } else if (label == LABEL_TYPE::LABELED_SPARSE) {
                 Label NodeLabel = _labels[neighborId];
-                this->labeledVectorGraph[Id][NodeLabel].emplace_back(neighborId);
-                ++this->labeledDegreeVector[Id][NodeLabel];
+                // Map node label to id using the label map
+                Label MappedNodeLabel = this->labelMappingPair.first[NodeLabel];
+                this->labeledVectorGraph[Id][MappedNodeLabel].emplace_back(neighborId);
+                ++this->labeledDegreeVector[Id][MappedNodeLabel];
             }
         }
     }
@@ -1465,8 +1596,22 @@ inline void GraphStruct::write_graph_nodes(const std::string & graphPath, const 
 inline void GraphStruct::set_labels(const Labels* labels) {
     this->_labels = *labels;
     if (this->_labels.size() == this->_graph.size()){
-        labelMap = GraphFunctions::GetGraphLabelMap(_labels);
-        labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
+        // save original labels in mapping
+        this->labelMap = GraphFunctions::GetGraphLabelMap(_labels);
+        this->labelMappingPair = GraphFunctions::GetLabelMappingPair(_labels);
+
+
+
+        // Map original label to new label
+        //this->labelMappingPair.first = std::unordered_map<Label, Label>();
+        //for (Label label = 0; label < this->_labels.size(); ++label) {}
+        // map new label to original label
+        //this->labelMappingPair.second = std::unordered_map<Label, Label>();
+        //for (auto const& [label, index] : this->labelMap) {
+        //    this->labelMappingPair.second[index] = label;
+        //}
+
+        this->labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
         this->_numLabels = (this->_numLabels == -1) ? static_cast<int>(labelMap.size()) : this->_numLabels;
         if (this->_numLabels >= 10){
             labelType = LABEL_TYPE::LABELED_DENSE;
@@ -1815,13 +1960,13 @@ inline void GraphStruct::LoadGraphsFromPath(const std::string& graphPath, const 
 
 }
 
-void GraphStruct::Convert(const std::string &graphPath, const std::string &Name,
-                          GraphFormat Format, bool relabeling, bool withLabels, const std::string &labelPath, bool Labeled) {
+inline void GraphStruct::Convert(const std::string &graphPath, const std::string &Name,
+                                 GraphFormat Format, bool relabeling, bool withLabels, const std::string &labelPath, bool Labeled) {
     GraphStruct graphStruct = GraphStruct(graphPath, relabeling, withLabels, labelPath);
     graphStruct.Save({"", Name, Format, Labeled});
 }
 
-void GraphStruct::Convert(const std::string &path, GraphFormat Format, const std::string &extension) {
+inline void GraphStruct::Convert(const std::string &path, GraphFormat Format, const std::string &extension) {
     std::vector<std::string> files;
     for (const auto &entry: std::filesystem::directory_iterator(path)) {
         if (entry.is_regular_file()) {
@@ -1837,7 +1982,7 @@ void GraphStruct::Convert(const std::string &path, GraphFormat Format, const std
 
 }
 
-void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format, const std::string& search_name) {
+inline void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format, const std::string& search_name) {
     int graphId = 0;
     std::string path = graphPath;
     if (!search_name.empty()) {
@@ -1988,8 +2133,9 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                     this->_labels.emplace_back(L);
                 }
                 if (this->_labels.size() == this->_graph.size()) {
-                    labelMap = GraphFunctions::GetGraphLabelMap(_labels);
-                    labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
+                    this->labelMap = GraphFunctions::GetGraphLabelMap(_labels);
+                    this->labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
+                    this->labelMappingPair = GraphFunctions::GetLabelMappingPair(_labels);
                     this->_numLabels = (this->_numLabels == -1) ? static_cast<int>(labelMap.size()) : this->_numLabels;
                     if (this->_numLabels >= 10) {
                         labelType = LABEL_TYPE::LABELED_DENSE;
@@ -2091,8 +2237,9 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                     }
                 }
                 if (this->_labels.size() == this->_graph.size()) {
-                    labelMap = GraphFunctions::GetGraphLabelMap(_labels);
-                    labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
+                    this->labelMap = GraphFunctions::GetGraphLabelMap(_labels);
+                    this->labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
+                    this->labelMappingPair = GraphFunctions::GetLabelMappingPair(_labels);
                     this->_numLabels = (this->_numLabels == -1) ? static_cast<int>(labelMap.size()) : this->_numLabels;
                     if (this->_numLabels >= 10) {
                         labelType = LABEL_TYPE::LABELED_DENSE;
@@ -2190,8 +2337,9 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                     }
                 }
                 if (this->_labels.size() == this->_graph.size()) {
-                    labelMap = GraphFunctions::GetGraphLabelMap(_labels);
-                    labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
+                    this->labelMap = GraphFunctions::GetGraphLabelMap(_labels);
+                    this->labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
+                    this->labelMappingPair = GraphFunctions::GetLabelMappingPair(_labels);
                     this->_numLabels = (this->_numLabels == -1) ? static_cast<int>(labelMap.size())
                                                                 : this->_numLabels;
                     if (this->_numLabels >= 10) {
@@ -2290,8 +2438,9 @@ void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withL
                     }
                 }
                 if (this->_labels.size() == this->_graph.size()) {
-                    labelMap = GraphFunctions::GetGraphLabelMap(_labels);
-                    labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
+                    this->labelMap = GraphFunctions::GetGraphLabelMap(_labels);
+                    this->labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
+                    this->labelMappingPair = GraphFunctions::GetLabelMappingPair(_labels);
                     this->_numLabels = (this->_numLabels == -1) ? static_cast<int>(labelMap.size())
                                                                 : this->_numLabels;
                     if (this->_numLabels >= 10) {
@@ -2475,11 +2624,11 @@ inline void GraphStruct::SetName(const std::string &name) {
     this->_name = name;
 }
 
-bool GraphStruct::ReadBGF(const std::string& extension,std::ifstream& In, int &saveVersion,  int &graphNumber, std::vector<std::string> &graphsNames,
-                          std::vector<GraphType> &graphsTypes, std::vector<INDEX> &graphsSizes,
-                          std::vector<std::vector<std::string>> &graphsNodeFeatureNames,
-                          std::vector<INDEX> &graphsEdges,
-                          std::vector<std::vector<std::string>> &graphsEdgeFeatureNames) {
+inline bool GraphStruct::ReadBGF(const std::string& extension,std::ifstream& In, int &saveVersion,  int &graphNumber, std::vector<std::string> &graphsNames,
+                                 std::vector<GraphType> &graphsTypes, std::vector<INDEX> &graphsSizes,
+                                 std::vector<std::vector<std::string>> &graphsNodeFeatureNames,
+                                 std::vector<INDEX> &graphsEdges,
+                                 std::vector<std::vector<std::string>> &graphsEdgeFeatureNames) {
 
     In.read((char *) (&saveVersion), sizeof(int));
     if (saveVersion == 1) {
@@ -2547,7 +2696,7 @@ bool GraphStruct::ReadBGF(const std::string& extension,std::ifstream& In, int &s
     return false;
 }
 
-void GraphStruct::InitLabels() {
+inline void GraphStruct::InitLabels() {
     //Add _graph labels if possible
     if (this->_labels.size() == this->_graph.size()) {
         labelMap = GraphFunctions::GetGraphLabelMap(_labels);
@@ -2564,7 +2713,7 @@ void GraphStruct::InitLabels() {
     }
 }
 
-void GraphStruct::WriteGraph(std::ofstream& Out, const SaveParams& saveParams) {
+inline void GraphStruct::WriteGraph(std::ofstream& Out, const SaveParams& saveParams) {
     const std::string graphName = this->_name;
     unsigned int stringLength = graphName.length();
     GraphType Type = this->graphType;
@@ -2617,7 +2766,7 @@ void GraphStruct::WriteGraph(std::ofstream& Out, const SaveParams& saveParams) {
 
 }
 
-void GraphStruct::WriteNodeFeatures(std::ofstream& Out, const SaveParams &saveParams) {
+inline void GraphStruct::WriteNodeFeatures(std::ofstream& Out, const SaveParams &saveParams) {
     unsigned int nodeFeatures = 0;
     if (saveParams.Labeled || this->_labels.size() == nodes()) {
         nodeFeatures = 1;
@@ -2637,7 +2786,7 @@ void GraphStruct::WriteNodeFeatures(std::ofstream& Out, const SaveParams &savePa
 
 }
 
-void GraphStruct::WriteEdges(std::ofstream& Out, const SaveParams &saveParams) {
+inline void GraphStruct::WriteEdges(std::ofstream& Out, const SaveParams &saveParams) {
     INDEX Src = 0;
     for (auto const &edges: this->_graph) {
         for (auto Dst: edges) {
@@ -2662,7 +2811,7 @@ void GraphStruct::WriteEdges(std::ofstream& Out, const SaveParams &saveParams) {
     }
 }
 
-void GraphStruct::DFS(const GraphStruct &graph, GraphStruct &tree, Nodes &nodeOrder, NodeId rootNodeId, int seed) {
+inline void GraphStruct::DFS(const GraphStruct &graph, GraphStruct &tree, Nodes &nodeOrder, NodeId rootNodeId, int seed) {
     std::mt19937_64 gen(seed);
     NodeId max = -1;
     if (rootNodeId == max) {
@@ -2705,7 +2854,7 @@ void GraphStruct::DFS(const GraphStruct &graph, GraphStruct &tree, Nodes &nodeOr
     }
 }
 
-void GraphStruct::OptOrdering(const GraphStruct &graph, Nodes &nodeOrder) {
+inline void GraphStruct::OptOrdering(const GraphStruct &graph, Nodes &nodeOrder) {
     NodeId rootNodeId;
     NodeId max_degree = 0;
     for (int i = 0; i < graph.nodes(); ++i) {
@@ -2739,7 +2888,7 @@ void GraphStruct::OptOrdering(const GraphStruct &graph, Nodes &nodeOrder) {
     }
 }
 
-void GraphStruct::ReorderGraph(GraphStruct &graph, const Nodes &nodeOrder) {
+inline void GraphStruct::ReorderGraph(GraphStruct &graph, const Nodes &nodeOrder) {
 
     std::unordered_map<NodeId, NodeId> nodeMap;
     int counter = 0;
@@ -2760,14 +2909,15 @@ void GraphStruct::ReorderGraph(GraphStruct &graph, const Nodes &nodeOrder) {
 
 }
 
-void GraphStruct::SetType(GraphType type) {
+inline void GraphStruct::SetType(GraphType type) {
     this->graphType = type;
 }
-GraphType GraphStruct::GetType() {
+
+inline  GraphType GraphStruct::GetType() const {
     return this->graphType;
 }
 
-bool GraphStruct::remove_edge(NodeId source, NodeId destination) {
+inline bool GraphStruct::remove_edge(NodeId source, NodeId destination) {
     auto it_source = std::find(this->_graph[source].begin(), this->_graph[source].end(), destination);
     auto it_destination = std::find(this->_graph[destination].begin(), this->_graph[destination].end(), source);
     if (it_source != this->_graph[source].end() && it_destination != this->_graph[destination].end()) {
@@ -2781,15 +2931,15 @@ bool GraphStruct::remove_edge(NodeId source, NodeId destination) {
     return false;
 }
 
-bool GraphStruct::remove_edge(const std::pair<NodeId, NodeId> &edge) {
+inline bool GraphStruct::remove_edge(const std::pair<NodeId, NodeId> &edge) {
     return remove_edge(edge.first, edge.second);
 }
 
-bool GraphStruct::remove_edge(const EdgeIterator &edge) {
+inline bool GraphStruct::remove_edge(const EdgeIterator &edge) {
     return remove_edge(*edge);
 }
 
-void GraphStruct::Reset(INDEX size) {
+inline void GraphStruct::Reset(INDEX size) {
     this->_graph.resize(size);
     this->_degrees.resize(size);
     this->_nodes = size;
@@ -2800,6 +2950,8 @@ void GraphStruct::Reset(INDEX size) {
         this->_degrees[i] = 0;
     }
 }
+
+
 
 
 #endif //HOPS_GRAPHBASE_H

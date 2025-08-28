@@ -13,7 +13,7 @@
 #include "GraphDataStructures/GraphStructs.h"
 
 
-class GraphStruct;
+struct GraphStruct;
 class DGraphStruct;
 class DDataGraph;
 
@@ -21,6 +21,7 @@ class GraphFunctions {
 public:
     static std::unordered_map<Label, INDEX> GetLabelFrequency(std::unordered_map<Label, Nodes>& labelMap);
     static std::unordered_map<Label, Nodes> GetGraphLabelMap(Labels& nodeLabels);
+    static std::pair<std::unordered_map<Label, Label>, std::unordered_map<Label, Label>> GetLabelMappingPair(Labels& nodeLabels);
     static void GetNodesByLabel(Labels& nodeLabels, Label label, Nodes& nodesByLabel);
     static Labels GetLabelsByNodes(Nodes& nodeIds, const Labels& graphLabels);
     static std::unordered_set<Label> GetUniqueLabelsByNodes(Nodes& nodeIds, const Labels& GraphLabels);
@@ -45,6 +46,20 @@ inline std::unordered_map<Label, INDEX> GraphFunctions::GetLabelFrequency(std::u
         labelFrequencyMap.insert(std::pair<Label, INDEX>(label, nodes.size()));
     }
     return labelFrequencyMap;
+}
+
+inline std::pair<std::unordered_map<Label, Label>, std::unordered_map<Label, Label>> GraphFunctions::GetLabelMappingPair(Labels& nodeLabels) {
+    std::unordered_map<Label, Label> labelMapping;
+    std::unordered_map<Label, Label> reverseLabelMapping;
+    std::set<Label> uniqueLabels = std::set<Label>{};
+    for (auto label : nodeLabels) {
+        uniqueLabels.insert(label);
+    }
+    for (auto label : uniqueLabels) {
+        labelMapping.insert(std::pair<Label, Label>(label, labelMapping.size()));
+        reverseLabelMapping.insert(std::pair<Label, Label>(labelMapping.size(), label));
+    }
+    return std::make_pair(labelMapping, reverseLabelMapping);
 }
 
 inline void GraphFunctions::GetNodesByLabel(Labels& nodeLabels, Label label, Nodes& nodesByLabel) {
