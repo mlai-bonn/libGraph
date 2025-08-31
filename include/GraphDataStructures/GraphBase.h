@@ -531,7 +531,7 @@ public:
     virtual bool remove_edge(NodeId source, NodeId destination);
     virtual bool remove_edge(const std::pair<NodeId, NodeId>& edge);
     virtual bool remove_edge(const EdgeIterator& edge);
-    NodeId add_node(INDEX number = 1, Labels* labels = nullptr);
+    NodeId add_node(INDEX number = 1, const Labels* labels = nullptr);
     //Get get_neighbors by []
     const Nodes& operator[](NodeId nodeId){return _graph[nodeId];};
     void sortNeighborIds();
@@ -1227,7 +1227,7 @@ void GraphStruct::set_graph(const std::vector<Nodes> &nodes) {
 
 /// Get labels of the _graph nodes
 /// \return
-inline const std::vector<Label>& GraphStruct::labels() const {
+inline const Labels& GraphStruct::labels() const {
     return _labels;
 }
 
@@ -1630,7 +1630,7 @@ inline void GraphStruct::set_labels(const Labels* labels) {
 /// \param number
 /// \param labels
 /// \return
-inline NodeId GraphStruct::add_node(INDEX number, Labels* labels) {
+inline NodeId GraphStruct::add_node(INDEX number, const Labels* labels) {
     for(INDEX i = 0; i < number; i++) {
         this->_graph.emplace_back();
         this->_degrees.emplace_back(0);
