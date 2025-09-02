@@ -66,29 +66,44 @@ int main() {
     env.init();
 
 
-    env.set_method(ged::Options::GEDMethod::STAR);
+    env.set_method(ged::Options::GEDMethod::BP_BEAM);
     env.init_method();
     constexpr int source_id = 1;
     constexpr int target_id = 0;
-    env.run_method(source_id,target_id);
 
-
-    GEDResult result = result_from_env(env, graph_data, source_id, target_id);
-    std::cout << "Approximated Distance: " << result.distance << std::endl;
+    while (true) {
+        env.run_method(source_id,target_id);
+        GEDResult result = result_from_env(env, graph_data, source_id, target_id);
+        std::cout << "Approximated Distance: " << result.distance << std::endl;
         std::cout << "Time: " << result.time << " seconds" << std::endl;
-    std::cout << "Quasimetric Cost: " << env.quasimetric_costs() << std::endl;
-    EditPath edit_path;
-    result.get_edit_path(edit_path, 0);
-    GraphData<GraphStruct> edit_path_graphs;
-    for (const auto& g : edit_path.edit_path_graphs) {
-        edit_path_graphs.add(g);
+        std::cout << "Quasimetric Cost: " << env.quasimetric_costs() << std::endl;
+        // print node mapping
+        std::cout << "Node Mapping First: " << std::endl;
+        for (const auto& x : result.node_mapping.first) {
+            std::cout << x << " ";
+        }
+        std::cout << std::endl;
+        std::cout << "Node Mapping Second: " << std::endl;
+        for (const auto& x : result.node_mapping.second) {
+            std::cout << x << " ";
+        }
+        std::cout << std::endl;
+
+        EditPath edit_path;
+        result.get_edit_path(edit_path, 0);
+        // print edit path length
+        std::cout << "Edit Path Length: " << edit_path.edit_path_graphs.size() - 1 << std::endl;
+        GraphData<GraphStruct> edit_path_graphs;
+        for (const auto& g : edit_path.edit_path_graphs) {
+            edit_path_graphs.add(g);
+        }
+        edit_path_graphs.graphData.back().SetName(edit_path.target_graph.GetName());
+        // print all the graphs
+        for (const auto& g : edit_path_graphs.graphData) {
+            std::cout << g << std::endl;
+        }
+        return 0;
     }
-    edit_path_graphs.graphData.back().SetName(edit_path.target_graph.GetName());
-    // print all the graphs
-    for (const auto& g : edit_path_graphs.graphData) {
-        std::cout << g << std::endl;
-    }
-    return 0;
 
 
 //    algorithms::GEDDFS solver(source, target, nullptr, nullptr, 0, 0, false, false);

@@ -419,11 +419,13 @@ inline void GEDResult::delete_node(EditPath &edit_path, const EditOperation &ope
     new_graph.SetName(name);
 
     // Updating the maps
-    for (NodeId i = source_node; i < graphs.first.nodes(); ++i) {
+    for (NodeId i = source_node + 1; i < graphs.first.nodes(); ++i) {
         edit_path.source_to_current[i] -= 1;
     }
     for (NodeId j = current_node; j < graphs.second.nodes(); ++j) {
-        edit_path.target_to_current[j] -=1;
+        if (edit_path.target_to_current[j] > current_node) {
+            edit_path.target_to_current[j] -=1;
+        }
     }
     edit_path.source_to_current[source_node] = -1;
 
@@ -431,11 +433,11 @@ inline void GEDResult::delete_node(EditPath &edit_path, const EditOperation &ope
     for (INDEX i = 0; i < edit_path.edit_path_graphs.back().nodes(); ++i) {
         for (const auto j : edit_path.edit_path_graphs.back().get_neighbors(i)) {
             if (i < j) {
-                if (i>= source_node) {
-                    new_graph.add_edge(i - 1, j);
+                if (i>= current_node) {
+                    new_graph.add_edge(i - 1, j-1);
                 }
                 else {
-                    if (j >= source_node) {
+                    if (j >= current_node) {
                         new_graph.add_edge(i, j - 1);
                     }
                     else {

@@ -32,13 +32,13 @@ link_directories(../../../include)
 #    <GEDLIB_ROOT>/ext/libsvm.3.22
 #    <GEDLIB_ROOT>/ext/fann.2.2.0/lib
 
-set(GEDLIB_ROOT ../../../../gedlib)
+set(GEDLIB_ROOT ../../../external/gedlib)
 include_directories(${GEDLIB_ROOT} ${GEDLIB_ROOT}/ext/boost.1.89.0 ${GEDLIB_ROOT}/ext/eigen.3.3.4/Eigen ${GEDLIB_ROOT}/ext/nomad.3.8.1/src ${GEDLIB_ROOT}/ext/nomad.3.8.1/ext/sgtelib/src ${GEDLIB_ROOT}/ext/lsape.5/cpp/include ${GEDLIB_ROOT}/ext/libsvm.3.22 ${GEDLIB_ROOT}/ext/fann.2.2.0/include)
 link_directories(${GEDLIB_ROOT}/ext/nomad.3.8.1/lib ${GEDLIB_ROOT}/ext/libsvm.3.22 ${GEDLIB_ROOT}/ext/fann.2.2.0/lib )
 
 
 # adding the Google_Tests_run target
-add_executable(GEDExample main.cpp test.h ../../../include/libGraph.h ${GEDLIB_ROOT}/src/env/ged_env.hpp
+add_executable(GEDExample main.cpp ../../../include/libGraph.h ${GEDLIB_ROOT}/src/env/ged_env.hpp
         ../../../include/Algorithms/GED/GEDFunctions.h)
 
 #Link your application against the following shared libraries:
