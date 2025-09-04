@@ -28,7 +28,6 @@ void add_graph_to_env(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env
             env.add_edge(graph_ids.second - 1, i, j,0);
         }
     }
-
 }
 
 GEDResult result_from_env(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, GraphData<GraphStruct>& graphs, const int source_graph_id = 0, const int target_graph_id = 1){
@@ -51,7 +50,6 @@ GEDResult result_from_env(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>&
 }
 
 int main() {
-
     const GraphStruct triangle = SimplePatterns::Circle(3);
     const GraphStruct square = SimplePatterns::Circle(5);
 
@@ -68,10 +66,9 @@ int main() {
 
     env.set_method(ged::Options::GEDMethod::BP_BEAM);
     env.init_method();
-    constexpr int source_id = 1;
-    constexpr int target_id = 0;
+    constexpr int source_id = 0;
+    constexpr int target_id = 1;
 
-    while (true) {
         env.run_method(source_id,target_id);
         GEDResult result = result_from_env(env, graph_data, source_id, target_id);
         std::cout << "Approximated Distance: " << result.distance << std::endl;
@@ -102,8 +99,8 @@ int main() {
         for (const auto& g : edit_path_graphs.graphData) {
             std::cout << g << std::endl;
         }
-        return 0;
-    }
+
+    return 0;
 
 
 //    algorithms::GEDDFS solver(source, target, nullptr, nullptr, 0, 0, false, false);

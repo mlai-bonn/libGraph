@@ -422,7 +422,7 @@ inline void GEDResult::delete_node(EditPath &edit_path, const EditOperation &ope
     for (NodeId i = source_node + 1; i < graphs.first.nodes(); ++i) {
         edit_path.source_to_current[i] -= 1;
     }
-    for (NodeId j = current_node; j < graphs.second.nodes(); ++j) {
+    for (NodeId j = 0; j < graphs.second.nodes(); ++j) {
         if (edit_path.target_to_current[j] > current_node) {
             edit_path.target_to_current[j] -=1;
         }
