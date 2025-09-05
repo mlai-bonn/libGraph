@@ -38,8 +38,7 @@ link_directories(${GEDLIB_ROOT}/ext/nomad.3.8.1/lib ${GEDLIB_ROOT}/ext/libsvm.3.
 
 
 # adding the Google_Tests_run target
-add_executable(GEDExample main.cpp ../../../include/libGraph.h ${GEDLIB_ROOT}/src/env/ged_env.hpp
-        ../../../include/Algorithms/GED/GEDFunctions.h)
+add_executable(GEDExample main.cpp ../../../include/libGraph.h ${GEDLIB_ROOT}/src/env/ged_env.hpp)
 
 #Link your application against the following shared libraries:
 #

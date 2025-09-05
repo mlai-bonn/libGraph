@@ -74,6 +74,6 @@ int main() {
         std::cout << x << std::endl;
     }
 
-    std::cout << "Successfully loaded the graphs from TUDataset" << dataset_name << std::endl;
+    std::cout << "Successfully loaded the " << dataset_name << " graphs from TUDataset" << std::endl;
     return 0;
 }
