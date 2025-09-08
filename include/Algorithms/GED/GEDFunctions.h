@@ -125,6 +125,7 @@ struct EditPath {
     // tmp variables
     std::vector<NodeId> source_to_current = std::vector<NodeId>();
     std::vector<NodeId> target_to_current = std::vector<NodeId>();
+    std::pair<Nodes, Nodes> node_mapping = {std::vector<NodeId>(), std::vector<NodeId>()};
 
     std::unordered_set<EditOperation, EditOperationHash> remaining_operations;
     std::unordered_set<EditOperation, EditOperationHash> remaining_edit_operations;
@@ -149,7 +150,7 @@ struct GEDResult {
     void delete_edge(EditPath& edit_path, const EditOperation& operation) const;
 
     static void insert_edge(EditPath& edit_path, const EditOperation& operation);
-    void relabel_edge(EditPath& edit_path, const EditOperation& operation);
+    static void relabel_edge(EditPath& edit_path, const EditOperation& operation);
     void delete_node(EditPath& edit_path, const EditOperation& operation) const;
 
     static void insert_node(EditPath& edit_path, const EditOperation& operation);
@@ -307,6 +308,7 @@ inline void GEDResult::get_edit_path(EditPath& edit_path, int seed) const {
     edit_path.source_to_current = std::vector<NodeId>(graphs.first.nodes(), 0);
     std::iota(std::begin(edit_path.source_to_current), std::end(edit_path.source_to_current), 0);
     edit_path.target_to_current = node_mapping.second;
+    edit_path.node_mapping = node_mapping;
 
     edit_path.remaining_operations = edit_path.edit_operations;
     
@@ -356,6 +358,15 @@ inline void GEDResult::get_edit_path(EditPath& edit_path, int seed) const {
             insert_node(edit_path, *it);
         }
         // TODO relabellings
+        while (!edit_path.remaining_node_relabels.empty()) {
+            auto it = edit_path.remaining_node_relabels.begin();
+            relabel_node(edit_path, *it);
+        }
+        while (!edit_path.remaining_edge_relabels.empty()) {
+            auto it = edit_path.remaining_edge_relabels.begin();
+            relabel_edge(edit_path, *it);
+        }
+
     }
 
 
@@ -409,12 +420,7 @@ inline void GEDResult::delete_node(EditPath &edit_path, const EditOperation &ope
     // new graph after deleting the node
     GraphStruct new_graph;
     // build up new graph from last graph without the node
-    if (edit_path.edit_path_graphs.back().labelType == LABEL_TYPE::UNLABELED) {
-        new_graph = GraphStruct(edit_path.edit_path_graphs.back().nodes() - 1, Labels());
-    }
-    else {
-        new_graph = GraphStruct(edit_path.edit_path_graphs.back().nodes() +1, edit_path.edit_path_graphs.back().labels());
-    }
+    new_graph = GraphStruct(edit_path.edit_path_graphs.back().nodes() - 1, Labels());
     const std::string name = edit_path.source_graph.GetName() + "_step_" + std::to_string(edit_path.edit_path_graphs.size()) + "_" + edit_path.target_graph.GetName();
     new_graph.SetName(name);
 
@@ -447,8 +453,19 @@ inline void GEDResult::delete_node(EditPath &edit_path, const EditOperation &ope
             }
         }
     }
-    edit_path.edit_path_graphs.emplace_back(new_graph);
+    // Add the labels
+    if (edit_path.edit_path_graphs.back().labelType != LABEL_TYPE::UNLABELED) {
+        Labels labels = std::vector<Label>(edit_path.edit_path_graphs.back().labels().size() - 1, 0);
+        for (NodeId i = 0, j = 0; i < edit_path.edit_path_graphs.back().labels().size(); ++i) {
+            if (i != current_node) {
+                labels[j] = edit_path.edit_path_graphs.back().label(i);
+                ++j;
+            }
+        }
+        new_graph.set_labels(&labels);
+    }
 
+    edit_path.edit_path_graphs.emplace_back(new_graph);
     edit_path.sequence_of_operations.push_back(operation);
     edit_path.remaining_node_deletions.erase(operation);
     edit_path.remaining_operations.erase(operation);
@@ -499,14 +516,9 @@ inline void GEDResult::insert_edge(EditPath &edit_path, const EditOperation &ope
 }
 
 inline void GEDResult::insert_node(EditPath &edit_path, const EditOperation &operation) {
-    GraphStruct new_graph;
     // new graph after inserting the node
-    if (edit_path.edit_path_graphs.back().labelType == LABEL_TYPE::UNLABELED) {
-        new_graph = GraphStruct(edit_path.edit_path_graphs.back().nodes() +1, Labels());
-    }
-    else {
-        new_graph = GraphStruct(edit_path.edit_path_graphs.back().nodes() +1, edit_path.edit_path_graphs.back().labels());
-    }
+    auto new_graph = GraphStruct(edit_path.edit_path_graphs.back().nodes() +1, Labels());
+
     const std::string name = edit_path.source_graph.GetName() + "_step_" + std::to_string(edit_path.edit_path_graphs.size()) + "_" + edit_path.target_graph.GetName();
     new_graph.SetName(name);
 
@@ -521,6 +533,13 @@ inline void GEDResult::insert_node(EditPath &edit_path, const EditOperation &ope
             }
         }
     }
+
+    if (edit_path.edit_path_graphs.back().labelType != LABEL_TYPE::UNLABELED) {
+        Labels labels = edit_path.edit_path_graphs.back().labels();
+        labels.push_back(edit_path.target_graph.label(operation.node));
+        new_graph.set_labels(&labels);
+    }
+
     edit_path.edit_path_graphs.emplace_back(new_graph);
 
 
@@ -538,10 +557,22 @@ inline void GEDResult::relabel_edge(EditPath &edit_path, const EditOperation &op
 }
 
 inline void GEDResult::relabel_node(EditPath &edit_path, const EditOperation &operation) {
-    // TODO
+    const NodeId source_i = operation.node;
+    const NodeId current_i = edit_path.source_to_current[source_i];
+    const NodeId target_i = edit_path.node_mapping.first[source_i];
+    Label target_label = edit_path.target_graph.label(target_i);
+    GraphStruct new_graph = edit_path.edit_path_graphs.back();
+    const std::string name = edit_path.source_graph.GetName() + "_step_" + std::to_string(edit_path.edit_path_graphs.size()) + "_" + edit_path.target_graph.GetName();
+    new_graph.SetName(name);
+    // relabel the node
+    Labels labels = new_graph.labels();
+    labels[current_i] = target_label;
+    new_graph.set_labels(&labels);
+    edit_path.edit_path_graphs.emplace_back(new_graph);
+
     edit_path.sequence_of_operations.push_back(operation);
-    edit_path.remaining_node_relabels.erase(operation);
     edit_path.remaining_operations.erase(operation);
+    edit_path.remaining_node_relabels.erase(operation);
 }
 
 

@@ -608,6 +608,13 @@ public:
     std::vector<T> graphData;
     T& operator[](size_t index){return graphData[index];};
     [[nodiscard]] INDEX size() const{return static_cast<INDEX>(graphData.size());};
+
+    // Setter and getter
+    void SetName(const std::string& name){_name = name;};
+    std::string GetName() const{return _name;};
+
+private:
+    std::string _name;
 };
 
 template<typename T>
@@ -1610,9 +1617,7 @@ inline void GraphStruct::set_labels(const Labels* labels) {
         //for (auto const& [label, index] : this->labelMap) {
         //    this->labelMappingPair.second[index] = label;
         //}
-
-        this->labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
-        this->_numLabels = (this->_numLabels == -1) ? static_cast<int>(labelMap.size()) : this->_numLabels;
+        this->_numLabels = this->labelMap.size();
         if (this->_numLabels >= 10){
             labelType = LABEL_TYPE::LABELED_DENSE;
         }
