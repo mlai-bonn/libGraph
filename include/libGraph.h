@@ -24,6 +24,7 @@
 #include "Closures/BaseOperator.h"
 #include "Closures/GraphClosures.h"
 
+// Algorithms
 #include "Algorithms/algorithms.h"
 
 

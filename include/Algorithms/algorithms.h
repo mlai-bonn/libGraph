@@ -6,7 +6,7 @@
 #define GOOGLE_TESTS_ALGORITHMS_H
 
 // GED Algorithms
-#include "GED/GEDFunctions.h"
+#include "GED/GED.h"
 
 // GeodesicCore Aglorithms
 #include "GeodesicCore/CoreGrowAlgorithm.h"
