@@ -67,69 +67,20 @@ inline void CreateAllEditPaths(std::vector<GEDEvaluation> &results, GraphData<Gr
         ++counter;
         auto edit_path_graphs = CreateEditPath(result);
         int path_counter = 0;
-        for (const auto& g : edit_path_graphs) {
-            g.SetName(graph_data.GetName() + "_" + std::to_string(i) + "_" + std::to_string(j) + "_" + std::to_string(path_counter));
+        for (auto& g : edit_path_graphs) {
+            g.SetName(graph_data.GetName() + "_" + std::to_string(result.graph_ids.first) + "_" + std::to_string(result.graph_ids.second) + "_" + std::to_string(path_counter));
             all_path_graphs.add(g);
             ++path_counter;
         }
     }
-
-    for (int i = 0; i < graph_data.size(); ++i) {
-        std::cout << graph_data[i] << std::endl;
-        GraphData<GraphStruct> result;
-        for (int j = i+1; j < graph_data.size(); ++j) {
-            std::cout << "Computing Path between graph " << i << " and graph " << j << std::endl;
-            // print percentage
-            std::cout << "Progress: " << (counter * 100) / (graph_data.size() * (graph_data.size() - 1) / 2) << "%" << std::endl;
-            // estimated time in minutes
-            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-            const double elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-            const double estimated_total_time = (elapsed_seconds / (counter + 1)) * (graph_data.size() * (graph_data.size() - 1) / 2);
-            const double estimated_time_left = estimated_total_time - elapsed_seconds;
-            std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
-            int path_counter = 0;
-            for (auto const& result : results) {
-                GraphStruct new_graph = CreateEditPath(result);
-                g.SetName(graph_data.GetName() + "_" + std::to_string(i) + "_" + std::to_string(j) + "_" + std::to_string(path_counter));
-                result.add(g);
-                ++path_counter;
-            }
-            ++counter;
-        }
-        // save intermediate result in the tmp folder under datasetname_i.bgfs
-        SaveParams params = {
-            edit_path_output + "tmp/",
-            graph_data.GetName() + "_" + std::to_string(i),
-            GraphFormat::BGF,
-            true,
-        };
-        result.Save(params);
-        std::cout << "Saved intermediate result for graph " << i << std::endl;
-    }
-    // Merge all graphs in tmp folder
-    GraphData<GraphStruct> final_result;
-    for (int i = 0; i < graph_data.size(); ++i) {
-        GraphData<GraphStruct> result;
-        std::string file_path = edit_path_output + "tmp/" + graph_data.GetName() + "_" + std::to_string(i) + ".bgf";
-        result.Load(file_path);
-        for (const auto& g : result.graphData) {
-            final_result.add(g);
-        }
-    }
-    // Save final result
+    // save the final result in the tmp folder under datasetname_i.bgfs
     SaveParams params = {
         edit_path_output,
         graph_data.GetName() + "_edit_paths",
         GraphFormat::BGF,
         true,
     };
-    final_result.Save(params);
-    // remove all databasename related files in tmp folder
-    for (const auto& entry : std::filesystem::directory_iterator(edit_path_output + "tmp/")) {
-        if (entry.path().string().find(graph_data.GetName() + "_") != std::string::npos) {
-            std::filesystem::remove(entry.path());
-        }
-    }
+    all_path_graphs.Save(params);
 }
 
 inline void GEDResultToBinary(const std::string &target_path, GEDEvaluation &result) {

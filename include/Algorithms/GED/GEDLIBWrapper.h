@@ -10,6 +10,45 @@
 #include "GEDFunctions.h"
 #include "src/env/ged_env.hpp"
 
+// description of the wrapper functions
+
+/* Adds a graph to the given GEDLIB environment
+ *
+ * @param env The GEDLIB environment
+ * @param g The graph to be added
+ */
+void AddGraphToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphStruct& g);
+/* Adds multiple graphs to the given GEDLIB environment
+ * @param env The GEDLIB environment
+ * @param graph_data The graphs to be added
+ */
+void AddGraphsToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<GraphStruct>& graph_data);
+/* Initializes the given GEDLIB environment
+ * @param env The GEDLIB environment
+ * @param graph_data The graphs to be added
+ * @param edit_costs The edit costs to be used
+ * @param method The method to be used
+ */
+void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<GraphStruct>& graph_data, ged::Options::EditCosts edit_costs = ged::Options::EditCosts::CONSTANT, ged::Options::GEDMethod method = ged::Options::GEDMethod::BP_BEAM);
+/* Evaluates the result of a GEDLIB computation
+ * @param env The GEDLIB environment
+ * @param graphs The graphs used in the computation
+ * @param source_graph_id The ID of the source graph
+ * @param target_graph_id The ID of the target graph
+ * @return The evaluation of the result
+ */
+GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, GraphData<GraphStruct>& graphs, const int source_graph_id = 0, const int target_graph_id = 1);
+/* Evaluates all results of a GEDLIB computation and saves the mappings to a file
+ * @param env The GEDLIB environment
+ * @param graph_data The graphs used in the computation
+ * @param mapping_path_output The path to the file where the mappings should be saved
+ */
+void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
+                                   GraphData<GraphStruct> &graph_data,
+                                   const std::string &results_path );
+
+
+
 inline void AddGraphToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphStruct& g) {
     // Add graph
     env.add_graph(g.GetName());
@@ -38,12 +77,15 @@ inline void AddGraphsToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ge
     }
 }
 
-inline void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<GraphStruct>& graph_data) {
-   AddGraphsToGEDEnvironment(env, graph_data);
+inline void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<GraphStruct>& graph_data, ged::Options::EditCosts edit_costs, ged::Options::GEDMethod method) {
+    env.set_edit_costs(edit_costs);
+    AddGraphsToGEDEnvironment(env, graph_data);
     env.init();
+    env.set_method(method);
+    env.init_method();
 }
 
-inline GEDEvaluation EvaluateGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, GraphData<GraphStruct>& graphs, const int source_graph_id = 0, const int target_graph_id = 1){
+inline GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, GraphData<GraphStruct>& graphs, const int source_graph_id, const int target_graph_id){
     const ged::NodeMap& node_map = env.get_node_map(source_graph_id, target_graph_id);
     std::pair<Nodes, Nodes> mapping;
     for (const auto x : node_map.get_forward_map()) {
@@ -64,17 +106,23 @@ inline GEDEvaluation EvaluateGEDResult(const ged::GEDEnv<ged::LabelID, ged::Labe
     return result;
 }
 
-inline void EvaluateGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
+inline void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
                                    GraphData<GraphStruct> &graph_data,
-                                   const std::string &mapping_path_output = "../Data/Mappings/") {
-    // check whether file already exists
-    if (std::filesystem::exists(mapping_path_output + graph_data.GetName() + "_ged_mapping.bin")) {
+                                   const std::string &results_path) {
+    // check whether the output path exists
+    if (!std::filesystem::exists(results_path)) {
+        std::cout << "The output path " << results_path << " does not exist." << std::endl;
+        return;
+    }
+    // check whether the file already exists in the output_path
+    if (std::filesystem::exists(results_path + graph_data.GetName() + "_ged_mapping.bin")) {
         std::cout << "The mapping file for " << graph_data.GetName() << " already exist." << std::endl;
+        std::cout << "Skipping computation." << std::endl;
         return;
     }
     // create tmp directory
-    std::filesystem::create_directory(mapping_path_output + "tmp/");
-    // counter for number of computed paths
+    std::filesystem::create_directory(results_path + "tmp/");
+    // counter for number of computed results
     int counter = 0;
     // time variable
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -82,12 +130,12 @@ inline void EvaluateGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::Labe
     for (int i = 0; i < graph_data.size(); ++i) {
         for (int j = i + 1; j < graph_data.size(); ++j) {
             // Check if mapping already exists in the tmp folder
-            if (std::filesystem::exists(mapping_path_output + "tmp/" + graph_data.GetName() + "_" + std::to_string(i) + "_" + std::to_string(j) + "_ged_mapping.bin")) {
+            if (std::filesystem::exists(results_path + "tmp/" + graph_data.GetName() + "_" + std::to_string(i) + "_" + std::to_string(j) + "_ged_mapping.bin")) {
                 std::cout << "Mapping between graph " << i << " and graph " << j << " already exists. Skipping." << std::endl;
                 ++counter;
                 continue;
             }
-            std::cout << "Computing Path between graph " << i << " and graph " << j << std::endl;
+            std::cout << "Computing mapping between graph " << i << " and graph " << j << std::endl;
             // print percentage
             std::cout << "Progress: " << (counter * 100) / (graph_data.size() * (graph_data.size() - 1) / 2) << "%" << std::endl;
             // estimated time in minutes
@@ -96,22 +144,21 @@ inline void EvaluateGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::Labe
             const double estimated_total_time = (elapsed_seconds / (counter + 1)) * (graph_data.size() * (graph_data.size() - 1) / 2);
             const double estimated_time_left = estimated_total_time - elapsed_seconds;
             std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
-            std::cout << "Computing Mapping between graph " << i << " and graph " << j << std::endl;
             env.run_method(i, j);
-            GEDEvaluation result = EvaluateGEDResult(env, graph_data, i, j);
+            GEDEvaluation result = ComputeGEDResult(env, graph_data, i, j);
             // save result to binary
-            GEDResultToBinary(mapping_path_output + "tmp/", result);
+            GEDResultToBinary(results_path + "tmp/", result);
             std::cout << "Saved intermediate result for graphs " << i << " and " << j << std::endl;
             ++counter;
         }
     }
     // Merge all mappings in tmp folder
     std::vector<GEDEvaluation> merged_results;
-    MergeBinaries(mapping_path_output + "tmp/", graph_data, merged_results);
+    MergeBinaries(results_path + "tmp/", graph_data, merged_results);
     // Save final result
-    GEDResultToBinary(mapping_path_output, merged_results);
+    GEDResultToBinary(results_path, merged_results);
     // remove all databasename related files in tmp folder
-    for (const auto& entry : std::filesystem::directory_iterator(mapping_path_output + "tmp/")) {
+    for (const auto& entry : std::filesystem::directory_iterator(results_path + "tmp/")) {
         if (entry.path().string().find(graph_data.GetName() + "_") != std::string::npos) {
             std::filesystem::remove(entry.path());
         }

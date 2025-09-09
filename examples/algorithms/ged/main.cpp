@@ -28,7 +28,7 @@ int main() {
     constexpr int target_id = 1;
 
     env.run_method(source_id,target_id);
-    const GEDEvaluation result = EvaluateGEDResult(env, graph_data, source_id, target_id);
+    const GEDEvaluation result = ComputeGEDResult(env, graph_data, source_id, target_id);
     std::cout << "Approximated Distance: " << result.distance << std::endl;
     std::cout << "Time: " << result.time << " seconds" << std::endl;
     std::cout << "Quasimetric Cost: " << env.quasimetric_costs() << std::endl;
