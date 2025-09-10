@@ -102,11 +102,14 @@ inline std::ostream& operator<<(std::ostream& os, const EditOperation& operation
     }
     switch (operation.type) {
         case EditType::INSERT:
-            os << "INSERT" << std::endl;
+            os << " INSERT" << std::endl;
+            break;
         case EditType::DELETE:
-            os << "DELETE" << std::endl;
+            os << " DELETE" << std::endl;
+            break;
         case EditType::RELABEL:
-            os << "RELABEL" << std::endl;
+            os << " RELABEL" << std::endl;
+            break;
     }
     return os;
 }
@@ -135,6 +138,16 @@ struct EditPath {
     std::unordered_set<EditOperation, EditOperationHash> remaining_edge_relabels;
     std::unordered_set<EditOperation, EditOperationHash> remaining_node_relabels;
 };
+
+// print Edit Path using the sequence of operations
+inline std::ostream& operator<<(std::ostream& os, const EditPath& edit_path) {
+    os << "Edit Costs: " << edit_path.total_costs << std::endl;
+    os << "Sequence of Operations: " << std::endl;
+    for (const auto& operation : edit_path.sequence_of_operations) {
+        os << operation;
+    }
+    return os;
+}
 
 
 #endif //GEDEXAMPLE_GEDSTRUCTS_H

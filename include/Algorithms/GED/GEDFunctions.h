@@ -44,8 +44,48 @@ inline std::vector<GraphStruct> CreateEditPath(const GEDEvaluation& result)
     //}
     return edit_path_graphs;
 }
+inline void WriteEditPathInfo(const std::vector<GEDEvaluation>& results, const GraphData<GraphStruct>& graph_data, const std::string& edit_path_info) {
+    // create also a MUTAG_edit_paths.bin storing source_id, step_id, target_id for each graph
+    std::ofstream ofs(edit_path_info, std::ios::binary);
+    if (!ofs) {
+        std::cerr << "Error opening file for writing: " << edit_path_info << std::endl;
+        return;
+    }
+    for (const auto& result : results) {
+        INDEX source_id = result.graph_ids.first;
+        INDEX target_id = result.graph_ids.second;
+        auto edit_path_graphs = CreateEditPath(result);
+        for (INDEX step_id = 0; step_id < edit_path_graphs.size(); ++step_id) {
+            // write source_id, step_id, target_id
+            ofs.write(reinterpret_cast<const char *>(&source_id), sizeof(source_id));
+            ofs.write(reinterpret_cast<const char *>(&step_id), sizeof(step_id));
+            ofs.write(reinterpret_cast<const char *>(&target_id), sizeof(target_id));
+        }
+    }
+    ofs.close();
+}
 
-inline void CreateAllEditPaths(std::vector<GEDEvaluation> &results, GraphData<GraphStruct> &graph_data, const std::string &edit_path_output = "../Data/EditPaths/") {
+inline void ReadEditPathInfo(std::string& edit_path_info, std::vector<std::tuple<INDEX, INDEX, INDEX>>& info) {
+    // open binary file
+    std::ifstream ifs(edit_path_info, std::ios::binary);
+    if (!ifs) {
+        std::cerr << "Error opening file for reading: " << edit_path_info << std::endl;
+        return;
+    }
+    info.clear();
+    while (!ifs.eof()) {
+        INDEX source_id;
+        INDEX step_id;
+        INDEX target_id;
+        ifs.read(reinterpret_cast<char *>(&source_id), sizeof(source_id));
+        ifs.read(reinterpret_cast<char *>(&step_id), sizeof(step_id));
+        ifs.read(reinterpret_cast<char *>(&target_id), sizeof(target_id));
+        info.emplace_back(std::make_tuple(source_id, step_id, target_id));
+    }
+
+}
+
+inline void CreateAllEditPaths(const std::vector<GEDEvaluation> &results, const GraphData<GraphStruct> &graph_data, const std::string &edit_path_output = "../Data/EditPaths/") {
     // check whether file already exists
     if (std::filesystem::exists(edit_path_output + graph_data.GetName() + "_edit_paths.bgf")) {
         std::cout << "Edit paths for " << graph_data.GetName() << " already exist." << std::endl;
@@ -81,6 +121,8 @@ inline void CreateAllEditPaths(std::vector<GEDEvaluation> &results, GraphData<Gr
         true,
     };
     all_path_graphs.Save(params);
+    WriteEditPathInfo(results, graph_data, edit_path_output + graph_data.GetName() + "_edit_paths_info.bin");
+
 }
 
 inline void GEDResultToBinary(const std::string &target_path, GEDEvaluation &result) {
@@ -248,6 +290,13 @@ inline void MergeBinaries(const std::string& input_path, GraphData<GraphStruct>&
             BinaryToGEDResult(entry.path().string(), graph_data, results.back());
         }
     }
+    // sort results by graph ids (first, second)
+    std::ranges::sort(results, [](const GEDEvaluation& a, const GEDEvaluation& b) {
+        if (a.graph_ids.first != b.graph_ids.first) {
+            return a.graph_ids.first < b.graph_ids.first;
+        }
+        return a.graph_ids.second < b.graph_ids.second;
+    });
 }
 
 

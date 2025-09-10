@@ -65,8 +65,10 @@ inline void AddGraphToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged
     }
     // Add edges
     for (int i = 0; i < g.nodes(); ++i) {
-        for (int j = i + 1; j < g.nodes(); ++j) {
-            env.add_edge(graph_ids.second - 1, i, j,0);
+        for (const auto j : g.get_neighbors(i)) {
+            if (i < j) {
+                env.add_edge(graph_ids.second - 1, i, j,0);
+            }
         }
     }
 }
@@ -86,7 +88,7 @@ inline void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged
 }
 
 inline GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, GraphData<GraphStruct>& graphs, const int source_graph_id, const int target_graph_id){
-    const ged::NodeMap& node_map = env.get_node_map(source_graph_id, target_graph_id);
+    ged::NodeMap node_map = env.get_node_map(source_graph_id, target_graph_id);
     std::pair<Nodes, Nodes> mapping;
     for (const auto x : node_map.get_forward_map()) {
         mapping.first.push_back(x);
@@ -94,9 +96,11 @@ inline GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::Label
     for (const auto x : node_map.get_backward_map()) {
         mapping.second.push_back(x);
     }
-
+    ged::GEDGraph::GraphID i = source_graph_id;
+    ged::GEDGraph::GraphID j = target_graph_id;
+    env.compute_induced_cost(i, j, node_map);
     GEDEvaluation result = {
-        node_map.induced_cost(),
+        env.get_node_map(i,j).induced_cost(),
         {graphs[source_graph_id], graphs[target_graph_id]},
         {source_graph_id, target_graph_id},
         mapping,
@@ -127,28 +131,31 @@ inline void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::Label
     // time variable
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
+#pragma omp parallel for schedule(dynamic) shared(graph_data, results_path) firstprivate(counter, env)
     for (int i = 0; i < graph_data.size(); ++i) {
         for (int j = i + 1; j < graph_data.size(); ++j) {
             // Check if mapping already exists in the tmp folder
             if (std::filesystem::exists(results_path + "tmp/" + graph_data.GetName() + "_" + std::to_string(i) + "_" + std::to_string(j) + "_ged_mapping.bin")) {
-                std::cout << "Mapping between graph " << i << " and graph " << j << " already exists. Skipping." << std::endl;
+                //std::cout << "Mapping between graph " << i << " and graph " << j << " already exists. Skipping." << std::endl;
                 ++counter;
                 continue;
             }
-            std::cout << "Computing mapping between graph " << i << " and graph " << j << std::endl;
+            //std::cout << "Computing mapping between graph " << i << " and graph " << j << std::endl;
             // print percentage
-            std::cout << "Progress: " << (counter * 100) / (graph_data.size() * (graph_data.size() - 1) / 2) << "%" << std::endl;
+            //std::cout << "Progress: " << (counter * 100) / (graph_data.size() * (graph_data.size() - 1) / 2) << "%" << std::endl;
             // estimated time in minutes
             std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
             const double elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
             const double estimated_total_time = (elapsed_seconds / (counter + 1)) * (graph_data.size() * (graph_data.size() - 1) / 2);
             const double estimated_time_left = estimated_total_time - elapsed_seconds;
-            std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
+            //std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
             env.run_method(i, j);
             GEDEvaluation result = ComputeGEDResult(env, graph_data, i, j);
+            // print calculated (approximated Distance)
+            //std::cout << "Approximated Distance " << i << " to " << j << " : " << result.distance << std::endl;
             // save result to binary
             GEDResultToBinary(results_path + "tmp/", result);
-            std::cout << "Saved intermediate result for graphs " << i << " and " << j << std::endl;
+            //std::cout << "Saved intermediate result for graphs " << i << " and " << j << std::endl;
             ++counter;
         }
     }
