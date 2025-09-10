@@ -12,6 +12,8 @@
 
 struct GEDEvaluation {
     double distance = std::numeric_limits<double>::max();
+    double lower_bound = std::numeric_limits<double>::min();
+    double upper_bound = std::numeric_limits<double>::max();
     std::pair<GraphStruct, GraphStruct> graphs = {GraphStruct(), GraphStruct()};
     std::pair<INDEX, INDEX> graph_ids = {std::numeric_limits<INDEX>::max(), std::numeric_limits<INDEX>::max()};
     std::pair<Nodes, Nodes> node_mapping = {std::vector<NodeId>(), std::vector<NodeId>()};

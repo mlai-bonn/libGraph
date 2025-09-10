@@ -9,6 +9,7 @@
 #include <set>
 #include <unordered_map>
 #include "GraphDataStructures/GraphBase.h"
+#include "GraphDataStructures/GraphLabeledBase.h"
 
 
 class LoadSave {
@@ -18,7 +19,8 @@ public:
     static void LoadLabelsFromPath(const std::string& Path, std::vector<Labels> &Labels, std::unordered_map<size_t, std::string> &LabelNames, std::set<int>* graphSizes = nullptr, int patternNum = -1);
     template <typename T>
     static void LoadTUDortmundGraphData(const std::string& path, const std::string& dbName, GraphData<T>& graphs, std::vector<int>& graphLabels, std::vector<std::vector<int>>* graphsNodeLabels=nullptr, std::vector<std::vector<int>>* graphsEdgeLabels= nullptr, std::vector<std::vector<int>>* graphsNodeAttributes= nullptr, std::vector<std::vector<int>>* graphsEdgeAttributes= nullptr);
-
+    static bool PreprocessTUDortmundGraphData(const std::string& dataset_name, const std::string &input_path, const std::string &output_path);
+    static GraphData<GraphStruct> LoadPreprocessedTUDortmundGraphData(const std::string& dataset_name , const std::string &output_path );
 };
 
 inline bool LoadSave::LoadLabels(const std::string& Path, Labels &LabelVector) {
@@ -73,7 +75,7 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
                                        std::vector<std::vector<int>> *graphsEdgeLabels,
                                        std::vector<std::vector<int>> *graphsNodeAttributes,
                                        std::vector<std::vector<int>> *graphsEdgeAttributes) {
-
+    graphs.SetName(dbName);
     EDGES edges;
     std::vector<int> graphIndicator;
     std::vector<int> nodeLabels;
@@ -181,7 +183,7 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
         Labels labels;
         if (indicator > graphs.size()){
             graphNodeCounter = 1;
-            graphs.add(GraphStruct());
+            graphs.add(T());
             if (!labels.empty()){
                 if (isNodeLabels){
                     graphs.graphData.back().set_labels(&labels);
@@ -226,24 +228,114 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
     //Get all _graph edges
     INDEX edgeCounter = 0;
     for (auto edge : edges) {
+        std::vector<double> edge_data;
         INDEX graphId = idMap[edge.first].first;
         if (graphId != idMap[edge.second].first){
             throw std::logic_error("File format is wrong!");
         }
         else{
-            graphs[graphId].add_edge(idMap[edge.first].second, idMap[edge.second].second);
             if (isEdgeLabels && graphsEdgeLabels != nullptr) {
                 //std::cout << graphId << ":"  << graphsEdgeLabels->size() << std::endl;
                 //std::cout << edgeCounter << ":"  << edgeLabels.size() << std::endl;
                 (*graphsEdgeLabels)[graphId].emplace_back(edgeLabels[edgeCounter]);
+                edge_data.emplace_back(edgeLabels[edgeCounter]);
             }
             if (isEdgeAttributes && graphsEdgeAttributes != nullptr) {
                 (*graphsEdgeAttributes)[graphId].emplace_back(edgeAttributes[edgeCounter]);
+                edge_data.emplace_back(edgeAttributes[edgeCounter]);
             }
+            graphs[graphId].ReadEdges(idMap[edge.first].second, idMap[edge.second].second, edge_data);
         }
         ++edgeCounter;
     }
+    // check whether T can be casted to DDataGraph
+    if (std::is_same_v<T, DDataGraph>) {
+        for (auto &graph : graphs.graphData) {
+            // cast
+            DDataGraph& dgraph = dynamic_cast<DDataGraph&>(graph);
+            std::unordered_map<std::string, int> edge_data_names = {{"label", 0}};
+            dgraph.set_edge_data_names(edge_data_names);
+            dgraph.set_node_data_names({{}});
+        }
+    }
 }
+
+inline bool LoadSave::PreprocessTUDortmundGraphData(const std::string &dataset_name, const std::string &input_path, const std::string &output_path) {
+     // check whether folder with name dataset_name is not yet existing
+    if (!std::filesystem::exists(input_path + dataset_name + "/") && !std::filesystem::is_directory(output_path + dataset_name))
+    {
+        std::cout << "Folder " << input_path << " does not exist" << std::endl;
+        // Please create it and download the data dataset_name from link
+        std::cout << "Please download the dataset from https://chrsmrrs.github.io/datasets/docs/datasets/" << std::endl;
+        return false;
+    }
+    // if output_path except for ProcessedGraphs exists then create ProcessedGraphs folder
+    if (!std::filesystem::exists(output_path)) {
+        std::filesystem::create_directory(output_path);
+    }
+
+
+
+    // Check whether Processed graphs already exists
+    if (std::filesystem::exists(output_path + dataset_name + ".bgfs")) {
+        std::cout << "Graph " << dataset_name << " already exists" << std::endl;
+        return true;
+    }
+
+    DDataGraph graph;
+    GraphData<DDataGraph> graphs;
+    //graphs.add(example_graph());
+    std::vector<int> graphLabels;
+    std::vector<std::vector<int>> graphNodeLabels;
+    std::vector<std::vector<int>> graphNodeAttributes;
+    std::vector<std::vector<int>> graphEdgeAttributes;
+    std::vector<std::vector<int>> graphEdgeLabels;
+    LoadSave::LoadTUDortmundGraphData(input_path, dataset_name, graphs, graphLabels, &graphNodeLabels, &graphEdgeLabels, &graphNodeAttributes, &graphEdgeAttributes);
+
+    SaveParams params = {
+        output_path,
+        dataset_name,
+        GraphFormat::BGFS,
+        true,
+    };
+    // Add information to graphs
+    int counter = 0;
+    for ( auto &x : graphs.graphData) {
+        auto labels = Labels(graphNodeLabels[counter].begin(), graphNodeLabels[counter].end());
+        std::string graph_name = dataset_name + "_" + std::to_string(counter);
+        x.SetName(graph_name);
+        x.set_labels(&labels);
+        ++counter;
+        // print counter
+        //std::cout << "Graph:" << counter << "/" << graphs.graphData.size() << std::endl;
+        //std::cout << x.nodes() << std::endl;
+    }
+    // Save the graph as bgfs format
+    graphs.Save(params);
+    return true;
+}
+
+inline GraphData<GraphStruct> LoadSave::LoadPreprocessedTUDortmundGraphData(const std::string& dataset_name , const std::string &output_path ) {
+    // Load the graph from the bgfs format
+
+    GraphData<GraphStruct> loadedGraphs;
+    std::string graph_path = output_path + dataset_name + ".bgfs";
+
+    if (!std::filesystem::exists(graph_path)) {
+        std::cout << "Graph " << dataset_name << " does not exist" << std::endl;
+    }
+    else {
+        loadedGraphs.Load(graph_path);
+        // print the loaded graphs
+        for ( auto &x : loadedGraphs.graphData) {
+            std::cout << x << std::endl;
+        }
+        std::cout << "Successfully loaded the " << dataset_name << " graphs from TUDataset" << std::endl;
+    }
+    loadedGraphs.SetName(dataset_name);
+    return loadedGraphs;
+}
+
 
 
 

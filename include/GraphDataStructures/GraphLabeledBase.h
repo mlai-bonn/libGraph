@@ -4,6 +4,7 @@
 
 #ifndef TESTGRAPHLIB_GRAPHLABELEDBASE_H
 #define TESTGRAPHLIB_GRAPHLABELEDBASE_H
+#include "GraphDirectedBase.h"
 
 struct DDataGraph : public DGraphStruct{
 public:
@@ -20,6 +21,8 @@ public:
     void WriteNodeFeatures(std::ofstream& Out,const SaveParams& saveParams) override;
     void WriteEdges(std::ofstream& Out,const SaveParams& saveParams) override;
 
+    NodeId add_node(INDEX number = 1, const Labels* labels = nullptr) override;
+
 
     double get_edge_data(const EDGE & edge, const std::string& type) const;
     double get_edge_data(const EDGE & edge, int index) const;
@@ -31,6 +34,12 @@ public:
     void add_edge_data(const EDGE & edge, int index, double data);
     void add_edge_data(const EDGE & edge, std::vector<double>& data);
     bool add_edge(NodeId source, NodeId destination, std::vector<double>& data);
+
+    // set node data names
+    void set_node_data_names(const std::unordered_map<std::string, int>& nodeDataNames);
+    // set edge data names
+    void set_edge_data_names(const std::unordered_map<std::string, int>& edgeDataNames);
+
 
     static bool dijkstra(const DDataGraph& graph, NodeId src, double (*weight_function)(const DDataGraph&, EDGE), std::vector<double>& distances);
     static bool dijkstra(const DDataGraph& graph, NodeId src, NodeId dest, double (*weight_function)(const DDataGraph&, EDGE), std::vector<NodeId>& path, std::vector<double>& distances, double& length);
@@ -290,6 +299,23 @@ inline void DDataGraph::add_edge_data(const EDGE &edge, std::vector<double> &dat
 inline bool DDataGraph::add_edge(NodeId source, NodeId destination, std::vector<double>& data) {
     add_edge_data(EDGE{source, destination}, data);
     return DGraphStruct::add_edge(source, destination);
+}
+
+inline void DDataGraph::set_node_data_names(const std::unordered_map<std::string, int> &nodeDataNames) {
+    this->_node_data_names = nodeDataNames;
+    this->_node_data_size = (int) nodeDataNames.size();
+}
+
+inline void DDataGraph::set_edge_data_names(const std::unordered_map<std::string, int> &edgeDataNames) {
+    this->_edge_data_names = edgeDataNames;
+    this->_edge_data_size = (int) edgeDataNames.size();
+}
+
+inline NodeId DDataGraph::add_node(INDEX number, const Labels *labels) {
+    const NodeId new_node_id =  DGraphStruct::add_node(number, labels);
+    this->_in_degrees.emplace_back(0);
+    this->_out_degrees.emplace_back(0);
+    return new_node_id;
 }
 
 

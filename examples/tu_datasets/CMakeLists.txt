@@ -14,5 +14,4 @@ include_directories(../../include)
 link_directories(../../include)
 
 # adding the Google_Tests_run target
-add_executable(TUDatasets main.cpp ../../include/libGraph.h
-        ../../include/Algorithms/GED/GED.h)
+add_executable(TUDatasets main.cpp ../../include/libGraph.h)

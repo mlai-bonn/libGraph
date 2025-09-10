@@ -44,8 +44,9 @@ GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged
  * @param mapping_path_output The path to the file where the mappings should be saved
  */
 void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
-                                   GraphData<GraphStruct> &graph_data,
-                                   const std::string &results_path );
+                                   const GraphData<GraphStruct> &graph_data,
+                                   const std::vector<INDEX> &graph_ids,
+                                   const std::string &results_path);
 
 
 
@@ -87,7 +88,7 @@ inline void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged
     env.init_method();
 }
 
-inline GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, GraphData<GraphStruct>& graphs, const int source_graph_id, const int target_graph_id){
+inline GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<GraphStruct>& graphs, const int source_graph_id, const int target_graph_id){
     ged::NodeMap node_map = env.get_node_map(source_graph_id, target_graph_id);
     std::pair<Nodes, Nodes> mapping;
     for (const auto x : node_map.get_forward_map()) {
@@ -101,7 +102,9 @@ inline GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::Label
     env.compute_induced_cost(i, j, node_map);
     GEDEvaluation result = {
         env.get_node_map(i,j).induced_cost(),
-        {graphs[source_graph_id], graphs[target_graph_id]},
+        env.get_lower_bound(i,j),
+        env.get_upper_bound(i,j),
+        {graphs.graphData[source_graph_id], graphs.graphData[target_graph_id]},
         {source_graph_id, target_graph_id},
         mapping,
         graphs.GetName(),
@@ -111,7 +114,8 @@ inline GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::Label
 }
 
 inline void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
-                                   GraphData<GraphStruct> &graph_data,
+                                   const GraphData<GraphStruct> &graph_data,
+                                   const std::vector<INDEX> &graph_ids,
                                    const std::string &results_path) {
     // check whether the output path exists
     if (!std::filesystem::exists(results_path)) {
@@ -131,46 +135,38 @@ inline void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::Label
     // time variable
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-#pragma omp parallel for schedule(dynamic) shared(graph_data, results_path) firstprivate(counter, env)
-    for (int i = 0; i < graph_data.size(); ++i) {
-        for (int j = i + 1; j < graph_data.size(); ++j) {
-            // Check if mapping already exists in the tmp folder
-            if (std::filesystem::exists(results_path + "tmp/" + graph_data.GetName() + "_" + std::to_string(i) + "_" + std::to_string(j) + "_ged_mapping.bin")) {
-                //std::cout << "Mapping between graph " << i << " and graph " << j << " already exists. Skipping." << std::endl;
+    for (const auto i : graph_ids) {
+        for (const auto j : graph_ids) {
+            if (j > i) {
+                // Check if mapping already exists in the tmp folder
+                if (std::filesystem::exists(results_path + "tmp/" + graph_data.GetName() + "_" + std::to_string(i) + "_" + std::to_string(j) + "_ged_mapping.bin")) {
+                    //std::cout << "Mapping between graph " << i << " and graph " << j << " already exists. Skipping." << std::endl;
+                    ++counter;
+                    continue;
+                }
+                //std::cout << "Computing mapping between graph " << i << " and graph " << j << std::endl;
+                // print percentage
+                //std::cout << "Progress: " << (counter * 100) / (graph_data.size() * (graph_data.size() - 1) / 2) << "%" << std::endl;
+                // estimated time in minutes
+                std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+                const double elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
+                const double estimated_total_time = (elapsed_seconds / (counter + 1)) * (graph_data.size() * (graph_data.size() - 1) / 2);
+                const double estimated_time_left = estimated_total_time - elapsed_seconds;
+                //std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
+                env.run_method(i, j);
+                GEDEvaluation result = ComputeGEDResult(env, graph_data, i, j);
+                // print calculated (approximated Distance)
+                //std::cout << "Approximated Distance " << i << " to " << j << " : " << result.distance << std::endl;
+                // save result to binary
+                GEDResultToBinary(results_path + "tmp/", result);
+                //std::cout << "Saved intermediate result for graphs " << i << " and " << j << std::endl;
                 ++counter;
-                continue;
             }
-            //std::cout << "Computing mapping between graph " << i << " and graph " << j << std::endl;
-            // print percentage
-            //std::cout << "Progress: " << (counter * 100) / (graph_data.size() * (graph_data.size() - 1) / 2) << "%" << std::endl;
-            // estimated time in minutes
-            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-            const double elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-            const double estimated_total_time = (elapsed_seconds / (counter + 1)) * (graph_data.size() * (graph_data.size() - 1) / 2);
-            const double estimated_time_left = estimated_total_time - elapsed_seconds;
-            //std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
-            env.run_method(i, j);
-            GEDEvaluation result = ComputeGEDResult(env, graph_data, i, j);
-            // print calculated (approximated Distance)
-            //std::cout << "Approximated Distance " << i << " to " << j << " : " << result.distance << std::endl;
-            // save result to binary
-            GEDResultToBinary(results_path + "tmp/", result);
-            //std::cout << "Saved intermediate result for graphs " << i << " and " << j << std::endl;
-            ++counter;
-        }
-    }
-    // Merge all mappings in tmp folder
-    std::vector<GEDEvaluation> merged_results;
-    MergeBinaries(results_path + "tmp/", graph_data, merged_results);
-    // Save final result
-    GEDResultToBinary(results_path, merged_results);
-    // remove all databasename related files in tmp folder
-    for (const auto& entry : std::filesystem::directory_iterator(results_path + "tmp/")) {
-        if (entry.path().string().find(graph_data.GetName() + "_") != std::string::npos) {
-            std::filesystem::remove(entry.path());
         }
     }
 }
+
+
 
 
 

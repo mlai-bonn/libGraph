@@ -531,7 +531,8 @@ public:
     virtual bool remove_edge(NodeId source, NodeId destination);
     virtual bool remove_edge(const std::pair<NodeId, NodeId>& edge);
     virtual bool remove_edge(const EdgeIterator& edge);
-    NodeId add_node(INDEX number = 1, const Labels* labels = nullptr);
+
+    virtual NodeId add_node(INDEX number = 1, const Labels* labels = nullptr);
     //Get get_neighbors by []
     const Nodes& operator[](NodeId nodeId){return _graph[nodeId];};
     void sortNeighborIds();
@@ -1557,20 +1558,20 @@ inline void GraphStruct::Save(const SaveParams& saveParams) {
     }
 }
 
-bool GraphStruct::ReadEdges(INDEX Src, INDEX Dst, std::vector<double>& edgeData) {
+inline bool GraphStruct::ReadEdges(INDEX Src, INDEX Dst, std::vector<double>& edgeData) {
     return this->add_edge(Src, Dst);
 
 }
 
-void GraphStruct::ReadNodeFeatures(double value, int pos, const std::string &nodeFeatureName) {
+inline void GraphStruct::ReadNodeFeatures(double value, int pos, const std::string &nodeFeatureName) {
     if (nodeFeatureName == "label") {
         this->_labels.emplace_back(value);
     }
 }
 
-void GraphStruct::Init(const std::string &name, int size, int edges, int nodeFeatures, int edgeFeatures,
-                       const std::vector<std::string> &nodeFeatureNames,
-                       const std::vector<std::string> &edgeFeatureNames) {
+inline void GraphStruct::Init(const std::string &name, int size, int edges, int nodeFeatures, int edgeFeatures,
+                              const std::vector<std::string> &nodeFeatureNames,
+                              const std::vector<std::string> &edgeFeatureNames) {
     this->_name = name;
     this->_nodes = size;
     this->_edges = edges;

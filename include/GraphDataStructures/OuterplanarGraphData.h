@@ -6,6 +6,7 @@
 #define CLOSURES_OUTERPLANARGRAPHDATA_H
 
 
+#include "GraphBase.h"
 #include "OuterplanarStructs.h"
 #include "Algorithms/Graph/GraphAlgorithms.h"
 
