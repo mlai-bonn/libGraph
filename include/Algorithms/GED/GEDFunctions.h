@@ -160,6 +160,12 @@ inline void GEDResultToBinary(const std::string &target_path, GEDEvaluation &res
     ofs.write(result.graph_data_name.c_str(), name_size);
     // write time
     ofs.write(reinterpret_cast<const char *>(&result.time), sizeof(result.time));
+    // write distance
+    ofs.write(reinterpret_cast<const char *>(&result.distance), sizeof(result.distance));
+    // write lower bound
+    ofs.write(reinterpret_cast<const char *>(&result.lower_bound), sizeof(result.lower_bound));
+    // write upper bound
+    ofs.write(reinterpret_cast<const char *>(&result.upper_bound), sizeof(result.upper_bound));
     ofs.close();
 }
 
@@ -171,10 +177,12 @@ inline void GEDResultToBinary(const std::string &output_path, std::vector<GEDEva
     }
     const std::string graph_data_name = results[0].graph_data_name;
     const std::string file_path = output_path + graph_data_name + "_ged_mapping.bin";
+    const std::string distance_file_path = output_path + graph_data_name + "_ged_mapping_distance.csv";
     // create output target_path if it does not exist
     if (!std::filesystem::exists(output_path)) {
         std::filesystem::create_directory(output_path);
     }
+
     // open binary file
     std::ofstream ofs(file_path, std::ios::binary);
     if (!ofs) {
@@ -205,12 +213,27 @@ inline void GEDResultToBinary(const std::string &output_path, std::vector<GEDEva
         ofs.write(result.graph_data_name.c_str(), name_size);
         // write time
         ofs.write(reinterpret_cast<const char *>(&result.time), sizeof(result.time));
+        // write distance
+        ofs.write(reinterpret_cast<const char *>(&result.distance), sizeof(result.distance));
+        // write lower bound
+        ofs.write(reinterpret_cast<const char *>(&result.lower_bound), sizeof(result.lower_bound));
+        // write upper bound
+        ofs.write(reinterpret_cast<const char *>(&result.upper_bound), sizeof(result.upper_bound));
     }
     ofs.close();
-
+    // write distance csv file source_id, target_id, distance
+    std::ofstream distance_ofs(distance_file_path, std::ios::out);
+    if (!distance_ofs) {
+        std::cerr << "Error opening file for writing: " << distance_file_path << std::endl;
+        return;
+    }
+    for (const auto& result : results) {
+        distance_ofs << result.graph_ids.first << "," << result.graph_ids.second << "," << result.distance << std::endl;
+    }
+    distance_ofs.close();
 }
 
-inline void BinaryToGEDResult(const std::string &input_path, GraphData<GraphStruct>& graph_data, GEDEvaluation &result) {
+inline void BinaryToGEDResult(const std::string &input_path, const GraphData<GraphStruct>& graph_data, GEDEvaluation &result) {
     // open binary file
     std::ifstream ifs(input_path, std::ios::binary);
     if (!ifs) {
@@ -239,11 +262,17 @@ inline void BinaryToGEDResult(const std::string &input_path, GraphData<GraphStru
     ifs.read(&result.graph_data_name[0], name_size);
     // read time
     ifs.read(reinterpret_cast<char *>(&result.time), sizeof(result.time));
+    // read distance
+    ifs.read(reinterpret_cast<char *>(&result.distance), sizeof(result.distance));
+    // read lower bound
+    ifs.read(reinterpret_cast<char *>(&result.lower_bound), sizeof(result.lower_bound));
+    // read upper bound
+    ifs.read(reinterpret_cast<char *>(&result.upper_bound), sizeof(result.upper_bound));
     // set graphs
-    result.graphs = {graph_data[result.graph_ids.first], graph_data[result.graph_ids.second]};
+    result.graphs = {graph_data.graphData[result.graph_ids.first], graph_data.graphData[result.graph_ids.second]};
 }
 
-inline void BinaryToGEDResult(const std::string &input_path, GraphData<GraphStruct>& graph_data, std::vector<GEDEvaluation> &results) {
+inline void BinaryToGEDResult(const std::string &input_path, const GraphData<GraphStruct>& graph_data, std::vector<GEDEvaluation> &results) {
     // open binary file
     std::ifstream ifs(input_path, std::ios::binary);
     if (!ifs) {
@@ -274,15 +303,21 @@ inline void BinaryToGEDResult(const std::string &input_path, GraphData<GraphStru
         ifs.read(&result.graph_data_name[0], name_size);
         // read time
         ifs.read(reinterpret_cast<char *>(&result.time), sizeof(result.time));
+        // read distance
+        ifs.read(reinterpret_cast<char *>(&result.distance), sizeof(result.distance));
+        // read lower bound
+        ifs.read(reinterpret_cast<char *>(&result.lower_bound), sizeof(result.lower_bound));
+        // read upper bound
+        ifs.read(reinterpret_cast<char *>(&result.upper_bound), sizeof(result.upper_bound));
         // set graphs
-        result.graphs = {graph_data[result.graph_ids.first], graph_data[result.graph_ids.second]};
+        result.graphs = {graph_data.graphData[result.graph_ids.first], graph_data.graphData[result.graph_ids.second]};
         // push back result
         results.push_back(result);
     }
     ifs.close();
 }
 
-inline void MergeBinaries(const std::string& input_path, GraphData<GraphStruct>& graph_data, std::vector<GEDEvaluation> &results) {
+inline void MergeBinaries(const std::string& input_path, const GraphData<GraphStruct>& graph_data, std::vector<GEDEvaluation> &results) {
     // read all mappings from binary files in the input path
     for (const auto& entry : std::filesystem::directory_iterator(input_path)) {
         if (entry.path().extension() == ".bin" && entry.path().filename().string().find("_ged_mapping") != std::string::npos) {
@@ -299,6 +334,19 @@ inline void MergeBinaries(const std::string& input_path, GraphData<GraphStruct>&
     });
 }
 
+inline void MergeGEDResults(const std::string &results_path, const GraphData<GraphStruct>& graph_data) {
+    // Merge all mappings in tmp folder
+    std::vector<GEDEvaluation> merged_results;
+    MergeBinaries(results_path + "tmp/", graph_data, merged_results);
+    // Save final result
+    GEDResultToBinary(results_path, merged_results);
+    // remove all databasename related files in tmp folder
+    for (const auto& entry : std::filesystem::directory_iterator(results_path + "tmp/")) {
+        if (entry.path().string().find(graph_data.GetName() + "_") != std::string::npos) {
+            std::filesystem::remove(entry.path());
+        }
+    }
+}
 
 
 
