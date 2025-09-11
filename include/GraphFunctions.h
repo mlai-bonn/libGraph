@@ -14,8 +14,8 @@
 
 
 struct GraphStruct;
-class DGraphStruct;
-class DDataGraph;
+struct DGraphStruct;
+struct DDataGraph;
 
 class GraphFunctions {
 public:

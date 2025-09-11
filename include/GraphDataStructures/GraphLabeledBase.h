@@ -4,6 +4,7 @@
 
 #ifndef TESTGRAPHLIB_GRAPHLABELEDBASE_H
 #define TESTGRAPHLIB_GRAPHLABELEDBASE_H
+#include "GraphDirectedBase.h"
 
 struct DDataGraph : public DGraphStruct{
 public:
@@ -13,12 +14,14 @@ public:
     void Save(const SaveParams& saveParams) override;
 
     void Init(const std::string& name, int size, int edges, int nodeFeatures, int edgeFeatures, const std::vector<std::string>& nodeFeatureNames, const std::vector<std::string>& edgeFeatureNames) override;
-    void ReadNodeFeatures(double value, int pos, const std::string& nodeFeatureName) override;
+    void ReadNodeFeatures(double value, INDEX pos, const std::string& nodeFeatureName) override;
     bool ReadEdges(INDEX Src, INDEX Dst, std::vector<double>& edgeData) override;
 
     void WriteGraph(std::ofstream& Out, const SaveParams& saveParams) override;
     void WriteNodeFeatures(std::ofstream& Out,const SaveParams& saveParams) override;
     void WriteEdges(std::ofstream& Out,const SaveParams& saveParams) override;
+
+    NodeId add_node(INDEX number = 1, const Labels* labels = nullptr) override;
 
 
     double get_edge_data(const EDGE & edge, const std::string& type) const;
@@ -31,6 +34,12 @@ public:
     void add_edge_data(const EDGE & edge, int index, double data);
     void add_edge_data(const EDGE & edge, std::vector<double>& data);
     bool add_edge(NodeId source, NodeId destination, std::vector<double>& data);
+
+    // set node data names
+    void set_node_data_names(const std::unordered_map<std::string, int>& nodeDataNames);
+    // set edge data names
+    void set_edge_data_names(const std::unordered_map<std::string, int>& edgeDataNames);
+
 
     static bool dijkstra(const DDataGraph& graph, NodeId src, double (*weight_function)(const DDataGraph&, EDGE), std::vector<double>& distances);
     static bool dijkstra(const DDataGraph& graph, NodeId src, NodeId dest, double (*weight_function)(const DDataGraph&, EDGE), std::vector<NodeId>& path, std::vector<double>& distances, double& length);
@@ -292,6 +301,23 @@ inline bool DDataGraph::add_edge(NodeId source, NodeId destination, std::vector<
     return DGraphStruct::add_edge(source, destination);
 }
 
+inline void DDataGraph::set_node_data_names(const std::unordered_map<std::string, int> &nodeDataNames) {
+    this->_node_data_names = nodeDataNames;
+    this->_node_data_size = (int) nodeDataNames.size();
+}
+
+inline void DDataGraph::set_edge_data_names(const std::unordered_map<std::string, int> &edgeDataNames) {
+    this->_edge_data_names = edgeDataNames;
+    this->_edge_data_size = (int) edgeDataNames.size();
+}
+
+inline NodeId DDataGraph::add_node(INDEX number, const Labels *labels) {
+    const NodeId new_node_id =  DGraphStruct::add_node(number, labels);
+    this->_in_degrees.emplace_back(0);
+    this->_out_degrees.emplace_back(0);
+    return new_node_id;
+}
+
 
 /// Get the node data for some node in the directed data _graph (by type)
 /// \param node
@@ -397,9 +423,9 @@ inline bool DDataGraph::dijkstra(const DDataGraph &graph, NodeId src, NodeId des
     return found;
 }
 
-void DDataGraph::Init(const std::string &name, int size, int edges, int nodeFeatures, int edgeFeatures,
-                      const std::vector<std::string> &nodeFeatureNames,
-                      const std::vector<std::string> &edgeFeatureNames) {
+inline void DDataGraph::Init(const std::string &name, int size, int edges, int nodeFeatures, int edgeFeatures,
+                             const std::vector<std::string> &nodeFeatureNames,
+                             const std::vector<std::string> &edgeFeatureNames) {
     DGraphStruct::Init(name, size, edges, nodeFeatures, edgeFeatures, nodeFeatureNames, edgeFeatureNames);
     this->_node_data_size = (int) nodeFeatureNames.size();
     this->_edge_data_size = (int) edgeFeatureNames.size();
@@ -413,7 +439,7 @@ void DDataGraph::Init(const std::string &name, int size, int edges, int nodeFeat
     this->_node_data.resize(nodes());
 }
 
-void DDataGraph::ReadNodeFeatures(double value, int pos, const std::string &nodeFeatureName) {
+void DDataGraph::ReadNodeFeatures(double value, INDEX pos, const std::string &nodeFeatureName) {
     this->_node_data[pos].emplace_back(value);
     if (nodeFeatureName == "label") {
         this->_labels.emplace_back((int) value);
@@ -425,7 +451,7 @@ bool DDataGraph::ReadEdges(INDEX Src, INDEX Dst, std::vector<double> &edgeData) 
 }
 
 
-void DDataGraph::WriteGraph(std::ofstream& Out, const SaveParams& saveParams){
+inline void DDataGraph::WriteGraph(std::ofstream& Out, const SaveParams& saveParams){
     const std::string graphName = this->_name;
     unsigned int stringLength = graphName.length();
     GraphType Type = this->graphType;
@@ -462,31 +488,32 @@ void DDataGraph::WriteGraph(std::ofstream& Out, const SaveParams& saveParams){
         featureNames[id] = e;
     }
 
-    Out.write((char *) (&numFeatures), sizeof(unsigned int));
+    Out.write(reinterpret_cast<char *>(&numFeatures), sizeof(unsigned int));
     for (int j = 0; j < numFeatures; ++j) {
         unsigned int edgeFeatureStringLength = featureNames[j].length();
-        Out.write((char *) (&edgeFeatureStringLength), sizeof(edgeFeatureStringLength));
+        Out.write(reinterpret_cast<char *>(&edgeFeatureStringLength), sizeof(edgeFeatureStringLength));
         Out.write(featureNames[j].c_str(), edgeFeatureStringLength);
     }
 }
 
-void DDataGraph::WriteNodeFeatures(std::ofstream& Out,const SaveParams& saveParams){
+inline void DDataGraph::WriteNodeFeatures(std::ofstream& Out,const SaveParams& saveParams){
     for (int j = 0; j < this->nodes(); ++j) {
         for (int k = 0; k < _node_data_size; ++k) {
             auto val = _node_data[j][k];
-            Out.write((char *) (&val), sizeof(double));
+            Out.write(reinterpret_cast<char *>(&val), sizeof(double));
         }
     }
 }
-void DDataGraph::WriteEdges(std::ofstream& Out,const SaveParams& saveParams){
+
+inline void DDataGraph::WriteEdges(std::ofstream& Out,const SaveParams& saveParams){
     INDEX Src = 0;
     for (auto const &edges: this->_graph) {
         for (auto Dst: edges) {
-            Out.write((char *) (&Src), sizeof(INDEX));
-            Out.write((char *) (&Dst), sizeof(INDEX));
+            Out.write(reinterpret_cast<char *>(&Src), sizeof(INDEX));
+            Out.write(reinterpret_cast<char *>(&Dst), sizeof(INDEX));
             for (int j = 0; j < _edge_data_size; ++j) {
                 auto val = _edge_data[Src][Dst][j];
-                Out.write((char *) (&val), sizeof(INDEX));
+                Out.write(reinterpret_cast<char *>(&val), sizeof(val));
             }
         }
         ++Src;
