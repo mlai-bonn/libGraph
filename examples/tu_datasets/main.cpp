@@ -27,7 +27,8 @@ int main() {
     }
 
     LoadSave::PreprocessTUDortmundGraphData(dataset_name, input_path, output_path);
-    GraphData<GraphStruct> loadedGraphs = LoadSave::LoadPreprocessedTUDortmundGraphData(dataset_name, output_path);
+    GraphData<DDataGraph> loadedGraphs;
+    LoadSave::LoadPreprocessedTUDortmundGraphData(dataset_name, output_path, loadedGraphs);
 
     // print the loaded graphs
     for ( auto &x : loadedGraphs.graphData) {

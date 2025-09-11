@@ -20,7 +20,7 @@ struct DGraphStruct : public GraphStruct{
     void Save(const SaveParams& saveParams) override;
 
     void Init(const std::string& name, int size, int edges, int nodeFeatures, int edgeFeatures, const std::vector<std::string>& nodeFeatureNames, const std::vector<std::string>& edgeFeatureNames) override;
-    void ReadNodeFeatures(double value, int pos, const std::string& nodeFeatureName) override;
+    void ReadNodeFeatures(double value, INDEX pos, const std::string& nodeFeatureName) override;
     bool ReadEdges(INDEX Src, INDEX Dst, std::vector<double>& edgeData) override;
 
     void WriteEdges(std::ofstream& Out,const SaveParams& saveParams) override;
@@ -425,7 +425,7 @@ inline bool DGraphStruct::ReadEdges(INDEX Src, INDEX Dst, std::vector<double> &e
     return this->add_edge(Src, Dst);
 }
 
-inline void DGraphStruct::ReadNodeFeatures(double value, int pos, const std::string &nodeFeatureName) {
+inline void DGraphStruct::ReadNodeFeatures(double value, INDEX pos, const std::string &nodeFeatureName) {
     GraphStruct::ReadNodeFeatures(value, pos, nodeFeatureName);
 }
 

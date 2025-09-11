@@ -158,7 +158,7 @@ public:
      */
     virtual void Reset(INDEX size);
     
-    virtual void ReadNodeFeatures(double value, int pos, const std::string& nodeFeatureName);
+    virtual void ReadNodeFeatures(double value, INDEX pos, const std::string& nodeFeatureName);
     virtual bool ReadEdges(INDEX Src, INDEX Dst, std::vector<double>& edgeData);
 
     virtual void WriteGraph(std::ofstream& Out, const SaveParams& saveParams);
@@ -533,6 +533,8 @@ public:
     virtual bool remove_edge(const EdgeIterator& edge);
 
     virtual NodeId add_node(INDEX number = 1, const Labels* labels = nullptr);
+    virtual void add_node_data(INDEX node_id, std::vector<double>& data){};
+    virtual void add_node_data(std::vector<std::vector<double>>& data){};
     //Get get_neighbors by []
     const Nodes& operator[](NodeId nodeId){return _graph[nodeId];};
     void sortNeighborIds();
@@ -973,6 +975,7 @@ void GraphData<T>::Load(const std::string &graphPath) {
                     graph.SetPath(graphPath);
                     //Read the nodes
                     for (int j = 0; j < graphsSizes[i]; ++j) {
+                        std::cout << "Reading node " << j << " of graph " << i << std::endl;
                         for (int k = 0; k < graphsNodeFeatureNames[i].size(); ++k) {
                             double val = 0;
                             if (extension == ".bgf") {
@@ -983,9 +986,13 @@ void GraphData<T>::Load(const std::string &graphPath) {
                                 val = int_val;
                             }
                             graph.ReadNodeFeatures(val, j, graphsNodeFeatureNames[i][k]);
-
+                            std::cout << "Feature values: " << val;
                         }
+                        std::cout << std::endl;
                     }
+                    // print nodes loaded for graph i
+                    std::cout << "Loaded " << graphsSizes[i] << " nodes for graph " << i << std::endl;
+                    std::cout << "Reading edges for graph " << i << std::endl;
                     //Read the edges
                     INDEX added_edges = 0;
                     INDEX original_edges = graph.edges();
@@ -993,27 +1000,33 @@ void GraphData<T>::Load(const std::string &graphPath) {
                         INDEX Src = 0;
                         INDEX Dst = 0;
                         if (extension == ".bgf") {
-                            In.read((char *) (&Src), sizeof(INDEX));
-                            In.read((char *) (&Dst), sizeof(INDEX));
+                            In.read(reinterpret_cast<char *>(&Src), sizeof(INDEX));
+                            In.read(reinterpret_cast<char *>(&Dst), sizeof(INDEX));
                         } else if (extension == ".bgfs") {
                             unsigned int int_Src;
                             unsigned int int_Dst;
-                            In.read((char *) (&int_Src), sizeof(unsigned int));
-                            In.read((char *) (&int_Dst), sizeof(unsigned int));
+                            In.read(reinterpret_cast<char *>(&int_Src), sizeof(unsigned int));
+                            In.read(reinterpret_cast<char *>(&int_Dst), sizeof(unsigned int));
                             Src = int_Src;
                             Dst = int_Dst;
                         }
-
+                        std::cout << Src << " " << Dst;
+                        if (graphsEdgeFeatureNames.size() > 0) {
+                            std::cout << " with features: ";
+                        }
                         std::vector<double> edgeData;
                         for (int k = 0; k < graphsEdgeFeatureNames[i].size(); ++k) {
                             double val;
-                            In.read((char *) (&val), sizeof(double));
+                            In.read((char *) (&val), sizeof(val));
                             edgeData.emplace_back(val);
+                            std::cout << val << " ";
                         }
+                        std::cout << std::endl;
                         if (graph.ReadEdges(Src, Dst, edgeData)) {
                             ++added_edges;
                         }
                     }
+                    std::cout << "Graph " << i << " with " << added_edges << " edges loaded." << std::endl;
                     graph.set_edge_num(added_edges);
                     graph.InitLabels();
                 }
@@ -1563,7 +1576,7 @@ inline bool GraphStruct::ReadEdges(INDEX Src, INDEX Dst, std::vector<double>& ed
 
 }
 
-inline void GraphStruct::ReadNodeFeatures(double value, int pos, const std::string &nodeFeatureName) {
+inline void GraphStruct::ReadNodeFeatures(double value, INDEX pos, const std::string &nodeFeatureName) {
     if (nodeFeatureName == "label") {
         this->_labels.emplace_back(value);
     }
