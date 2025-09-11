@@ -13,8 +13,8 @@
 // the following functions are only to embedd the library results in our code base, i.e., the evaluation of the result
 
 // main function to run the examples
-
-inline std::vector<GraphStruct> CreateEditPath(const GEDEvaluation& result)
+template<typename T>
+inline std::vector<T> CreateEditPath(const GEDEvaluation<T>& result)
 {
     std::cout << "Time: " << result.time << " seconds" << std::endl;
     // print node mapping
@@ -29,11 +29,11 @@ inline std::vector<GraphStruct> CreateEditPath(const GEDEvaluation& result)
     //}
     //std::cout << std::endl;
 
-    EditPath edit_path;
+    EditPath<T> edit_path;
     result.get_edit_path(edit_path, 0);
     // print edit path length
     std::cout << "Edit Path Length: " << edit_path.edit_path_graphs.size() - 1 << std::endl;
-    std::vector<GraphStruct> edit_path_graphs;
+    std::vector<T> edit_path_graphs;
     for (const auto& g : edit_path.edit_path_graphs) {
         edit_path_graphs.emplace_back(g);
     }
@@ -44,7 +44,9 @@ inline std::vector<GraphStruct> CreateEditPath(const GEDEvaluation& result)
     //}
     return edit_path_graphs;
 }
-inline void WriteEditPathInfo(const std::vector<GEDEvaluation>& results, const GraphData<GraphStruct>& graph_data, const std::string& edit_path_info) {
+
+template<typename T>
+inline void WriteEditPathInfo(const std::vector<GEDEvaluation<T>>& results, const GraphData<T>& graph_data, const std::string& edit_path_info) {
     // create also a MUTAG_edit_paths.bin storing source_id, step_id, target_id for each graph
     std::ofstream ofs(edit_path_info, std::ios::binary);
     if (!ofs) {
@@ -54,7 +56,7 @@ inline void WriteEditPathInfo(const std::vector<GEDEvaluation>& results, const G
     for (const auto& result : results) {
         INDEX source_id = result.graph_ids.first;
         INDEX target_id = result.graph_ids.second;
-        auto edit_path_graphs = CreateEditPath(result);
+        auto edit_path_graphs = CreateEditPath<DDataGraph>(result);
         for (INDEX step_id = 0; step_id < edit_path_graphs.size(); ++step_id) {
             // write source_id, step_id, target_id
             ofs.write(reinterpret_cast<const char *>(&source_id), sizeof(source_id));
@@ -85,13 +87,14 @@ inline void ReadEditPathInfo(std::string& edit_path_info, std::vector<std::tuple
 
 }
 
-inline void CreateAllEditPaths(const std::vector<GEDEvaluation> &results, const GraphData<GraphStruct> &graph_data, const std::string &edit_path_output = "../Data/EditPaths/") {
+template<typename T>
+void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const GraphData<T> &graph_data, const std::string &edit_path_output = "../Data/EditPaths/") {
     // check whether file already exists
     if (std::filesystem::exists(edit_path_output + graph_data.GetName() + "_edit_paths.bgf")) {
         std::cout << "Edit paths for " << graph_data.GetName() << " already exist." << std::endl;
         return;
     }
-    GraphData<GraphStruct> all_path_graphs;
+    GraphData<T> all_path_graphs;
     // counter for number of computed paths
    int counter = 0;
     // time variable
@@ -105,7 +108,7 @@ inline void CreateAllEditPaths(const std::vector<GEDEvaluation> &results, const 
         const double estimated_time_left = estimated_total_time - elapsed_seconds;
         std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
         ++counter;
-        auto edit_path_graphs = CreateEditPath(result);
+        auto edit_path_graphs = CreateEditPath<T>(result);
         int path_counter = 0;
         for (auto& g : edit_path_graphs) {
             g.SetName(graph_data.GetName() + "_" + std::to_string(result.graph_ids.first) + "_" + std::to_string(result.graph_ids.second) + "_" + std::to_string(path_counter));
@@ -125,7 +128,9 @@ inline void CreateAllEditPaths(const std::vector<GEDEvaluation> &results, const 
 
 }
 
-inline void GEDResultToBinary(const std::string &target_path, GEDEvaluation &result) {
+
+template <typename T>
+inline void GEDResultToBinary(const std::string &target_path, GEDEvaluation<T> &result) {
     // create output target_path if it does not exist
     if (!std::filesystem::exists(target_path)) {
         std::filesystem::create_directory(target_path);
@@ -169,7 +174,8 @@ inline void GEDResultToBinary(const std::string &target_path, GEDEvaluation &res
     ofs.close();
 }
 
-inline void GEDResultToBinary(const std::string &output_path, std::vector<GEDEvaluation> &results) {
+template <typename T>
+inline void GEDResultToBinary(const std::string &output_path, std::vector<GEDEvaluation<T>> &results) {
     // set file path
     if (results.empty()) {
         std::cerr << "No results to save." << std::endl;
@@ -233,7 +239,9 @@ inline void GEDResultToBinary(const std::string &output_path, std::vector<GEDEva
     distance_ofs.close();
 }
 
-inline void BinaryToGEDResult(const std::string &input_path, const GraphData<GraphStruct>& graph_data, GEDEvaluation &result) {
+
+template<typename T>
+inline void BinaryToGEDResult(const std::string &input_path, const GraphData<T>& graph_data, GEDEvaluation<T> &result) {
     // open binary file
     std::ifstream ifs(input_path, std::ios::binary);
     if (!ifs) {
@@ -272,7 +280,8 @@ inline void BinaryToGEDResult(const std::string &input_path, const GraphData<Gra
     result.graphs = {graph_data.graphData[result.graph_ids.first], graph_data.graphData[result.graph_ids.second]};
 }
 
-inline void BinaryToGEDResult(const std::string &input_path, const GraphData<GraphStruct>& graph_data, std::vector<GEDEvaluation> &results) {
+template<typename T>
+void BinaryToGEDResult(const std::string &input_path, const GraphData<T>& graph_data, std::vector<GEDEvaluation<T>> &results) {
     // open binary file
     std::ifstream ifs(input_path, std::ios::binary);
     if (!ifs) {
@@ -280,7 +289,7 @@ inline void BinaryToGEDResult(const std::string &input_path, const GraphData<Gra
         return;
     }
     while (ifs.peek() != EOF) {
-        GEDEvaluation result;
+        GEDEvaluation<T> result;
         // read source_id and target_id
         ifs.read(reinterpret_cast<char *>(&result.graph_ids.first), sizeof(result.graph_ids.first));
         ifs.read(reinterpret_cast<char *>(&result.graph_ids.second), sizeof(result.graph_ids.second));
@@ -317,7 +326,8 @@ inline void BinaryToGEDResult(const std::string &input_path, const GraphData<Gra
     ifs.close();
 }
 
-inline void MergeBinaries(const std::string& input_path, const GraphData<GraphStruct>& graph_data, std::vector<GEDEvaluation> &results) {
+template<typename T>
+void MergeBinaries(const std::string& input_path, const GraphData<T>& graph_data, std::vector<GEDEvaluation<T>> &results) {
     // read all mappings from binary files in the input path
     for (const auto& entry : std::filesystem::directory_iterator(input_path)) {
         if (entry.path().extension() == ".bin" && entry.path().filename().string().find("_ged_mapping") != std::string::npos) {
@@ -326,7 +336,7 @@ inline void MergeBinaries(const std::string& input_path, const GraphData<GraphSt
         }
     }
     // sort results by graph ids (first, second)
-    std::ranges::sort(results, [](const GEDEvaluation& a, const GEDEvaluation& b) {
+    std::ranges::sort(results, [](const GEDEvaluation<T>& a, const GEDEvaluation<T>& b) {
         if (a.graph_ids.first != b.graph_ids.first) {
             return a.graph_ids.first < b.graph_ids.first;
         }
@@ -334,9 +344,10 @@ inline void MergeBinaries(const std::string& input_path, const GraphData<GraphSt
     });
 }
 
-inline void MergeGEDResults(const std::string &results_path, const GraphData<GraphStruct>& graph_data) {
+template<typename T>
+void MergeGEDResults(const std::string &results_path, const GraphData<T>& graph_data) {
     // Merge all mappings in tmp folder
-    std::vector<GEDEvaluation> merged_results;
+    std::vector<GEDEvaluation<T>> merged_results;
     MergeBinaries(results_path + "tmp/", graph_data, merged_results);
     // Save final result
     GEDResultToBinary(results_path, merged_results);

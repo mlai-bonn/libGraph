@@ -17,19 +17,22 @@
  * @param env The GEDLIB environment
  * @param g The graph to be added
  */
-void AddGraphToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphStruct& g);
+template<typename T>
+void AddGraphToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const T& g);
 /* Adds multiple graphs to the given GEDLIB environment
  * @param env The GEDLIB environment
  * @param graph_data The graphs to be added
  */
-void AddGraphsToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<GraphStruct>& graph_data);
+template<typename T>
+void AddGraphsToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<T>& graph_data);
 /* Initializes the given GEDLIB environment
  * @param env The GEDLIB environment
  * @param graph_data The graphs to be added
  * @param edit_costs The edit costs to be used
  * @param method The method to be used
  */
-void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<GraphStruct>& graph_data, ged::Options::EditCosts edit_costs = ged::Options::EditCosts::CONSTANT, ged::Options::GEDMethod method = ged::Options::GEDMethod::BP_BEAM);
+template<typename T>
+void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<T>& graph_data, ged::Options::EditCosts edit_costs = ged::Options::EditCosts::CONSTANT, ged::Options::GEDMethod method = ged::Options::GEDMethod::BP_BEAM);
 /* Evaluates the result of a GEDLIB computation
  * @param env The GEDLIB environment
  * @param graphs The graphs used in the computation
@@ -37,20 +40,23 @@ void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::Label
  * @param target_graph_id The ID of the target graph
  * @return The evaluation of the result
  */
-GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, GraphData<GraphStruct>& graphs, const int source_graph_id = 0, const int target_graph_id = 1);
+template<typename T>
+GEDEvaluation<T> ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, GraphData<T>& graphs, const int source_graph_id = 0, const int target_graph_id = 1);
 /* Evaluates all results of a GEDLIB computation and saves the mappings to a file
  * @param env The GEDLIB environment
  * @param graph_data The graphs used in the computation
  * @param mapping_path_output The path to the file where the mappings should be saved
  */
+template<typename T>
 void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
-                                   const GraphData<GraphStruct> &graph_data,
+                                   const GraphData<T> &graph_data,
                                    const std::vector<std::pair<INDEX,INDEX>> &graph_ids,
                                    const std::string &results_path);
 
 
 
-inline void AddGraphToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphStruct& g) {
+template<typename T>
+void AddGraphToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const T& g) {
     // Add graph
     env.add_graph(g.GetName());
     // Add nodes
@@ -74,13 +80,15 @@ inline void AddGraphToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged
     }
 }
 
-inline void AddGraphsToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<GraphStruct>& graph_data) {
+template<typename T>
+void AddGraphsToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<T>& graph_data) {
     for (const auto& g : graph_data.graphData) {
         AddGraphToGEDEnvironment(env, g);
     }
 }
 
-inline void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<GraphStruct>& graph_data, ged::Options::EditCosts edit_costs, ged::Options::GEDMethod method) {
+template<typename T>
+void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<T>& graph_data, ged::Options::EditCosts edit_costs, ged::Options::GEDMethod method) {
     env.set_edit_costs(edit_costs);
     AddGraphsToGEDEnvironment(env, graph_data);
     env.init();
@@ -88,7 +96,8 @@ inline void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged
     env.init_method();
 }
 
-inline GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<GraphStruct>& graphs, const int source_graph_id, const int target_graph_id){
+template<typename T>
+GEDEvaluation<T> ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<T>& graphs, const int source_graph_id, const int target_graph_id){
     ged::NodeMap node_map = env.get_node_map(source_graph_id, target_graph_id);
     std::pair<Nodes, Nodes> mapping;
     for (const auto x : node_map.get_forward_map()) {
@@ -100,7 +109,7 @@ inline GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::Label
     ged::GEDGraph::GraphID i = source_graph_id;
     ged::GEDGraph::GraphID j = target_graph_id;
     env.compute_induced_cost(i, j, node_map);
-    GEDEvaluation result = {
+    GEDEvaluation<T> result = {
         env.get_node_map(i,j).induced_cost(),
         env.get_lower_bound(i,j),
         env.get_upper_bound(i,j),
@@ -113,8 +122,9 @@ inline GEDEvaluation ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::Label
     return result;
 }
 
-inline void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
-                                   const GraphData<GraphStruct> &graph_data,
+template<typename T>
+void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
+                                   const GraphData<T> &graph_data,
                                    const std::vector<std::pair<INDEX,INDEX>> &graph_ids,
                                    const std::string &results_path) {
     // check whether the output path exists
@@ -153,7 +163,7 @@ inline void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::Label
             const double estimated_time_left = estimated_total_time - elapsed_seconds;
             //std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
             env.run_method(i, j);
-            GEDEvaluation result = ComputeGEDResult(env, graph_data, i, j);
+            GEDEvaluation<T> result = ComputeGEDResult(env, graph_data, i, j);
             // print calculated (approximated Distance)
             //std::cout << "Approximated Distance " << i << " to " << j << " : " << result.distance << std::endl;
             // save result to binary

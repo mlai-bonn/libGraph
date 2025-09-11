@@ -114,15 +114,15 @@ inline std::ostream& operator<<(std::ostream& os, const EditOperation& operation
     return os;
 }
 
-
+template<typename T>
 struct EditPath {
     double total_costs;
     std::unordered_set<EditOperation, EditOperationHash> edit_operations;
     std::vector<EditOperation> sequence_of_operations;
-    std::vector<GraphStruct> edit_path_graphs;
+    std::vector<T> edit_path_graphs;
 
-    GraphStruct source_graph;
-    GraphStruct target_graph;
+    T source_graph;
+    T target_graph;
 
     // tmp variables
     std::vector<NodeId> source_to_current = std::vector<NodeId>();
@@ -140,7 +140,8 @@ struct EditPath {
 };
 
 // print Edit Path using the sequence of operations
-inline std::ostream& operator<<(std::ostream& os, const EditPath& edit_path) {
+template<typename T>
+inline std::ostream& operator<<(std::ostream& os, const EditPath<T>& edit_path) {
     os << "Edit Costs: " << edit_path.total_costs << std::endl;
     os << "Sequence of Operations: " << std::endl;
     for (const auto& operation : edit_path.sequence_of_operations) {
