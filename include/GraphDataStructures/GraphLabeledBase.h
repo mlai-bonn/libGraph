@@ -6,11 +6,35 @@
 #define TESTGRAPHLIB_GRAPHLABELEDBASE_H
 #include "GraphDirectedBase.h"
 
-struct DDataGraph : public DGraphStruct{
-public:
+struct DDataGraph : DGraphStruct{
+    /**
+     * Default constructor
+     */
     DDataGraph();
-    DDataGraph(INDEX size, const Labels& labels);
+    /**
+     * Default destructor
+     */
+    ~DDataGraph() override = default;
+
+    /**
+     *
+     * @param name name of the graph
+     * @param size size of the graph, i.e., number of nodes
+     * @param labels labels of the nodes
+     */
+    DDataGraph(const std::string& name, INDEX size, const Labels& labels);
+
+    /**
+     *
+     * @param graphPath
+     * @param relabeling
+     * @param withLabels
+     * @param labelPath
+     */
     explicit DDataGraph(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "");
+
+
+    // TODO check functions
     void Load(const std::string & graphPath, bool relabeling, bool withLabels, const std::string& labelPath, const std::string& format = "");
     void Save(const SaveParams& saveParams) override;
 
@@ -22,7 +46,13 @@ public:
     void WriteNodeFeatures(std::ofstream& Out,const SaveParams& saveParams) override;
     void WriteEdges(std::ofstream& Out,const SaveParams& saveParams) override;
 
-    NodeId add_node(INDEX number = 1, const Labels* labels = nullptr) override;
+    // Graph Manipulation
+    INDEX AddNodes(INDEX number, const std::vector<Label> *labels,
+                   const std::vector<std::vector<double>> *nodeData) override;
+
+    void RelabelNode(NodeId nodeId, Label newLabel, const std::vector<double> *nodeData) override;
+
+    void RemoveNode(NodeId nodeId) override;
 
 
     double get_edge_data(const EDGE & edge, const std::string& type) const;
@@ -77,14 +107,17 @@ private:
     std::unordered_map<INDEX, std::unordered_map<INDEX, std::vector<double>>> _edge_data;
     int _edge_data_size = 0;
     int _node_data_size = 0;
+
+    void update_graph_struct() override;
 };
+
+
 
 
 /// Default constructor
 inline DDataGraph::DDataGraph() = default;
 
-inline DDataGraph::DDataGraph(const INDEX size, const Labels &labels) {
-    DGraphStruct(size, labels);
+inline DDataGraph::DDataGraph(const std::string& name, const INDEX size, const Labels &labels) : DGraphStruct(name, size, labels) {
 }
 
 /// Read directed data _graph from file TODO binary extension
@@ -216,16 +249,7 @@ inline void DDataGraph::Load(const std::string &graphPath, bool relabeling, bool
                     }
                 }
                 if (this->_labels.size() == this->_graph.size()) {
-                    labelMap = GraphFunctions::GetGraphLabelMap(_labels);
-                    labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
-                    //TODO why this line this->numLabels = (this->numLabels == -1) ? static_cast<int>(labelMap.size()) : this->numLabels;
-                    this->_numLabels = static_cast<int>(labelMap.size());
-                    if (this->_numLabels >= 10) {
-                        labelType = LABEL_TYPE::LABELED_DENSE;
-                    } else {
-                        labelType = LABEL_TYPE::LABELED_SPARSE;
-                    }
-                    UpdateGraphLabels(labelType);
+                    update_node_label_information();
                 } else {
                     //TODO throw exception
                 }
@@ -252,7 +276,10 @@ inline void DDataGraph::Save(const SaveParams& saveParams) {
 /// \param type
 /// \return
 inline double DDataGraph::get_edge_data(const EDGE & edge, const std::string& type) const {
-    int index = _edge_data_names.at(type);
+    const int index = _edge_data_names.at(type);
+    if (index == -1) {
+        return 0;
+    }
     return _edge_data.at(edge.first).at(edge.second)[index];
 }
 
@@ -260,7 +287,7 @@ inline double DDataGraph::get_edge_data(const EDGE & edge, const std::string& ty
 /// \param edge
 /// \param index
 /// \return
-inline double DDataGraph::get_edge_data(const EDGE &edge, int index) const {
+inline double DDataGraph::get_edge_data(const EDGE &edge, const int index) const {
     return _edge_data.at(edge.first).at(edge.second)[index];
 }
 
@@ -316,11 +343,26 @@ inline void DDataGraph::set_edge_data_names(const std::unordered_map<std::string
     this->_edge_data_size = (int) edgeDataNames.size();
 }
 
-inline NodeId DDataGraph::add_node(INDEX number, const Labels *labels) {
-    const NodeId new_node_id =  DGraphStruct::add_node(number, labels);
-    this->_in_degrees.emplace_back(0);
-    this->_out_degrees.emplace_back(0);
-    return new_node_id;
+inline INDEX DDataGraph::AddNodes(const INDEX number, const std::vector<Label> *labels,
+    const std::vector<std::vector<double>> *nodeData) {
+    const INDEX result =  DGraphStruct::AddNodes(number, labels, nodeData);
+    // Check whether nodeData size equals the number and add the data
+    if (nodeData != nullptr && nodeData->size() == number) {
+        for (INDEX i = 0; i < number; ++i) {
+            this->_node_data.emplace_back(nodeData->at(i));
+        }
+    }
+    return result;
+}
+
+inline void DDataGraph::RelabelNode(const NodeId nodeId, const Label newLabel, const std::vector<double> *nodeData) {
+    this->_node_data[nodeId] = *nodeData;
+    GraphStruct::RelabelNode(nodeId, newLabel, nodeData);
+}
+
+inline void DDataGraph::RemoveNode(const NodeId nodeId) {
+    DGraphStruct::RemoveNode(nodeId);
+    this->_node_data.erase(this->_node_data.begin() + nodeId);
 }
 
 

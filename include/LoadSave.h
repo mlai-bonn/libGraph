@@ -18,7 +18,13 @@ public:
 
     static void LoadLabelsFromPath(const std::string& Path, std::vector<Labels> &Labels, std::unordered_map<size_t, std::string> &LabelNames, std::set<int>* graphSizes = nullptr, int patternNum = -1);
     template <typename T>
-    static void LoadTUDortmundGraphData(const std::string& path, const std::string& dbName, GraphData<T>& graphs, std::vector<int>& graphLabels, std::vector<std::vector<int>>* graphsNodeLabels=nullptr, std::vector<std::vector<int>>* graphsEdgeLabels= nullptr, std::vector<std::vector<int>>* graphsNodeAttributes= nullptr, std::vector<std::vector<int>>* graphsEdgeAttributes= nullptr);
+    static void LoadTUDortmundGraphData(const std::string& path,
+        const std::string& dbName, GraphData<T>& graphs,
+        std::vector<int>& graphLabels,
+        std::vector<std::vector<Label>>* graphsNodeLabels=nullptr,
+        std::vector<std::vector<Label>>* graphsEdgeLabels= nullptr,
+        std::vector<std::vector<double>>* graphsNodeAttributes= nullptr,
+        std::vector<std::vector<double>>* graphsEdgeAttributes= nullptr);
     static bool PreprocessTUDortmundGraphData(const std::string& dataset_name, const std::string &input_path, const std::string &output_path);
     template <typename T>
     static void LoadPreprocessedTUDortmundGraphData(const std::string& dataset_name , const std::string &output_path, GraphData<T>& graph_data);
@@ -72,18 +78,18 @@ inline LoadSave::LoadLabelsFromPath(const std::string& Path, std::vector<Labels>
 template<typename T>
 void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::string &dbName, GraphData<T> &graphs,
                                        std::vector<int> &graphLabels,
-                                       std::vector<std::vector<int>> *graphsNodeLabels,
-                                       std::vector<std::vector<int>> *graphsEdgeLabels,
-                                       std::vector<std::vector<int>> *graphsNodeAttributes,
-                                       std::vector<std::vector<int>> *graphsEdgeAttributes) {
+                                       std::vector<std::vector<Label>> *graphsNodeLabels,
+                                       std::vector<std::vector<Label>> *graphsEdgeLabels,
+                                       std::vector<std::vector<double>> *graphsNodeAttributes,
+                                       std::vector<std::vector<double>> *graphsEdgeAttributes) {
     static_assert(std::is_base_of_v<GraphStruct, T>, "T must derive from GraphStruct");
     graphs.SetName(dbName);
     EDGES edges;
     std::vector<int> graphIndicator;
-    std::vector<int> nodeLabels;
-    std::vector<int> edgeLabels;
-    std::vector<int> nodeAttributes;
-    std::vector<int> edgeAttributes;
+    std::vector<Label> nodeLabels;
+    std::vector<Label> edgeLabels;
+    std::vector<double> nodeAttributes;
+    std::vector<double> edgeAttributes;
     bool isNodeLabels = false;
     bool isEdgeLabels = false;
     bool isNodeAttributes = false;
@@ -164,7 +170,7 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
             node_attribute_file.close();
         }
     }
-    //read node attributes
+    //read edge attributes
     if(std::filesystem::is_regular_file(path + dbName + "/" + dbName + "_edge_attributes.txt")) {
         isEdgeAttributes = true;
         std::ifstream edge_attribute_file(path + dbName + "/" + dbName + "_edge_attributes.txt", std::ios_base::out);
@@ -184,11 +190,9 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
         ++graphNodeCounter;
         if (indicator > graphs.size()){
             graphNodeCounter = 1;
-            graphs.add(T());
-            // add name to T using dbName and indicator
-            graphs[indicator-1].SetName(dbName + "_" + std::to_string(indicator-1));
+            graphs.add(T(dbName + "_" + std::to_string(indicator-1)));
         }
-        graphs[indicator-1].add_node();
+        graphs[indicator-1].AddNodes(1,nullptr,nullptr);
 
         //get node labels
         if (isNodeLabels && graphsNodeLabels != nullptr) {
@@ -213,13 +217,13 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
     if (isEdgeLabels && graphsEdgeLabels != nullptr){
         graphsEdgeLabels->clear();
         for (auto const & graph : graphs.graphData) {
-            graphsEdgeLabels->emplace_back(std::vector<int>());
+            graphsEdgeLabels->emplace_back(std::vector<Label>());
         }
     }
     if (isEdgeAttributes && graphsEdgeAttributes != nullptr){
         graphsEdgeAttributes->clear();
         for (auto const & graph : graphs.graphData) {
-            graphsEdgeAttributes->emplace_back(std::vector<int>());
+            graphsEdgeAttributes->emplace_back(std::vector<double>());
         }
     }
 
@@ -247,18 +251,9 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
         ++edgeCounter;
     }
 
-    // Initialize graph node labels
-    for (auto& graph : graphs.graphData) {
-        Labels labels = std::vector<Label>(graph.nodes(), 0);
-        if (isNodeLabels) {
-            labels = Labels((*graphsNodeLabels)[0].begin(), (*graphsNodeLabels)[0].end());
-
-        }
-        graph.set_labels(&labels);
-    }
-
     // check whether T can be casted to DDataGraph
     if (std::is_same_v<T, DDataGraph>) {
+        int graph_counter = 0;
         for (auto &graph : graphs.graphData) {
             // cast
             DDataGraph& dgraph = dynamic_cast<DDataGraph&>(graph);
@@ -293,9 +288,9 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
             std::vector<double> node_data;
             for (INDEX i = 0; i < dgraph.nodes(); ++i) {
                 node_data.clear();
-                // add node label
-                if (dgraph.labelType != LABEL_TYPE::UNLABELED && graphsNodeLabels != nullptr) {
-                    dgraph.ReadNodeFeatures((*graphsNodeLabels)[idMap[i + 1].first][idMap[i + 1].second], i, "label");
+                // Initialize graph node labels
+                if (isNodeLabels && graphsNodeLabels != nullptr) {
+                    dgraph.ReadNodeFeatures((*graphsNodeLabels)[graph_counter][i], i, "label");
                 } else {
                     dgraph.ReadNodeFeatures(0, i, "label");
                 }
@@ -308,6 +303,8 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
                     }
                 }
             }
+            dgraph.set_labels(&(*graphsNodeLabels)[graph_counter]);
+            ++graph_counter;
         }
     }
 }
@@ -338,10 +335,10 @@ inline bool LoadSave::PreprocessTUDortmundGraphData(const std::string &dataset_n
     GraphData<DDataGraph> graphs;
     //graphs.add(example_graph());
     std::vector<int> graphLabels;
-    std::vector<std::vector<int>> graphNodeLabels;
-    std::vector<std::vector<int>> graphNodeAttributes;
-    std::vector<std::vector<int>> graphEdgeAttributes;
-    std::vector<std::vector<int>> graphEdgeLabels;
+    std::vector<std::vector<INDEX>> graphNodeLabels;
+    std::vector<std::vector<double>> graphNodeAttributes;
+    std::vector<std::vector<double>> graphEdgeAttributes;
+    std::vector<std::vector<INDEX>> graphEdgeLabels;
     LoadSave::LoadTUDortmundGraphData(input_path, dataset_name, graphs, graphLabels, &graphNodeLabels, &graphEdgeLabels, &graphNodeAttributes, &graphEdgeAttributes);
 
     SaveParams params = {

@@ -159,7 +159,7 @@ inline void GraphAlgorithms::GetBiconnectedOuterplanarFaces(const GraphStruct &c
             if (component.edge(n1, n2)) {
                 NodeId newNode1 = currentFace.back().add_node();
                 NodeId newNode2 = currentFace.back().add_node();
-                currentFace.back().add_edge(newNode1, newNode2, false);
+                currentFace.back().AddEdge(newNode1, newNode2, false);
                 ++face_num;
                 currentFace.pop_back();
                 //Update degreeTwo nodes
@@ -170,8 +170,8 @@ inline void GraphAlgorithms::GetBiconnectedOuterplanarFaces(const GraphStruct &c
                 NodeId newNode1 = currentFace.back().add_node();
                 NodeId newNode2 = currentFace.back().add_node();
 
-                currentFace.back().add_edge(newCurrent, newNode1, false);
-                currentFace.back().add_edge(newCurrent, newNode2, false);
+                currentFace.back().AddEdge(newCurrent, newNode1, false);
+                currentFace.back().AddEdge(newCurrent, newNode2, false);
             }
             if (degrees[n1] == 2 || degrees[n2] == 2) {
                 if (degrees[n1] == 2) {
@@ -222,8 +222,8 @@ inline void GraphAlgorithms::GetBiconnectedOuterplanarFaceNum(GraphStruct &compo
         NodeId n1 = component.neighbor(currentNodeId,0);
         NodeId n2 = component.neighbor(currentNodeId,1);
         //Delete possibleEdges from component
-        component.remove_edge(currentNodeId, n1);
-        component.remove_edge(currentNodeId, n2);
+        component.RemoveEdge(currentNodeId, n1);
+        component.RemoveEdge(currentNodeId, n2);
         if (component.edge(n1, n2)) {
             ++face_num;
             //Update degreeTwo nodes
@@ -237,7 +237,7 @@ inline void GraphAlgorithms::GetBiconnectedOuterplanarFaceNum(GraphStruct &compo
             }
         }
         else{
-            component.add_edge(n1, n2);
+            component.AddEdge(n1, n2);
         }
     }
 }
@@ -307,7 +307,7 @@ bool GraphAlgorithms::IsOuterPlanar(const GraphStruct &graph, NodeId src, NodeId
                         }
                     }
                     for (auto edge = componentGraph.first_edge(); edge != componentGraph.last_edge(); ++edge) {
-                        algorithmGraph.add_edge(*edge);
+                        algorithmGraph.AddEdge(*edge);
                         triangulationCount[NodePair(*edge, false)] = 0;
                     }
                     while (!degree2Nodes.empty()) {
@@ -317,10 +317,10 @@ bool GraphAlgorithms::IsOuterPlanar(const GraphStruct &graph, NodeId src, NodeId
                             NodeId near = algorithmGraph[cNode][0];
                             NodeId next = algorithmGraph[cNode][1];
                             NodePair nodePair = NodePair(near, next);
-                            algorithmGraph.remove_edge(cNode, near);
-                            algorithmGraph.remove_edge(cNode, next);
+                            algorithmGraph.RemoveEdge(cNode, near);
+                            algorithmGraph.RemoveEdge(cNode, next);
                             if (!algorithmGraph.edge(near, next)) {
-                                algorithmGraph.add_edge(near, next);
+                                algorithmGraph.AddEdge(near, next);
                                 triangulationCount[nodePair] = std::max(1, std::max(
                                         triangulationCount[NodePair(cNode, near)],
                                         triangulationCount[NodePair(cNode, next)]));
@@ -365,13 +365,13 @@ bool GraphAlgorithms::IsMaximalOuterplanarSubgraph(const GraphStruct &graph, con
 
     for (auto edge = graph.first_edge(); edge != graph.last_edge(); ++edge) {
         if (!check_graph.edge(*edge)){
-            check_graph.add_edge(*edge);
+            check_graph.AddEdge(*edge);
             additionalEdge = IsOuterPlanar(check_graph, (*edge).first, (*edge).second);
             if (additionalEdge){
                 missingEdges.emplace_back(*edge, false);
             }
             else{
-                check_graph.remove_edge(*edge);
+                check_graph.RemoveEdge(*edge);
             }
         }
     }
@@ -577,7 +577,7 @@ inline void GraphAlgorithms::AddRandomEdges(GraphStruct &graph, INDEX edgeNum, i
     for (INDEX i = 1; i < edgeNum + 1; ++i) {
         NodeId src = std::uniform_int_distribution<NodeId>(0, graph.nodes() - 1)(gen);
         NodeId dst = std::uniform_int_distribution<NodeId>(0, graph.nodes() - 1)(gen);
-        if (src != dst && graph.add_edge(src, dst)){
+        if (src != dst && graph.AddEdge(src, dst)){
             continue;
         }
         else{

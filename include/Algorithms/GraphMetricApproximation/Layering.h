@@ -65,7 +65,7 @@ LayeringPartition::LayeringPartition(const GraphStruct &graph, NodeId root_node_
                 NodeId neighbor = graph.neighbor(currentNodeId, j);
                 // check if the neighbor is in the sphere
                 if (distances[neighbor] == level && i < nodeIdToSphereNodeId[neighbor]) {
-                    sphereGraphs.back().add_edge(i, nodeIdToSphereNodeId[neighbor]);
+                    sphereGraphs.back().AddEdge(i, nodeIdToSphereNodeId[neighbor]);
                 }
             }
         }
@@ -134,7 +134,7 @@ LayeringPartition::LayeringPartition(const GraphStruct &graph, NodeId root_node_
                     for (NodeId i = 0; i < graph.degree(graphNodeId); ++i) {
                         NodeId neighbor = graph.neighbor(graphNodeId, i);
                         if (distances[neighbor] == level && !levelEdges[nodeIdToSphereNodeId[neighbor]]) {
-                            levelGraph.add_edge(id, nodeIdToSphereNodeId[neighbor], false);
+                            levelGraph.AddEdge(id, nodeIdToSphereNodeId[neighbor], false);
                             levelEdges[nodeIdToSphereNodeId[neighbor]] = true;
                         }
                     }
@@ -182,7 +182,7 @@ LayeringTree::LayeringTree(GraphStruct &graph, int seed, NodeId root_node_id) : 
             }
             // add edges from all nodes in the cluster to the neighbor
             for (auto &node : cluster) {
-                tree.add_edge(node, neighbor);
+                tree.AddEdge(node, neighbor);
             }
         }
     }

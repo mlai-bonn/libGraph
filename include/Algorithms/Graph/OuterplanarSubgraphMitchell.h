@@ -364,7 +364,7 @@ void OuterPlanarSubgraphMitchell::BiconnectedComponentSampling(GraphStruct& subg
     //Add all undeleted edges to the _subgraph
     for (auto const& [edge, valid] : currentComponent.edges) {
         if (valid) {
-           subgraph.add_edge(edge.first(), edge.second());
+           subgraph.AddEdge(edge.first(), edge.second());
         }
     }
 }
@@ -462,7 +462,7 @@ void OuterPlanarSubgraphMitchell::CollapseTriangle(GraphStruct& component, Algor
     //Triangulated baseEdge is not contained in the graph
     if (triangulationEdge == nullptr || !triangulationEdge->is_valid()){
         if (triangulationEdge == nullptr){
-            component.add_edge(triangulationPair.first(), triangulationPair.second());
+            component.AddEdge(triangulationPair.first(), triangulationPair.second());
             currentComponent.algorithmEdges[triangulationPair] = AlgorithmEdge(triangulationPair, false);
             triangulationEdge = &currentComponent.algorithmEdges[triangulationPair];
             triangulationForest.AddNode(TriangulationForest::NodeType::EDGE, triangulationEdge);

@@ -37,7 +37,7 @@ inline std::vector<T> CreateEditPath(const GEDEvaluation<T>& result)
     for (const auto& g : edit_path.edit_path_graphs) {
         edit_path_graphs.emplace_back(g);
     }
-    edit_path_graphs.back().SetName(edit_path.target_graph.GetName());
+    edit_path_graphs.back().set_name(edit_path.target_graph.GetName());
     // print all the graphs
     //for (const auto& g : edit_path_graphs.graphData) {
     //    std::cout << g << std::endl;
@@ -111,7 +111,7 @@ void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const Grap
         auto edit_path_graphs = CreateEditPath<T>(result);
         int path_counter = 0;
         for (auto& g : edit_path_graphs) {
-            g.SetName(graph_data.GetName() + "_" + std::to_string(result.graph_ids.first) + "_" + std::to_string(result.graph_ids.second) + "_" + std::to_string(path_counter));
+            g.set_name(graph_data.GetName() + "_" + std::to_string(result.graph_ids.first) + "_" + std::to_string(result.graph_ids.second) + "_" + std::to_string(path_counter));
             all_path_graphs.add(g);
             ++path_counter;
         }
@@ -183,7 +183,6 @@ inline void GEDResultToBinary(const std::string &output_path, std::vector<GEDEva
     }
     const std::string graph_data_name = results[0].graph_data_name;
     const std::string file_path = output_path + graph_data_name + "_ged_mapping.bin";
-    const std::string distance_file_path = output_path + graph_data_name + "_ged_mapping_distance.csv";
     // create output target_path if it does not exist
     if (!std::filesystem::exists(output_path)) {
         std::filesystem::create_directory(output_path);
@@ -227,16 +226,6 @@ inline void GEDResultToBinary(const std::string &output_path, std::vector<GEDEva
         ofs.write(reinterpret_cast<const char *>(&result.upper_bound), sizeof(result.upper_bound));
     }
     ofs.close();
-    // write distance csv file source_id, target_id, distance
-    std::ofstream distance_ofs(distance_file_path, std::ios::out);
-    if (!distance_ofs) {
-        std::cerr << "Error opening file for writing: " << distance_file_path << std::endl;
-        return;
-    }
-    for (const auto& result : results) {
-        distance_ofs << result.graph_ids.first << "," << result.graph_ids.second << "," << result.distance << std::endl;
-    }
-    distance_ofs.close();
 }
 
 
@@ -327,10 +316,10 @@ void BinaryToGEDResult(const std::string &input_path, const GraphData<T>& graph_
 }
 
 template<typename T>
-void MergeBinaries(const std::string& input_path, const GraphData<T>& graph_data, std::vector<GEDEvaluation<T>> &results) {
+void MergeBinaries(const std::string& input_path, const std::string& search_string, const GraphData<T>& graph_data, std::vector<GEDEvaluation<T>> &results) {
     // read all mappings from binary files in the input path
     for (const auto& entry : std::filesystem::directory_iterator(input_path)) {
-        if (entry.path().extension() == ".bin" && entry.path().filename().string().find("_ged_mapping") != std::string::npos) {
+        if (entry.path().extension() == ".bin" && entry.path().filename().string().find(search_string) != std::string::npos) {
             results.emplace_back();
             BinaryToGEDResult(entry.path().string(), graph_data, results.back());
         }
@@ -344,11 +333,26 @@ void MergeBinaries(const std::string& input_path, const GraphData<T>& graph_data
     });
 }
 
+inline void CSVFromGEDResults(const std::string &results_path, const std::vector<GEDEvaluation<DDataGraph>> &results) {
+    // write distance csv file source_id, target_id, distance
+    std::ofstream distance_ofs(results_path, std::ios::out);
+    if (!distance_ofs) {
+        std::cerr << "Error opening file for writing: " << results_path << std::endl;
+        return;
+    }
+    // Write Header source_id, target_id, lower_bound, upper_bound, distance
+    distance_ofs << "source_id, target_id, lower_bound, upper_bound, distance" << std::endl;
+    for (const auto& result : results) {
+        distance_ofs << result.graph_ids.first << "," << result.graph_ids.second << "," << result.lower_bound << "," << result.upper_bound << "," << result.distance << std::endl;
+    }
+    distance_ofs.close();
+}
+
 template<typename T>
-void MergeGEDResults(const std::string &results_path, const GraphData<T>& graph_data) {
+void MergeGEDResults(const std::string &results_path, const std::string& search_string, const GraphData<T>& graph_data) {
     // Merge all mappings in tmp folder
     std::vector<GEDEvaluation<T>> merged_results;
-    MergeBinaries(results_path + "tmp/", graph_data, merged_results);
+    MergeBinaries(results_path + "tmp/", search_string, graph_data, merged_results);
     // Save final result
     GEDResultToBinary(results_path, merged_results);
     // remove all databasename related files in tmp folder

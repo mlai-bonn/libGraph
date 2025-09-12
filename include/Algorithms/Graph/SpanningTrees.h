@@ -132,7 +132,7 @@ inline int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
                             visited[neighbor] = true;
                             queue.push(neighbor);
                             distances[neighbor] = distances[current_node] + 1;
-                            tree.add_edge(current_node, neighbor, false);
+                            tree.AddEdge(current_node, neighbor, false);
                         }
                     }
                 } else {
@@ -147,7 +147,7 @@ inline int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
                             visited[neighbor] = true;
                             queue.push(neighbor);
                             distances[neighbor] = distances[current_node] + 1;
-                            tree.add_edge(current_node, neighbor, false);
+                            tree.AddEdge(current_node, neighbor, false);
                         }
                     }
                     // undo the swaps
@@ -225,7 +225,7 @@ inline int BFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_
                             graph._visited[neighbor] = graph._visited_id;
                             queue.push(neighbor);
                             graph._distances[neighbor] = graph._distances[current_node] + 1;
-                            tree.add_edge(current_node, neighbor, false);
+                            tree.AddEdge(current_node, neighbor, false);
                         }
                     }
                 } else {
@@ -240,7 +240,7 @@ inline int BFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_
                             graph._visited[neighbor] = graph._visited_id;
                             queue.push(neighbor);
                             graph._distances[neighbor] = graph._distances[current_node] + 1;
-                            tree.add_edge(current_node, neighbor, false);
+                            tree.AddEdge(current_node, neighbor, false);
                         }
                     }
                     // undo the swaps
@@ -326,7 +326,7 @@ inline int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
                         if (!visited[neighbor]) {
                             stack.push(neighbor);
                             visited[neighbor] = true;
-                            tree.add_edge(current_node, neighbor, false);
+                            tree.AddEdge(current_node, neighbor, false);
                             distances[neighbor] = distances[current_node] + 1;
                         }
                     }
@@ -341,7 +341,7 @@ inline int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
                         if (!visited[neighbor]) {
                             stack.push(neighbor);
                             visited[neighbor] = true;
-                            tree.add_edge(current_node, neighbor, false);
+                            tree.AddEdge(current_node, neighbor, false);
                             distances[neighbor] = distances[current_node] + 1;
                         }
                     }
@@ -415,7 +415,7 @@ inline int DFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_
                         if (graph._visited[neighbor] != graph._visited_id) {
                             stack.push(neighbor);
                             graph._visited[neighbor] = graph._visited_id;
-                            tree.add_edge(current_node, neighbor, false);
+                            tree.AddEdge(current_node, neighbor, false);
                             graph._distances[neighbor] = graph._distances[current_node] + 1;
                         }
                     }
@@ -430,7 +430,7 @@ inline int DFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_
                         if (graph._visited[neighbor] != graph._visited_id) {
                             stack.push(neighbor);
                             graph._visited[neighbor] = graph._visited_id;
-                            tree.add_edge(current_node, neighbor, false);
+                            tree.AddEdge(current_node, neighbor, false);
                             graph._distances[neighbor] = graph._distances[current_node] + 1;
                         }
                     }

@@ -185,7 +185,7 @@ void OuterplanarSubgraphDFS::get_next_node(GraphStruct& subgraph, std::mt19937_6
         //Check if get_node is not the root node
         if (currentNodeId != dfs_root_node) {
             //Add tree edge to the _graph
-            subgraph.add_edge(currentNodeId, currentNode.dfs_parent->node_id);
+            subgraph.AddEdge(currentNodeId, currentNode.dfs_parent->node_id);
             UpdateNodeParameters(currentNode);
         }
 
@@ -404,7 +404,7 @@ void OuterplanarSubgraphDFS::AddGraphEdges(GraphStruct& subgraph, const std::vec
                 std::cout << " " << src.node_id << "--R" << dst.node_id << " ";
             }
         }
-        subgraph.add_edge(src.node_id, dst.node_id);
+        subgraph.AddEdge(src.node_id, dst.node_id);
     }
 }
 

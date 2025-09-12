@@ -108,13 +108,13 @@ void OuterplanarGraphData::set() {
                 bbTree.BBNodesToNodeOrComponent[component_node] = {-1, c};
                 NodeId currentNodeId = j;
                 if (nodeToComponents[currentNodeId].size() > 1){
-                    bbTree.tree.add_edge(bbTree.nodeToBBNodes[currentNodeId][0], component_node);
+                    bbTree.tree.AddEdge(bbTree.nodeToBBNodes[currentNodeId][0], component_node);
                 }
             }
         }
         else{
             --c;
-            bbTree.tree.add_edge(bbTree.nodeToBBNodes[component[0]][0], bbTree.nodeToBBNodes[component[1]][0]);
+            bbTree.tree.AddEdge(bbTree.nodeToBBNodes[component[0]][0], bbTree.nodeToBBNodes[component[1]][0]);
         }
         ++c;
     }

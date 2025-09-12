@@ -41,7 +41,7 @@ void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::Label
  * @return The evaluation of the result
  */
 template<typename T>
-GEDEvaluation<T> ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, GraphData<T>& graphs, const int source_graph_id = 0, const int target_graph_id = 1);
+GEDEvaluation<T> ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<T>& graphs, const int source_graph_id = 0, const int target_graph_id = 1);
 /* Evaluates all results of a GEDLIB computation and saves the mappings to a file
  * @param env The GEDLIB environment
  * @param graph_data The graphs used in the computation
@@ -57,24 +57,34 @@ void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &en
 
 template<typename T>
 void AddGraphToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const T& g) {
+    // T must be from base class GraphStruct
+    static_assert(std::is_base_of<GraphStruct, T>::value, "T must be from base class GraphStruct");
     // Add graph
     env.add_graph(g.GetName());
     // Add nodes
     // get last env graph id
-    std::pair<ged::GEDGraph::GraphID, ged::GEDGraph::GraphID> graph_ids = env.graph_ids();
+    ged::GEDGraph::GraphID last_graph_id = env.graph_ids().second - 1;
     for (int i = 0; i < g.nodes(); ++i) {
         if (g.labelType == LABEL_TYPE::UNLABELED) {
-            env.add_node(graph_ids.second - 1, i, 0);
+            env.add_node(last_graph_id, i, 0);
         }
         else {
-            env.add_node(graph_ids.second - 1, i, g.label(i));
+            env.add_node(last_graph_id, i, g.label(i));
         }
     }
     // Add edges
     for (int i = 0; i < g.nodes(); ++i) {
         for (const auto j : g.get_neighbors(i)) {
             if (i < j) {
-                env.add_edge(graph_ids.second - 1, i, j,0);
+                // if cast to DDataGraph is succesfull
+                if (dynamic_cast<const DDataGraph*>(&g) != nullptr) {
+                    // graph has edge labels
+                    INDEX edge_label = (INDEX) g.get_edge_data({i,j}, "label");
+                    env.add_edge(last_graph_id, i, j, edge_label);
+                }
+                else {
+                    env.add_edge(last_graph_id, i, j,0);
+                }
             }
         }
     }
@@ -108,7 +118,6 @@ GEDEvaluation<T> ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, 
     }
     ged::GEDGraph::GraphID i = source_graph_id;
     ged::GEDGraph::GraphID j = target_graph_id;
-    env.compute_induced_cost(i, j, node_map);
     GEDEvaluation<T> result = {
         env.get_node_map(i,j).induced_cost(),
         env.get_lower_bound(i,j),

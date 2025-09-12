@@ -12,8 +12,8 @@ struct DGraphStruct : public GraphStruct{
     DGraphStruct()= default;
     explicit DGraphStruct(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "");
     explicit DGraphStruct(GraphStruct& graph);
-    explicit DGraphStruct(INDEX size);
-    explicit DGraphStruct(INDEX size, const Labels& labels);
+    explicit DGraphStruct(const std::string& name, INDEX size);
+    explicit DGraphStruct(const std::string&name, INDEX size, const Labels& labels);
 
     //Load and save
     void Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format = "");
@@ -28,7 +28,7 @@ struct DGraphStruct : public GraphStruct{
     bool edge(NodeId source, NodeId destination) const override;
     bool edge(NodeId source, NodeId destination, bool directed) const;
     bool add_edge(NodeId source, NodeId destination);
-    bool add_edge(NodeId source, NodeId destination, bool check_existence) override;
+    bool AddEdge(NodeId source, NodeId destination, bool check_existence) override;
     static DGraphStruct GetBFSTree(const GraphStruct& graph, NodeId rootNodeId);
     INDEX out_degree(NodeId node);
     INDEX in_degree(NodeId node);
@@ -62,8 +62,18 @@ inline DGraphStruct::DGraphStruct(GraphStruct & graph) : GraphStruct(graph){
 }
 
 /// Construct a directed _graph by certain size
+/// \param name
 /// \param size
-inline DGraphStruct::DGraphStruct(INDEX size) : GraphStruct(size, Labels()){
+inline DGraphStruct::DGraphStruct(const std::string& name, const INDEX size) : GraphStruct(name, size, Labels()){
+    this->_in_degrees.resize(size, 0);
+    this->_out_degrees.resize(size, 0);
+}
+
+/// Constructor of directed _graph with certain size and given labels
+/// \param name
+/// \param size
+/// \param labels
+inline DGraphStruct::DGraphStruct(const std::string& name, const INDEX size, const Labels &labels) : GraphStruct(name, size, labels) {
     this->_in_degrees.resize(size, 0);
     this->_out_degrees.resize(size, 0);
 }
@@ -81,19 +91,13 @@ inline INDEX DGraphStruct::out_degree(NodeId node) {
     return this->_out_degrees[node];
 }
 
-/// Constructor of directed _graph with certain size and given labels
-/// \param size
-/// \param labels
-inline DGraphStruct::DGraphStruct(const INDEX size, const Labels &labels) : GraphStruct(size, labels) {
-    this->_in_degrees.resize(size, 0);
-    this->_out_degrees.resize(size, 0);
-}
+
 
 /// Ad an edge to a directed _graph
 /// \param source
 /// \param destination
 /// \return
-inline bool DGraphStruct::add_edge(NodeId source, NodeId destination, bool check_existence) {
+inline bool DGraphStruct::AddEdge(NodeId source, NodeId destination, bool check_existence) {
     if (!check_existence || !edge(source, destination)){
         this->_graph[source].emplace_back(destination);
         NodeId ElementId = (NodeId) this->_graph[source].size() - 1;
@@ -141,10 +145,11 @@ inline INDEX DGraphStruct::in_degree(NodeId node) {
     return _in_degrees[node];
 }
 ///
+/// \param graph
 /// \param rootNodeId
 /// \return
-inline DGraphStruct DGraphStruct::GetBFSTree(const GraphStruct &graph, NodeId rootNodeId) {
-    DGraphStruct BFSTree = DGraphStruct(graph.nodes(), graph.labels());
+inline DGraphStruct DGraphStruct::GetBFSTree(const GraphStruct &graph, const NodeId rootNodeId) {
+    DGraphStruct BFSTree = DGraphStruct(graph.GetName() + "BFS_Tree", graph.nodes(), graph.labels());
     std::vector<bool> VisitedNodes = std::vector<bool>(graph.nodes(), false);
     VisitedNodes[rootNodeId] = true;
     std::vector<NodeId> CurrentNodes;
@@ -220,15 +225,7 @@ inline void DGraphStruct::Load(const std::string &graphPath, bool relabeling, bo
                     this->_labels.emplace_back(L);
                 }
                 if (this->_labels.size() == this->_graph.size()) {
-                    labelMap = GraphFunctions::GetGraphLabelMap(_labels);
-                    labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
-                    this->_numLabels = (this->_numLabels == -1) ? static_cast<int>(labelMap.size()) : this->_numLabels;
-                    if (this->_numLabels >= 10) {
-                        labelType = LABEL_TYPE::LABELED_DENSE;
-                    } else {
-                        labelType = LABEL_TYPE::LABELED_SPARSE;
-                    }
-                    UpdateGraphLabels(labelType);
+                    update_node_label_information();
                 } else {
                     //TODO throw exception
                 }
@@ -284,7 +281,7 @@ inline void DGraphStruct::Load(const std::string &graphPath, bool relabeling, bo
                 ++nodeCounter;
             }
             for (auto edge : graphEdges) {
-                GraphStruct::add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second]);
+                GraphStruct::AddEdge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second], true);
             }
             if (!labelPath.empty() && withLabels) {
                 std::string label_extension = std::filesystem::path(labelPath).extension().string();
@@ -314,15 +311,7 @@ inline void DGraphStruct::Load(const std::string &graphPath, bool relabeling, bo
                     }
                 }
                 if (this->_labels.size() == this->_graph.size()) {
-                    labelMap = GraphFunctions::GetGraphLabelMap(_labels);
-                    labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
-                    this->_numLabels = (this->_numLabels == -1) ? static_cast<int>(labelMap.size()) : this->_numLabels;
-                    if (this->_numLabels >= 10) {
-                        labelType = LABEL_TYPE::LABELED_DENSE;
-                    } else {
-                        labelType = LABEL_TYPE::LABELED_SPARSE;
-                    }
-                    UpdateGraphLabels(labelType);
+                    update_node_label_information();
                 } else {
                     //TODO throw exception
                 }
@@ -453,7 +442,7 @@ inline void DGraphStruct::WriteEdges(std::ofstream& Out, const SaveParams& saveP
 }
 
 inline bool DGraphStruct::add_edge(NodeId source, NodeId destination) {
-    return add_edge(source, destination, true);
+    return AddEdge(source, destination, true);
 }
 
 
