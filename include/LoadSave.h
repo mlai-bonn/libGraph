@@ -303,7 +303,7 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
                     }
                 }
             }
-            dgraph.set_labels(&(*graphsNodeLabels)[graph_counter]);
+            dgraph.SetLabels(&(*graphsNodeLabels)[graph_counter]);
             ++graph_counter;
         }
     }

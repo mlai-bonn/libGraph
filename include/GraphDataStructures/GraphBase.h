@@ -188,8 +188,8 @@ struct GraphStruct{
     virtual bool AddEdge(const std::pair<NodeId, NodeId>& edge, bool check_existence);
     virtual bool RemoveEdge(NodeId source, NodeId destination);
     virtual bool RemoveEdge(const std::pair<NodeId, NodeId>& edge);
-    virtual bool RelabelEdge(NodeId source, NodeId destination, const std::vector<double>* edgeData);
-    virtual bool RelabelEdge(const std::pair<NodeId, NodeId>& edge, std::vector<double> newEdgeData);
+    virtual void RelabelEdge(NodeId source, NodeId destination, const std::vector<double>* edgeData){};
+    virtual void RelabelEdge(const std::pair<NodeId, NodeId>& edge, std::vector<double> newEdgeData){};
 
     /**
  * Resets the labels of the whole graph
