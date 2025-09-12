@@ -84,7 +84,7 @@ inline INDEX DGraphStruct::out_degree(NodeId node) {
 /// Constructor of directed _graph with certain size and given labels
 /// \param size
 /// \param labels
-inline DGraphStruct::DGraphStruct(INDEX size, const Labels &labels) : GraphStruct(size, labels) {
+inline DGraphStruct::DGraphStruct(const INDEX size, const Labels &labels) : GraphStruct(size, labels) {
     this->_in_degrees.resize(size, 0);
     this->_out_degrees.resize(size, 0);
 }

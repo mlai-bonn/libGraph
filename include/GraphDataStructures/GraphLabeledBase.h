@@ -9,6 +9,7 @@
 struct DDataGraph : public DGraphStruct{
 public:
     DDataGraph();
+    DDataGraph(INDEX size, const Labels& labels);
     explicit DDataGraph(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "");
     void Load(const std::string & graphPath, bool relabeling, bool withLabels, const std::string& labelPath, const std::string& format = "");
     void Save(const SaveParams& saveParams) override;
@@ -81,6 +82,10 @@ private:
 
 /// Default constructor
 inline DDataGraph::DDataGraph() = default;
+
+inline DDataGraph::DDataGraph(const INDEX size, const Labels &labels) {
+    DGraphStruct(size, labels);
+}
 
 /// Read directed data _graph from file TODO binary extension
 /// \param graphPath path of the _graph file

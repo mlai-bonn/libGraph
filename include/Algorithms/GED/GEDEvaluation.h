@@ -318,14 +318,23 @@ inline void GEDEvaluation<T>::delete_node(EditPath<T> &edit_path, const EditOper
         for (const auto j : edit_path.edit_path_graphs.back().get_neighbors(i)) {
             if (i < j) {
                 if (i>= current_node) {
-                    new_graph.add_edge(i - 1, j-1);
+
+                    //TODO correct labels/features
+                    std::vector<double> edge_features = std::vector<double>(0);
+                   new_graph.add_edge(i - 1, j-1, edge_features);
                 }
                 else {
                     if (j >= current_node) {
-                        new_graph.add_edge(i, j - 1);
+
+                        //TODO correct labels/features
+                        std::vector<double> edge_features = std::vector<double>(0);
+                        new_graph.add_edge(i, j - 1, edge_features);
                     }
                     else {
-                        new_graph.add_edge(i, j);
+                        //TODO correct labels/features
+                        std::vector<double> edge_features = std::vector<double>(0);
+
+                        new_graph.add_edge(i, j, edge_features);
                     }
                 }
             }
@@ -407,8 +416,10 @@ inline void GEDEvaluation<T>::insert_node(EditPath<T> &edit_path, const EditOper
 
     for (INDEX i = 0; i < edit_path.edit_path_graphs.back().nodes(); ++i) {
         for (auto j : edit_path.edit_path_graphs.back().get_neighbors(i)) {
+//TODO correct labels/features
             if (i < j) {
-                new_graph.add_edge(i, j);
+std::vector<double> edge_features = std::vector<double>(0);
+                new_graph.add_edge(i, j, edge_features);
             }
         }
     }
