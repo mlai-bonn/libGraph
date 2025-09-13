@@ -4,17 +4,17 @@
 
 #ifndef TESTGRAPHLIB_GRAPHLABELEDBASE_H
 #define TESTGRAPHLIB_GRAPHLABELEDBASE_H
-#include "GraphDirectedBase.h"
+#include "GraphUndirectedBase.h"
 
-struct DDataGraph : DGraphStruct{
+struct UDataGraph : UGraphStruct{
     /**
      * Default constructor
      */
-    DDataGraph();
+    UDataGraph();
     /**
      * Default destructor
      */
-    ~DDataGraph() override = default;
+    ~UDataGraph() override = default;
 
     /**
      *
@@ -22,7 +22,7 @@ struct DDataGraph : DGraphStruct{
      * @param size size of the graph, i.e., number of nodes
      * @param labels labels of the nodes
      */
-    DDataGraph(const std::string& name, INDEX size, const Labels& labels);
+    UDataGraph(const std::string& name, INDEX size, const Labels& labels);
 
     /**
      *
@@ -31,7 +31,7 @@ struct DDataGraph : DGraphStruct{
      * @param withLabels
      * @param labelPath
      */
-    explicit DDataGraph(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "");
+    explicit UDataGraph(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "");
 
 
     // TODO check functions
@@ -40,31 +40,47 @@ struct DDataGraph : DGraphStruct{
 
     void Init(const std::string& name, int size, int edges, int nodeFeatures, int edgeFeatures, const std::vector<std::string>& nodeFeatureNames, const std::vector<std::string>& edgeFeatureNames) override;
     void ReadNodeFeatures(double value, INDEX pos, const std::string& nodeFeatureName) override;
-    bool ReadEdges(INDEX Src, INDEX Dst, std::vector<double>& edgeData) override;
 
     void WriteGraph(std::ofstream& Out, const SaveParams& saveParams) override;
     void WriteNodeFeatures(std::ofstream& Out,const SaveParams& saveParams) override;
     void WriteEdges(std::ofstream& Out,const SaveParams& saveParams) override;
 
     // Graph Manipulation
-    INDEX AddNodes(INDEX number, const std::vector<Label> *labels,
-                   const std::vector<std::vector<double>> *nodeData) override;
+    // Graph manipulation (functions that change the underlying graph data)
+    // Nodes
+    INDEX AddNodes(INDEX number) override;
 
-    void RelabelNode(NodeId nodeId, Label newLabel, const std::vector<double> *nodeData) override;
+    INDEX AddNodes(INDEX number, const std::vector<Label>& labels) override;
+    INDEX AddNodes(INDEX number, const std::vector<Label>& labels, const std::vector<std::vector<double>>& nodeData) override;
 
     void RemoveNode(NodeId nodeId) override;
+    void RelabelNode(NodeId nodeId, Label newLabel) override;
+    void RelabelNode(NodeId nodeId, Label newLabel, const std::vector<double>& nodeData) override;
+
+    // Edges
+    bool AddEdge(NodeId source, NodeId destination, const std::vector<double>& edgeData) override;
+    bool AddEdge(NodeId source, NodeId destination, const std::vector<double>& edgeData, bool check_existence) override;
+    bool AddEdge(const std::pair<NodeId, NodeId>& edge, const std::vector<double>& edgeData, bool check_existence) override;
+
+    bool RemoveEdge(NodeId source, NodeId destination) override;
+    bool RemoveEdge(const std::pair<NodeId, NodeId>& edge) override;
+
+    void RelabelEdge(NodeId source, NodeId destination, const std::vector<double>& edgeData) override;
+    void RelabelEdge(const std::pair<NodeId, NodeId>& edge, std::vector<double>& newEdgeData) override;
+
+    // Data access (const functions that do not change the underlying graph data)
+    double GetNodeData(NodeId node, const std::string& type) const override;
+    double GetNodeData(NodeId node, int index) const override;
+    const std::vector<double>& GetNodeData(NodeId node) const override;
+
+    double GetEdgeData(const EDGE & edge, const std::string& type) const override;
+    double GetEdgeData(const EDGE & edge, int index) const override;
+    const std::vector<double>& GetEdgeData(const EDGE& edge) const override;
 
 
-    double get_edge_data(const EDGE & edge, const std::string& type) const;
-    double get_edge_data(const EDGE & edge, int index) const;
-    const std::vector<double>& get_edge_data(const EDGE& edge) const;
-    double get_node_data(NodeId node, const std::string& type) const;
-    double get_node_data(NodeId node, int index) const;
-    const std::vector<double>& get_node_data(NodeId node) const;
     void add_edge_data(const EDGE & edge, const std::string& type, double data);
     void add_edge_data(const EDGE & edge, int index, double data);
-    void add_edge_data(const EDGE & edge, std::vector<double>& data);
-    bool add_edge(NodeId source, NodeId destination, std::vector<double>& data);
+    void add_edge_data(const EDGE & edge, const std::vector<double>& data);
 
     // set node data names
     void set_node_data_names(const std::unordered_map<std::string, int>& nodeDataNames);
@@ -72,11 +88,11 @@ struct DDataGraph : DGraphStruct{
     void set_edge_data_names(const std::unordered_map<std::string, int>& edgeDataNames);
 
 
-    static bool dijkstra(const DDataGraph& graph, NodeId src, double (*weight_function)(const DDataGraph&, EDGE), std::vector<double>& distances);
-    static bool dijkstra(const DDataGraph& graph, NodeId src, NodeId dest, double (*weight_function)(const DDataGraph&, EDGE), std::vector<NodeId>& path, std::vector<double>& distances, double& length);
+    static bool dijkstra(const UDataGraph& graph, NodeId src, double (*weight_function)(const UDataGraph&, EDGE), std::vector<double>& distances);
+    static bool dijkstra(const UDataGraph& graph, NodeId src, NodeId dest, double (*weight_function)(const UDataGraph&, EDGE), std::vector<NodeId>& path, std::vector<double>& distances, double& length);
 
-    bool operator==(const DDataGraph &rhs) const {
-        if ((DGraphStruct) *this != (DGraphStruct) rhs){
+    bool operator==(const UDataGraph &rhs) const {
+        if ((UGraphStruct) *this != (UGraphStruct) rhs){
             return false;
         }
         if (_edge_data_size != rhs._edge_data_size){
@@ -107,17 +123,15 @@ private:
     std::unordered_map<INDEX, std::unordered_map<INDEX, std::vector<double>>> _edge_data;
     int _edge_data_size = 0;
     int _node_data_size = 0;
-
-    void update_graph_struct() override;
 };
 
 
 
 
 /// Default constructor
-inline DDataGraph::DDataGraph() = default;
+inline UDataGraph::UDataGraph() = default;
 
-inline DDataGraph::DDataGraph(const std::string& name, const INDEX size, const Labels &labels) : DGraphStruct(name, size, labels) {
+inline UDataGraph::UDataGraph(const std::string& name, const INDEX size, const Labels &labels) : UGraphStruct(name, size, labels) {
 }
 
 /// Read directed data _graph from file TODO binary extension
@@ -125,17 +139,17 @@ inline DDataGraph::DDataGraph(const std::string& name, const INDEX size, const L
 /// \param relabeling if true node labels start with 0 and end with size-1, otherwise use original labels TODO check this
 /// \param withLabels if considering node attributes
 /// \param labelPath path to node data
-inline DDataGraph::DDataGraph(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath){
-    DDataGraph::Load(graphPath, relabeling, withLabels,labelPath);
+inline UDataGraph::UDataGraph(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath){
+    UDataGraph::Load(graphPath, relabeling, withLabels,labelPath);
 }
 
-inline void DDataGraph::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format) {
+inline void UDataGraph::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format) {
     int Version = 1;
     int graphId = 0;
     if (std::filesystem::is_regular_file(graphPath)) {
         std::string extension = std::filesystem::path(graphPath).extension().string();
         if (extension == ".bgf"){
-            DGraphStruct::Load(graphPath, relabeling,withLabels,labelPath);
+            UGraphStruct::Load(graphPath, relabeling,withLabels,labelPath);
         }
         else if (extension == ".edges" || extension == ".txt") {
             std::string graph_name = std::filesystem::path(graphPath).stem().string();
@@ -181,8 +195,6 @@ inline void DDataGraph::Load(const std::string &graphPath, bool relabeling, bool
             _nodes = graphNodeIds.size();
             this->_degrees.resize(_nodes);
             this->_graph.resize(_nodes);
-            this->_in_degrees.resize(_nodes);
-            this->_out_degrees.resize(_nodes);
             INDEX nodeCounter = 0;
             for (auto x: graphNodeIds) {
                 originalIdsToNodeIds.insert({x, nodeCounter});
@@ -190,8 +202,7 @@ inline void DDataGraph::Load(const std::string &graphPath, bool relabeling, bool
                 ++nodeCounter;
             }
             for (auto edge: graphEdges) {
-                DDataGraph::add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second],
-                                     original_edge_data[edge.first][edge.second]);
+                AddEdge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second], original_edge_data[edge.first][edge.second]);
             }
             if (!labelPath.empty() && withLabels) {
                 std::string label_extension = std::filesystem::path(labelPath).extension().string();
@@ -267,15 +278,15 @@ inline void DDataGraph::Load(const std::string &graphPath, bool relabeling, bool
     }
 }
 
-inline void DDataGraph::Save(const SaveParams& saveParams) {
-    DGraphStruct::Save(saveParams);
+inline void UDataGraph::Save(const SaveParams& saveParams) {
+    UGraphStruct::Save(saveParams);
 }
 
 /// Get the data of an edge using the data type
 /// \param edge
 /// \param type
 /// \return
-inline double DDataGraph::get_edge_data(const EDGE & edge, const std::string& type) const {
+inline double UDataGraph::GetEdgeData(const EDGE & edge, const std::string& type) const {
     const int index = _edge_data_names.at(type);
     if (index == -1) {
         return 0;
@@ -287,14 +298,14 @@ inline double DDataGraph::get_edge_data(const EDGE & edge, const std::string& ty
 /// \param edge
 /// \param index
 /// \return
-inline double DDataGraph::get_edge_data(const EDGE &edge, const int index) const {
+inline double UDataGraph::GetEdgeData(const EDGE &edge, const int index) const {
     return _edge_data.at(edge.first).at(edge.second)[index];
 }
 
 /// Get edge data for some edge in a directed data _graph
 /// \param edge
 /// \return
-inline const std::vector<double>& DDataGraph::get_edge_data(const EDGE & edge) const {
+inline const std::vector<double>& UDataGraph::GetEdgeData(const EDGE & edge) const {
     return _edge_data.at(edge.first).at(edge.second);
 }
 
@@ -303,7 +314,7 @@ inline const std::vector<double>& DDataGraph::get_edge_data(const EDGE & edge) c
 /// \param edge
 /// \param type
 /// \param data
-inline void DDataGraph::add_edge_data(const EDGE &edge, const std::string &type, double data) {
+inline void UDataGraph::add_edge_data(const EDGE &edge, const std::string &type, double data) {
     add_edge_data(edge, _edge_data_names[type], data);
 }
 
@@ -311,7 +322,7 @@ inline void DDataGraph::add_edge_data(const EDGE &edge, const std::string &type,
 /// \param edge
 /// \param index
 /// \param data
-inline void DDataGraph::add_edge_data(const EDGE &edge, int index, double data) {
+inline void UDataGraph::add_edge_data(const EDGE &edge, int index, double data) {
     _edge_data[edge.first][edge.second].resize(this->_edge_data_size);
     _edge_data[edge.first][edge.second][index] = data;
 }
@@ -319,50 +330,79 @@ inline void DDataGraph::add_edge_data(const EDGE &edge, int index, double data) 
 /// Add the data of an edge
 /// \param edge
 /// \param data
-inline void DDataGraph::add_edge_data(const EDGE &edge, std::vector<double> &data) {
+inline void UDataGraph::add_edge_data(const EDGE &edge, const std::vector<double> &data) {
     _edge_data[edge.first][edge.second] = data;
 }
 
-/// Add an data edge to a directed data _graph
-/// \param source
-/// \param destination
-/// \param data
-/// \return
-inline bool DDataGraph::add_edge(NodeId source, NodeId destination, std::vector<double>& data) {
-    add_edge_data(EDGE{source, destination}, data);
-    return DGraphStruct::add_edge(source, destination);
-}
 
-inline void DDataGraph::set_node_data_names(const std::unordered_map<std::string, int> &nodeDataNames) {
+inline void UDataGraph::set_node_data_names(const std::unordered_map<std::string, int> &nodeDataNames) {
     this->_node_data_names = nodeDataNames;
     this->_node_data_size = (int) nodeDataNames.size();
 }
 
-inline void DDataGraph::set_edge_data_names(const std::unordered_map<std::string, int> &edgeDataNames) {
+inline void UDataGraph::set_edge_data_names(const std::unordered_map<std::string, int> &edgeDataNames) {
     this->_edge_data_names = edgeDataNames;
     this->_edge_data_size = (int) edgeDataNames.size();
 }
 
-inline INDEX DDataGraph::AddNodes(const INDEX number, const std::vector<Label> *labels,
-    const std::vector<std::vector<double>> *nodeData) {
-    const INDEX result =  DGraphStruct::AddNodes(number, labels, nodeData);
+inline INDEX UDataGraph::AddNodes(const INDEX number, const std::vector<Label>& labels,
+    const std::vector<std::vector<double>>& nodeData) {
+    const INDEX result =  UGraphStruct::AddNodes(number, labels, nodeData);
     // Check whether nodeData size equals the number and add the data
-    if (nodeData != nullptr && nodeData->size() == number) {
+    if ( nodeData.size() == number) {
         for (INDEX i = 0; i < number; ++i) {
-            this->_node_data.emplace_back(nodeData->at(i));
+            this->_node_data.emplace_back(nodeData.at(i));
         }
     }
     return result;
 }
 
-inline void DDataGraph::RelabelNode(const NodeId nodeId, const Label newLabel, const std::vector<double> *nodeData) {
-    this->_node_data[nodeId] = *nodeData;
+inline void UDataGraph::RelabelNode(const NodeId nodeId, const Label newLabel, const std::vector<double>& nodeData) {
+    this->_node_data[nodeId] = nodeData;
     GraphStruct::RelabelNode(nodeId, newLabel, nodeData);
 }
 
-inline void DDataGraph::RemoveNode(const NodeId nodeId) {
-    DGraphStruct::RemoveNode(nodeId);
+inline bool UDataGraph::AddEdge(const NodeId source, const NodeId destination, const std::vector<double> &edgeData) {
+    return UDataGraph::AddEdge(source, destination, edgeData, true);
+}
+
+inline bool UDataGraph::AddEdge(NodeId source, NodeId destination, const std::vector<double>& edgeData,
+                                bool check_existence) {
+    add_edge_data(EDGE{source, destination}, edgeData);
+    return UGraphStruct::AddEdge(source, destination);
+
+}
+
+inline bool UDataGraph::AddEdge(const std::pair<NodeId, NodeId> &edge, const std::vector<double> &edgeData,
+    const bool check_existence) {
+    return UDataGraph::AddEdge(edge.first, edge.second, edgeData, check_existence);
+}
+
+inline bool UDataGraph::RemoveEdge(const NodeId source, const NodeId destination) {
+    this->_edge_data[source].erase(destination);
+    return UGraphStruct::RemoveEdge(source, destination);
+}
+
+inline bool UDataGraph::RemoveEdge(const std::pair<NodeId, NodeId> &edge) {
+    return UDataGraph::RemoveEdge(edge.first, edge.second);
+}
+
+inline void UDataGraph::RelabelEdge(const NodeId source, const NodeId destination, const std::vector<double> &edgeData) {
+    this->_edge_data[source][destination] = edgeData;
+    UGraphStruct::RelabelEdge(source, destination, edgeData);
+}
+
+inline void UDataGraph::RelabelEdge(const std::pair<NodeId, NodeId> &edge, std::vector<double> &newEdgeData) {
+    UDataGraph::RelabelEdge(edge.first, edge.second, newEdgeData);
+}
+
+inline void UDataGraph::RemoveNode(const NodeId nodeId) {
+    UGraphStruct::RemoveNode(nodeId);
     this->_node_data.erase(this->_node_data.begin() + nodeId);
+}
+
+inline void UDataGraph::RelabelNode(const NodeId nodeId, const Label newLabel) {
+    UGraphStruct::RelabelNode(nodeId, newLabel);
 }
 
 
@@ -370,26 +410,26 @@ inline void DDataGraph::RemoveNode(const NodeId nodeId) {
 /// \param node
 /// \param type
 /// \return
-inline double DDataGraph::get_node_data(NodeId node, const std::string &type) const {
-    return get_node_data(node, _node_data_names.at(type));
+inline double UDataGraph::GetNodeData(NodeId node, const std::string &type) const {
+    return GetNodeData(node, _node_data_names.at(type));
 }
 
 /// Get the node data for some node in the directed data _graph (by index)
 /// \param node
 /// \param index
 /// \return
-inline double DDataGraph::get_node_data(NodeId node, int index) const {
+inline double UDataGraph::GetNodeData(NodeId node, int index) const {
     return _node_data[node][index];
 }
 
 /// Get the node data for some node in the directed data _graph (all data)
 /// \param node
 /// \return
-inline const std::vector<double> &DDataGraph::get_node_data(NodeId node) const {
+inline const std::vector<double> &UDataGraph::GetNodeData(NodeId node) const {
     return _node_data[node];
 }
 
-inline bool DDataGraph::dijkstra(const DDataGraph &graph, NodeId src, double (*weight_function)(const DDataGraph&, EDGE), std::vector<double>& distances) {
+inline bool UDataGraph::dijkstra(const UDataGraph &graph, NodeId src, double (*weight_function)(const UDataGraph&, EDGE), std::vector<double>& distances) {
     std::priority_queue p_queue = std::priority_queue<std::pair<double, NodeId>, std::vector<std::pair<double, NodeId>>, std::greater<>>();
     //initialize distances
     for (NodeId i = 0; i < graph.nodes(); i++)
@@ -417,8 +457,8 @@ inline bool DDataGraph::dijkstra(const DDataGraph &graph, NodeId src, double (*w
     return nodesFound == graph.nodes();
 }
 
-inline bool DDataGraph::dijkstra(const DDataGraph &graph, NodeId src, NodeId dest,
-                                 double (*weight_function)(const DDataGraph &, EDGE), std::vector<NodeId>& path, std::vector<double>& distances, double& length) {
+inline bool UDataGraph::dijkstra(const UDataGraph &graph, NodeId src, NodeId dest,
+                                 double (*weight_function)(const UDataGraph &, EDGE), std::vector<NodeId>& path, std::vector<double>& distances, double& length) {
     length = std::numeric_limits<double>::max();
     std::priority_queue p_queue = std::priority_queue<std::pair<double, NodeId>, std::vector<std::pair<double, NodeId>>, std::greater<>>();
     std::unordered_map<NodeId, std::pair<NodeId, int>> predecessors;
@@ -470,10 +510,10 @@ inline bool DDataGraph::dijkstra(const DDataGraph &graph, NodeId src, NodeId des
     return found;
 }
 
-inline void DDataGraph::Init(const std::string &name, int size, int edges, int nodeFeatures, int edgeFeatures,
+inline void UDataGraph::Init(const std::string &name, int size, int edges, int nodeFeatures, int edgeFeatures,
                              const std::vector<std::string> &nodeFeatureNames,
                              const std::vector<std::string> &edgeFeatureNames) {
-    DGraphStruct::Init(name, size, edges, nodeFeatures, edgeFeatures, nodeFeatureNames, edgeFeatureNames);
+    UGraphStruct::Init(name, size, edges, nodeFeatures, edgeFeatures, nodeFeatureNames, edgeFeatureNames);
     this->_node_data_size = (int) nodeFeatureNames.size();
     this->_edge_data_size = (int) edgeFeatureNames.size();
 
@@ -486,19 +526,15 @@ inline void DDataGraph::Init(const std::string &name, int size, int edges, int n
     this->_node_data.resize(nodes());
 }
 
-void DDataGraph::ReadNodeFeatures(double value, INDEX pos, const std::string &nodeFeatureName) {
+void UDataGraph::ReadNodeFeatures(double value, INDEX pos, const std::string &nodeFeatureName) {
     this->_node_data[pos].emplace_back(value);
     if (nodeFeatureName == "label") {
         this->_labels.emplace_back((int) value);
     }
 }
 
-bool DDataGraph::ReadEdges(INDEX Src, INDEX Dst, std::vector<double> &edgeData) {
-    return this->add_edge(Src, Dst, edgeData);
-}
 
-
-inline void DDataGraph::WriteGraph(std::ofstream& Out, const SaveParams& saveParams){
+inline void UDataGraph::WriteGraph(std::ofstream& Out, const SaveParams& saveParams){
     const std::string graphName = this->_name;
     unsigned int stringLength = graphName.length();
     GraphType Type = this->graphType;
@@ -543,7 +579,7 @@ inline void DDataGraph::WriteGraph(std::ofstream& Out, const SaveParams& savePar
     }
 }
 
-inline void DDataGraph::WriteNodeFeatures(std::ofstream& Out,const SaveParams& saveParams){
+inline void UDataGraph::WriteNodeFeatures(std::ofstream& Out,const SaveParams& saveParams){
     for (int j = 0; j < this->nodes(); ++j) {
         for (int k = 0; k < _node_data_size; ++k) {
             auto val = _node_data[j][k];
@@ -552,7 +588,7 @@ inline void DDataGraph::WriteNodeFeatures(std::ofstream& Out,const SaveParams& s
     }
 }
 
-inline void DDataGraph::WriteEdges(std::ofstream& Out,const SaveParams& saveParams){
+inline void UDataGraph::WriteEdges(std::ofstream& Out,const SaveParams& saveParams){
     INDEX Src = 0;
     for (auto const &edges: this->_graph) {
         for (auto Dst: edges) {
@@ -565,6 +601,14 @@ inline void DDataGraph::WriteEdges(std::ofstream& Out,const SaveParams& savePara
         }
         ++Src;
     }
+}
+
+inline INDEX UDataGraph::AddNodes(const INDEX number) {
+    return UGraphStruct::AddNodes(number);
+}
+
+inline INDEX UDataGraph::AddNodes(const INDEX number, const std::vector<Label> &labels) {
+    return UGraphStruct::AddNodes(number, labels);
 }
 
 #endif //TESTGRAPHLIB_GRAPHLABELEDBASE_H

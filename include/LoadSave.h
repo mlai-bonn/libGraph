@@ -9,7 +9,8 @@
 #include <set>
 #include <unordered_map>
 #include "GraphDataStructures/GraphBase.h"
-#include "GraphDataStructures/GraphLabeledBase.h"
+#include "GraphDataStructures/GraphData.h"
+#include "GraphDataStructures/GraphUndirectedFeaturedBase.h"
 
 
 class LoadSave {
@@ -192,7 +193,7 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
             graphNodeCounter = 1;
             graphs.add(T(dbName + "_" + std::to_string(indicator-1)));
         }
-        graphs[indicator-1].AddNodes(1,nullptr,nullptr);
+        graphs[indicator-1].AddNodes(1);
 
         //get node labels
         if (isNodeLabels && graphsNodeLabels != nullptr) {
@@ -246,17 +247,17 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
                 (*graphsEdgeAttributes)[graphId].emplace_back(edgeAttributes[edgeCounter]);
                 edge_data.emplace_back(edgeAttributes[edgeCounter]);
             }
-            graphs[graphId].ReadEdges(idMap[edge.first].second, idMap[edge.second].second, edge_data);
+            graphs[graphId].AddEdge(idMap[edge.first].second, idMap[edge.second].second, edge_data);
         }
         ++edgeCounter;
     }
 
-    // check whether T can be casted to DDataGraph
-    if (std::is_same_v<T, DDataGraph>) {
+    // check whether T can be casted to UDataGraph
+    if (std::is_same_v<T, UDataGraph>) {
         int graph_counter = 0;
         for (auto &graph : graphs.graphData) {
             // cast
-            DDataGraph& dgraph = dynamic_cast<DDataGraph&>(graph);
+            auto & data_graph = dynamic_cast<UDataGraph&>(graph);
             std::vector<std::string> nodeFeatureNames = {"label"};
             if (isNodeAttributes) {
                 int attr_counter = 1;
@@ -278,32 +279,32 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
                     ++attr_counter;
                 }
             }
-            dgraph.Init(dgraph.GetName(),
-                dgraph.nodes(), dgraph.edges(),
+            data_graph.Init(data_graph.GetName(),
+                data_graph.nodes(), data_graph.edges(),
                 nodeFeatureNames.size(),
                 edgeFeatureNames.size(),
                 nodeFeatureNames,
                 edgeFeatureNames);
 
             std::vector<double> node_data;
-            for (INDEX i = 0; i < dgraph.nodes(); ++i) {
+            for (INDEX i = 0; i < data_graph.nodes(); ++i) {
                 node_data.clear();
                 // Initialize graph node labels
                 if (isNodeLabels && graphsNodeLabels != nullptr) {
-                    dgraph.ReadNodeFeatures((*graphsNodeLabels)[graph_counter][i], i, "label");
+                    data_graph.ReadNodeFeatures((*graphsNodeLabels)[graph_counter][i], i, "label");
                 } else {
-                    dgraph.ReadNodeFeatures(0, i, "label");
+                    data_graph.ReadNodeFeatures(0, i, "label");
                 }
                 // add node attributes
                 if (isNodeAttributes && graphsNodeAttributes != nullptr) {
                     int attr_counter = 1;
                     for (auto const & attr : (*graphsNodeAttributes)[idMap[i + 1].first]) {
-                        dgraph.ReadNodeFeatures(attr, i, "attr_" + std::to_string(attr_counter));
+                        data_graph.ReadNodeFeatures(attr, i, "attr_" + std::to_string(attr_counter));
                         ++attr_counter;
                     }
                 }
             }
-            dgraph.SetLabels(&(*graphsNodeLabels)[graph_counter]);
+            data_graph.SetLabels(&(*graphsNodeLabels)[graph_counter]);
             ++graph_counter;
         }
     }
@@ -331,8 +332,8 @@ inline bool LoadSave::PreprocessTUDortmundGraphData(const std::string &dataset_n
         return true;
     }
 
-    DDataGraph graph;
-    GraphData<DDataGraph> graphs;
+    UDataGraph graph;
+    GraphData<UDataGraph> graphs;
     //graphs.add(example_graph());
     std::vector<int> graphLabels;
     std::vector<std::vector<INDEX>> graphNodeLabels;

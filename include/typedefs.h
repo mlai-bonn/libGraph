@@ -10,7 +10,7 @@
 
 
 
-typedef unsigned int INDEX;
+typedef size_t INDEX;
 typedef INDEX Label;
 typedef INDEX NodeId;
 typedef std::vector<Label> Labels;

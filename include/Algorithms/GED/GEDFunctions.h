@@ -37,7 +37,7 @@ inline std::vector<T> CreateEditPath(const GEDEvaluation<T>& result)
     for (const auto& g : edit_path.edit_path_graphs) {
         edit_path_graphs.emplace_back(g);
     }
-    edit_path_graphs.back().set_name(edit_path.target_graph.GetName());
+    edit_path_graphs.back().SetName(edit_path.target_graph.GetName());
     // print all the graphs
     //for (const auto& g : edit_path_graphs.graphData) {
     //    std::cout << g << std::endl;
@@ -56,7 +56,7 @@ inline void WriteEditPathInfo(const std::vector<GEDEvaluation<T>>& results, cons
     for (const auto& result : results) {
         INDEX source_id = result.graph_ids.first;
         INDEX target_id = result.graph_ids.second;
-        auto edit_path_graphs = CreateEditPath<DDataGraph>(result);
+        auto edit_path_graphs = CreateEditPath<T>(result);
         for (INDEX step_id = 0; step_id < edit_path_graphs.size(); ++step_id) {
             // write source_id, step_id, target_id
             ofs.write(reinterpret_cast<const char *>(&source_id), sizeof(source_id));
@@ -111,7 +111,7 @@ void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const Grap
         auto edit_path_graphs = CreateEditPath<T>(result);
         int path_counter = 0;
         for (auto& g : edit_path_graphs) {
-            g.set_name(graph_data.GetName() + "_" + std::to_string(result.graph_ids.first) + "_" + std::to_string(result.graph_ids.second) + "_" + std::to_string(path_counter));
+            g.SetName(graph_data.GetName() + "_" + std::to_string(result.graph_ids.first) + "_" + std::to_string(result.graph_ids.second) + "_" + std::to_string(path_counter));
             all_path_graphs.add(g);
             ++path_counter;
         }
@@ -333,7 +333,8 @@ void MergeBinaries(const std::string& input_path, const std::string& search_stri
     });
 }
 
-inline void CSVFromGEDResults(const std::string &results_path, const std::vector<GEDEvaluation<DDataGraph>> &results) {
+template<typename T>
+inline void CSVFromGEDResults(const std::string &results_path, const std::vector<GEDEvaluation<T>> &results) {
     // write distance csv file source_id, target_id, distance
     std::ofstream distance_ofs(results_path, std::ios::out);
     if (!distance_ofs) {
@@ -341,7 +342,7 @@ inline void CSVFromGEDResults(const std::string &results_path, const std::vector
         return;
     }
     // Write Header source_id, target_id, lower_bound, upper_bound, distance
-    distance_ofs << "source_id, target_id, lower_bound, upper_bound, distance" << std::endl;
+    distance_ofs << "source_id, target_id, lower_bound, upper_bound, approximated distance" << std::endl;
     for (const auto& result : results) {
         distance_ofs << result.graph_ids.first << "," << result.graph_ids.second << "," << result.lower_bound << "," << result.upper_bound << "," << result.distance << std::endl;
     }

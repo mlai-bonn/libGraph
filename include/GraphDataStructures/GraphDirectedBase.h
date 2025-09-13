@@ -15,20 +15,39 @@ struct DGraphStruct : public GraphStruct{
     explicit DGraphStruct(const std::string& name, INDEX size);
     explicit DGraphStruct(const std::string&name, INDEX size, const Labels& labels);
 
+
+
     //Load and save
     void Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format = "");
     void Save(const SaveParams& saveParams) override;
 
     void Init(const std::string& name, int size, int edges, int nodeFeatures, int edgeFeatures, const std::vector<std::string>& nodeFeatureNames, const std::vector<std::string>& edgeFeatureNames) override;
-    void ReadNodeFeatures(double value, INDEX pos, const std::string& nodeFeatureName) override;
-    bool ReadEdges(INDEX Src, INDEX Dst, std::vector<double>& edgeData) override;
 
+
+    // Graph manipulation (functions that change the underlying graph data)
+    // change behaviour of adding edges because of directedness
+    INDEX AddNodes(INDEX number) override;
+
+    INDEX AddNodes(INDEX number, const std::vector<Label>& labels) override;
+
+    INDEX AddNodes(INDEX number, const std::vector<Label>& labels, const std::vector<std::vector<double>>& nodeData) override;
+    // Edges
+    bool AddEdge(NodeId source, NodeId destination) override;
+    bool AddEdge(const std::pair<NodeId, NodeId>& edge) override;
+
+    bool AddEdge(NodeId source, NodeId destination, bool check_existence) override;
+    bool AddEdge(const std::pair<NodeId, NodeId>& edge, bool check_existence) override;
+
+    bool RemoveEdge(NodeId source, NodeId destination) override;
+    bool RemoveEdge(const std::pair<NodeId, NodeId>& edge) override;
+
+
+    void ReadNodeFeatures(double value, INDEX pos, const std::string& nodeFeatureName) override;
     void WriteEdges(std::ofstream& Out,const SaveParams& saveParams) override;
 
-    bool edge(NodeId source, NodeId destination) const override;
+
+    bool IsEdge(NodeId source, NodeId destination) const override;
     bool edge(NodeId source, NodeId destination, bool directed) const;
-    bool add_edge(NodeId source, NodeId destination);
-    bool AddEdge(NodeId source, NodeId destination, bool check_existence) override;
     static DGraphStruct GetBFSTree(const GraphStruct& graph, NodeId rootNodeId);
     INDEX out_degree(NodeId node);
     INDEX in_degree(NodeId node);
@@ -96,9 +115,10 @@ inline INDEX DGraphStruct::out_degree(NodeId node) {
 /// Ad an edge to a directed _graph
 /// \param source
 /// \param destination
+/// \param check_existence
 /// \return
-inline bool DGraphStruct::AddEdge(NodeId source, NodeId destination, bool check_existence) {
-    if (!check_existence || !edge(source, destination)){
+inline bool DGraphStruct::AddEdge(const NodeId source, NodeId destination, const bool check_existence) {
+    if (!check_existence || !IsEdge(source, destination)){
         this->_graph[source].emplace_back(destination);
         NodeId ElementId = (NodeId) this->_graph[source].size() - 1;
         while (ElementId > 0 && this->_graph[source][ElementId] < this->_graph[source][ElementId - 1]){
@@ -116,11 +136,32 @@ inline bool DGraphStruct::AddEdge(NodeId source, NodeId destination, bool check_
     return false;
 }
 
+inline bool DGraphStruct::AddEdge(const std::pair<NodeId, NodeId> &edge, const bool check_existence) {
+    return DGraphStruct::AddEdge(edge.first, edge.second, check_existence);
+}
+
+inline bool DGraphStruct::RemoveEdge(const NodeId source, const NodeId destination) {
+    if (const auto it_source = std::ranges::find(this->_graph[source], destination); it_source != this->_graph[source].end()) {
+        this->_graph[source].erase(it_source);
+        --_degrees[source];
+        --_degrees[destination];
+        --this->_in_degrees[destination];
+        --this->_out_degrees[source];
+        --this->_edges;
+        return true;
+    }
+    return false;
+}
+
+inline bool DGraphStruct::RemoveEdge(const std::pair<NodeId, NodeId> &edge) {
+    return DGraphStruct::RemoveEdge(edge.first, edge.second);
+}
+
 /// Check if edge in directed _graph exists
 /// \param source
 /// \param destination
 /// \return
-inline bool DGraphStruct::edge(NodeId source, NodeId destination) const {
+inline bool DGraphStruct::IsEdge(NodeId source, NodeId destination) const {
     return DGraphStruct::edge(source, destination, true);
 }
 
@@ -161,7 +202,7 @@ inline DGraphStruct DGraphStruct::GetBFSTree(const GraphStruct &graph, const Nod
             if (!VisitedNodes[neighborId]){
                 VisitedNodes[neighborId] = true;
                 CurrentNodes.insert(CurrentNodes.begin(), neighborId);
-                BFSTree.add_edge(NextNodeId, neighborId);
+                BFSTree.AddEdge(NextNodeId, neighborId);
             }
         }
     }
@@ -410,8 +451,31 @@ inline void DGraphStruct::Init(const std::string &name, int size, int edges, int
     this->_out_degrees.resize(_nodes);
 }
 
-inline bool DGraphStruct::ReadEdges(INDEX Src, INDEX Dst, std::vector<double> &edgeData) {
-    return this->add_edge(Src, Dst);
+inline INDEX DGraphStruct::AddNodes(const INDEX number, const std::vector<Label>& labels) {
+    // Emplace back in and out degrees
+    this->_in_degrees.emplace_back(0);
+    this->_out_degrees.emplace_back(0);
+    return GraphStruct::AddNodes(number, labels);
+}
+
+inline INDEX DGraphStruct::AddNodes(const INDEX number, const std::vector<Label> &labels,
+    const std::vector<std::vector<double>> &nodeData) {
+    return GraphStruct::AddNodes(number, labels, nodeData);
+}
+
+inline INDEX DGraphStruct::AddNodes(const INDEX number) {
+    // Emplace back in and out degrees
+    this->_in_degrees.emplace_back(0);
+    this->_out_degrees.emplace_back(0);
+    return GraphStruct::AddNodes(number);
+}
+
+inline bool DGraphStruct::AddEdge(const NodeId source, const NodeId destination) {
+    return DGraphStruct::AddEdge(source, destination, true);
+}
+
+inline bool DGraphStruct::AddEdge(const std::pair<NodeId, NodeId> &edge) {
+    return DGraphStruct::AddEdge(edge.first, edge.second);
 }
 
 inline void DGraphStruct::ReadNodeFeatures(double value, INDEX pos, const std::string &nodeFeatureName) {
@@ -441,9 +505,7 @@ inline void DGraphStruct::WriteEdges(std::ofstream& Out, const SaveParams& saveP
     }
 }
 
-inline bool DGraphStruct::add_edge(NodeId source, NodeId destination) {
-    return AddEdge(source, destination, true);
-}
+
 
 
 #endif //TESTGRAPHLIB_GRAPHDIRECTEDBASE_H

@@ -76,15 +76,8 @@ void AddGraphToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::Label
     for (int i = 0; i < g.nodes(); ++i) {
         for (const auto j : g.get_neighbors(i)) {
             if (i < j) {
-                // if cast to DDataGraph is succesfull
-                if (dynamic_cast<const DDataGraph*>(&g) != nullptr) {
-                    // graph has edge labels
-                    INDEX edge_label = (INDEX) g.get_edge_data({i,j}, "label");
-                    env.add_edge(last_graph_id, i, j, edge_label);
-                }
-                else {
-                    env.add_edge(last_graph_id, i, j,0);
-                }
+                INDEX edge_label = (INDEX) g.GetEdgeData({i,j}, "label");
+                env.add_edge(last_graph_id, i, j, edge_label);
             }
         }
     }

@@ -156,7 +156,7 @@ inline void GraphAlgorithms::GetBiconnectedOuterplanarFaces(const GraphStruct &c
 
             int near_degree = degrees[n1];
             int next_degree = degrees[n2];
-            if (component.edge(n1, n2)) {
+            if (component.IsEdge(n1, n2)) {
                 NodeId newNode1 = currentFace.back().add_node();
                 NodeId newNode2 = currentFace.back().add_node();
                 currentFace.back().AddEdge(newNode1, newNode2, false);
@@ -224,7 +224,7 @@ inline void GraphAlgorithms::GetBiconnectedOuterplanarFaceNum(GraphStruct &compo
         //Delete possibleEdges from component
         component.RemoveEdge(currentNodeId, n1);
         component.RemoveEdge(currentNodeId, n2);
-        if (component.edge(n1, n2)) {
+        if (component.IsEdge(n1, n2)) {
             ++face_num;
             //Update degreeTwo nodes
             INDEX deg1 = component.degree(n1);
@@ -319,7 +319,7 @@ bool GraphAlgorithms::IsOuterPlanar(const GraphStruct &graph, NodeId src, NodeId
                             NodePair nodePair = NodePair(near, next);
                             algorithmGraph.RemoveEdge(cNode, near);
                             algorithmGraph.RemoveEdge(cNode, next);
-                            if (!algorithmGraph.edge(near, next)) {
+                            if (!algorithmGraph.IsEdge(near, next)) {
                                 algorithmGraph.AddEdge(near, next);
                                 triangulationCount[nodePair] = std::max(1, std::max(
                                         triangulationCount[NodePair(cNode, near)],
@@ -364,7 +364,7 @@ bool GraphAlgorithms::IsMaximalOuterplanarSubgraph(const GraphStruct &graph, con
     GraphStruct check_graph = subgraph;
 
     for (auto edge = graph.first_edge(); edge != graph.last_edge(); ++edge) {
-        if (!check_graph.edge(*edge)){
+        if (!check_graph.IsEdge(*edge)){
             check_graph.AddEdge(*edge);
             additionalEdge = IsOuterPlanar(check_graph, (*edge).first, (*edge).second);
             if (additionalEdge){
