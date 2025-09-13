@@ -191,7 +191,8 @@ void LoadSave::LoadTUDortmundGraphData(const std::string &path, const std::strin
         ++graphNodeCounter;
         if (indicator > graphs.size()){
             graphNodeCounter = 1;
-            graphs.add(T(dbName + "_" + std::to_string(indicator-1)));
+            std::string graph_name = dbName + "_" + std::to_string(indicator-1);
+            graphs.add(T(graph_name, 0));
         }
         graphs[indicator-1].AddNodes(1);
 
@@ -327,7 +328,7 @@ inline bool LoadSave::PreprocessTUDortmundGraphData(const std::string &dataset_n
 
 
     // Check whether Processed graphs already exists
-    if (std::filesystem::exists(output_path + dataset_name + ".bgfs")) {
+    if (std::filesystem::exists(output_path + dataset_name + ".bgf")) {
         std::cout << "Graph " << dataset_name << " already exists" << std::endl;
         return true;
     }

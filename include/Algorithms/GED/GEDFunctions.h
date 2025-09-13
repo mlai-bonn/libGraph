@@ -135,8 +135,8 @@ inline void GEDResultToBinary(const std::string &target_path, GEDEvaluation<T> &
     if (!std::filesystem::exists(target_path)) {
         std::filesystem::create_directory(target_path);
     }
-    int source_id = result.graph_ids.first;
-    int target_id = result.graph_ids.second;
+    const INDEX source_id = result.graph_ids.first;
+    const INDEX target_id = result.graph_ids.second;
     const std::vector<NodeId>& i_to_j = result.node_mapping.first;
     const std::vector<NodeId>& j_to_i = result.node_mapping.second;
     // open binary file
@@ -147,8 +147,8 @@ inline void GEDResultToBinary(const std::string &target_path, GEDEvaluation<T> &
         return;
     }
     // write source_id and target_id
-    ofs.write(reinterpret_cast<const char *>(&source_id), sizeof(source_id));
-    ofs.write(reinterpret_cast<const char *>(&target_id), sizeof(target_id));
+    ofs.write(reinterpret_cast<const char *>(&source_id), sizeof(INDEX));
+    ofs.write(reinterpret_cast<const char *>(&target_id), sizeof(INDEX));
     // write size of i_to_j
     size_t size_i_to_j = i_to_j.size();
     ofs.write(reinterpret_cast<const char *>(&size_i_to_j), sizeof(size_i_to_j));
@@ -164,13 +164,13 @@ inline void GEDResultToBinary(const std::string &target_path, GEDEvaluation<T> &
     ofs.write(reinterpret_cast<const char *>(&name_size), sizeof(name_size));
     ofs.write(result.graph_data_name.c_str(), name_size);
     // write time
-    ofs.write(reinterpret_cast<const char *>(&result.time), sizeof(result.time));
+    ofs.write(reinterpret_cast<const char *>(&result.time), sizeof(double));
     // write distance
-    ofs.write(reinterpret_cast<const char *>(&result.distance), sizeof(result.distance));
+    ofs.write(reinterpret_cast<const char *>(&result.distance), sizeof(double));
     // write lower bound
-    ofs.write(reinterpret_cast<const char *>(&result.lower_bound), sizeof(result.lower_bound));
+    ofs.write(reinterpret_cast<const char *>(&result.lower_bound), sizeof(double));
     // write upper bound
-    ofs.write(reinterpret_cast<const char *>(&result.upper_bound), sizeof(result.upper_bound));
+    ofs.write(reinterpret_cast<const char *>(&result.upper_bound), sizeof(double));
     ofs.close();
 }
 
@@ -195,13 +195,13 @@ inline void GEDResultToBinary(const std::string &output_path, std::vector<GEDEva
         return;
     }
     for (const auto& result : results) {
-        int source_id = result.graph_ids.first;
-        int target_id = result.graph_ids.second;
+        INDEX source_id = result.graph_ids.first;
+        INDEX target_id = result.graph_ids.second;
         const std::vector<NodeId>& i_to_j = result.node_mapping.first;
         const std::vector<NodeId>& j_to_i = result.node_mapping.second;
         // write source_id and target_id
-        ofs.write(reinterpret_cast<const char *>(&source_id), sizeof(source_id));
-        ofs.write(reinterpret_cast<const char *>(&target_id), sizeof(target_id));
+        ofs.write(reinterpret_cast<const char *>(&source_id), sizeof(INDEX));
+        ofs.write(reinterpret_cast<const char *>(&target_id), sizeof(INDEX));
         // write size of i_to_j
         size_t size_i_to_j = i_to_j.size();
         ofs.write(reinterpret_cast<const char *>(&size_i_to_j), sizeof(size_i_to_j));
@@ -217,13 +217,13 @@ inline void GEDResultToBinary(const std::string &output_path, std::vector<GEDEva
         ofs.write(reinterpret_cast<const char *>(&name_size), sizeof(name_size));
         ofs.write(result.graph_data_name.c_str(), name_size);
         // write time
-        ofs.write(reinterpret_cast<const char *>(&result.time), sizeof(result.time));
+        ofs.write(reinterpret_cast<const char *>(&result.time), sizeof(double));
         // write distance
-        ofs.write(reinterpret_cast<const char *>(&result.distance), sizeof(result.distance));
+        ofs.write(reinterpret_cast<const char *>(&result.distance), sizeof(double));
         // write lower bound
-        ofs.write(reinterpret_cast<const char *>(&result.lower_bound), sizeof(result.lower_bound));
+        ofs.write(reinterpret_cast<const char *>(&result.lower_bound), sizeof(double));
         // write upper bound
-        ofs.write(reinterpret_cast<const char *>(&result.upper_bound), sizeof(result.upper_bound));
+        ofs.write(reinterpret_cast<const char *>(&result.upper_bound), sizeof(double));
     }
     ofs.close();
 }
@@ -238,8 +238,8 @@ inline void BinaryToGEDResult(const std::string &input_path, const GraphData<T>&
         return;
     }
     // read source_id and target_id
-    ifs.read(reinterpret_cast<char *>(&result.graph_ids.first), sizeof(result.graph_ids.first));
-    ifs.read(reinterpret_cast<char *>(&result.graph_ids.second), sizeof(result.graph_ids.second));
+    ifs.read(reinterpret_cast<char *>(&result.graph_ids.first), sizeof(INDEX));
+    ifs.read(reinterpret_cast<char *>(&result.graph_ids.second), sizeof(INDEX));
     // read size of i_to_j
     size_t size_i_to_j;
     ifs.read(reinterpret_cast<char *>(&size_i_to_j), sizeof(size_i_to_j));
@@ -258,13 +258,13 @@ inline void BinaryToGEDResult(const std::string &input_path, const GraphData<T>&
     result.graph_data_name.resize(name_size);
     ifs.read(&result.graph_data_name[0], name_size);
     // read time
-    ifs.read(reinterpret_cast<char *>(&result.time), sizeof(result.time));
+    ifs.read(reinterpret_cast<char *>(&result.time), sizeof(double));
     // read distance
-    ifs.read(reinterpret_cast<char *>(&result.distance), sizeof(result.distance));
+    ifs.read(reinterpret_cast<char *>(&result.distance), sizeof(double));
     // read lower bound
-    ifs.read(reinterpret_cast<char *>(&result.lower_bound), sizeof(result.lower_bound));
+    ifs.read(reinterpret_cast<char *>(&result.lower_bound), sizeof(double));
     // read upper bound
-    ifs.read(reinterpret_cast<char *>(&result.upper_bound), sizeof(result.upper_bound));
+    ifs.read(reinterpret_cast<char *>(&result.upper_bound), sizeof(double));
     // set graphs
     result.graphs = {graph_data.graphData[result.graph_ids.first], graph_data.graphData[result.graph_ids.second]};
 }

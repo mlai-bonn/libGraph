@@ -59,7 +59,7 @@ struct UGraphStruct : public GraphStruct{
      * @param format format of the graph file
      * @param search_name if not empty only graphs with the given name will be loaded
      */
-    explicit UGraphStruct(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "", const std::string& format = "", const std::string& search_name = "");
+    explicit UGraphStruct(const std::string & graphPath, const std::string& labelPath = "", bool relabeling = true, bool withLabels = false, const std::string& format = "", const std::string& search_name = "");
 
     /**
      * Function for loading a graph from a file
@@ -961,7 +961,7 @@ inline NodeId UGraphStruct::random_neighbor_in_range(NodeId nodeId, INDEX minIdx
 /// \param relabeling
 /// \param withLabels
 /// \param labelPath
-inline UGraphStruct::UGraphStruct(const std::string &graphPath, bool relabeling, bool withLabels, const std::string & labelPath, const std::string& format, const std::string& search_name) {
+inline UGraphStruct::UGraphStruct(const std::string &graphPath, const std::string & labelPath, bool relabeling, bool withLabels, const std::string& format, const std::string& search_name) {
 Load(graphPath, relabeling, withLabels, labelPath, format, search_name);
 }
 
@@ -1455,7 +1455,7 @@ inline UGraphStruct UGraphStruct::GetLargestComponent(const UGraphStruct& graph)
 
 inline void UGraphStruct::Convert(const std::string &graphPath, const std::string &Name,
                                  GraphFormat Format, bool relabeling, bool withLabels, const std::string &labelPath, bool Labeled) {
-    UGraphStruct graphStruct = UGraphStruct(graphPath, relabeling, withLabels, labelPath);
+    UGraphStruct graphStruct = UGraphStruct(graphPath, labelPath, relabeling, withLabels);
     graphStruct.Save({"", Name, Format, Labeled});
 }
 
@@ -1468,7 +1468,7 @@ inline void UGraphStruct::Convert(const std::string &path, GraphFormat Format, c
     }
     for(const auto& f_path : files){
         if (std::filesystem::path(f_path).extension() == extension){
-            UGraphStruct graphStruct = UGraphStruct(f_path, true, false, "");
+            UGraphStruct graphStruct = UGraphStruct(f_path, "", true, false);
             graphStruct.Save({"", "", Format, false});
         }
     }

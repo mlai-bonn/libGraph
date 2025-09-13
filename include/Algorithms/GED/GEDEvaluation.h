@@ -354,9 +354,9 @@ inline void GEDEvaluation<T>::insert_edge(EditPath<T> &edit_path, const EditOper
             .type = EditType::INSERT,
             .node = operation.edge.first,
         };
+        insert_node(edit_path, first_node_insertion);
         // Update last graph if node is inserted
         last_graph = edit_path.edit_path_graphs.back();
-        insert_node(edit_path, first_node_insertion);
     }
     if (!second_node_inserted) {
         const EditOperation second_node_insertion = {
@@ -375,8 +375,7 @@ inline void GEDEvaluation<T>::insert_edge(EditPath<T> &edit_path, const EditOper
     T new_graph = last_graph;
     const std::string name = edit_path.source_graph.GetName() + "_step_" + std::to_string(edit_path.edit_path_graphs.size()) + "_" + edit_path.target_graph.GetName();
     new_graph.SetName(name);
-    // TODO edge features
-    std::vector<double> edge_features = std::vector<double>(0);
+    std::vector<double> edge_features = edit_path.target_graph.GetEdgeData(EDGE(target_i, target_j));
     new_graph.AddEdge(current_i, current_j, edge_features, true);
     edit_path.edit_path_graphs.emplace_back(new_graph);
 

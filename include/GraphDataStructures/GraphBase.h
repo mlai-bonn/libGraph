@@ -111,8 +111,9 @@ struct GraphStruct{
     /**
      * Constructor for creating a graph with the given name
      * @param name name of the graph
+     * @param size number of nodes
      */
-    explicit GraphStruct(const std::string& name, NodeId size);
+    explicit GraphStruct(const std::string& name, INDEX size);
 
     /**
      * Constructor for creating a graph with the given size and labels

@@ -422,8 +422,8 @@ void GraphData<T>::Load(const std::string &graphPath) {
                             unsigned int int_Dst;
                             In.read(reinterpret_cast<char *>(&int_Src), sizeof(unsigned int));
                             In.read(reinterpret_cast<char *>(&int_Dst), sizeof(unsigned int));
-                            Src = int_Src;
-                            Dst = int_Dst;
+                            Src = (INDEX) int_Src;
+                            Dst = (INDEX) int_Dst;
                         }
                         std::cout << Src << " " << Dst;
                         if (graphsEdgeFeatureNames.size() > 0) {

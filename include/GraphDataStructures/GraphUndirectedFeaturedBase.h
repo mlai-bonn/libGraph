@@ -20,6 +20,13 @@ struct UDataGraph : UGraphStruct{
      *
      * @param name name of the graph
      * @param size size of the graph, i.e., number of nodes
+     */
+    UDataGraph(const std::string& name, INDEX size);
+
+    /**
+     *
+     * @param name name of the graph
+     * @param size size of the graph, i.e., number of nodes
      * @param labels labels of the nodes
      */
     UDataGraph(const std::string& name, INDEX size, const Labels& labels);
@@ -31,7 +38,7 @@ struct UDataGraph : UGraphStruct{
      * @param withLabels
      * @param labelPath
      */
-    explicit UDataGraph(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "");
+    explicit UDataGraph(const std::string & graphPath, const std::string& labelPath = "", bool relabeling = true, bool withLabels = false);
 
 
     // TODO check functions
@@ -131,6 +138,9 @@ private:
 /// Default constructor
 inline UDataGraph::UDataGraph() = default;
 
+inline UDataGraph::UDataGraph(const std::string &name, const INDEX size) : UGraphStruct(name, size) {
+}
+
 inline UDataGraph::UDataGraph(const std::string& name, const INDEX size, const Labels &labels) : UGraphStruct(name, size, labels) {
 }
 
@@ -139,7 +149,7 @@ inline UDataGraph::UDataGraph(const std::string& name, const INDEX size, const L
 /// \param relabeling if true node labels start with 0 and end with size-1, otherwise use original labels TODO check this
 /// \param withLabels if considering node attributes
 /// \param labelPath path to node data
-inline UDataGraph::UDataGraph(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath){
+inline UDataGraph::UDataGraph(const std::string &graphPath, const std::string &labelPath, bool relabeling, bool withLabels){
     UDataGraph::Load(graphPath, relabeling, withLabels,labelPath);
 }
 
@@ -325,6 +335,8 @@ inline void UDataGraph::add_edge_data(const EDGE &edge, const std::string &type,
 inline void UDataGraph::add_edge_data(const EDGE &edge, int index, double data) {
     _edge_data[edge.first][edge.second].resize(this->_edge_data_size);
     _edge_data[edge.first][edge.second][index] = data;
+    _edge_data[edge.second][edge.first].resize(this->_edge_data_size);
+    _edge_data[edge.second][edge.first][index] = data;
 }
 
 /// Add the data of an edge
@@ -332,6 +344,7 @@ inline void UDataGraph::add_edge_data(const EDGE &edge, int index, double data) 
 /// \param data
 inline void UDataGraph::add_edge_data(const EDGE &edge, const std::vector<double> &data) {
     _edge_data[edge.first][edge.second] = data;
+    _edge_data[edge.second][edge.first] = data;
 }
 
 
@@ -380,6 +393,7 @@ inline bool UDataGraph::AddEdge(const std::pair<NodeId, NodeId> &edge, const std
 
 inline bool UDataGraph::RemoveEdge(const NodeId source, const NodeId destination) {
     this->_edge_data[source].erase(destination);
+    this->_edge_data[destination].erase(source);
     return UGraphStruct::RemoveEdge(source, destination);
 }
 
@@ -399,6 +413,29 @@ inline void UDataGraph::RelabelEdge(const std::pair<NodeId, NodeId> &edge, std::
 inline void UDataGraph::RemoveNode(const NodeId nodeId) {
     UGraphStruct::RemoveNode(nodeId);
     this->_node_data.erase(this->_node_data.begin() + nodeId);
+    this->_edge_data.erase(nodeId);
+    std::unordered_map<INDEX, std::unordered_map<INDEX, std::vector<double>>> new_edge_data;
+    // Update the edge data iterate over all edge data
+    for (auto & edge_map : this->_edge_data) {
+        NodeId source = edge_map.first;
+        std::unordered_map<INDEX, std::vector<double>> new_target_data_map;
+        for (auto & [target, data] : edge_map.second) {
+            if (target >= nodeId) {
+                new_target_data_map[target - 1] = data;
+            }
+            else{
+                new_target_data_map[target] = data;
+            }
+        }
+        if (source >= nodeId) {
+            new_edge_data[source - 1] = new_target_data_map;
+        }
+        else{
+            new_edge_data[source] = new_target_data_map;
+        }
+    }
+    this->_edge_data.clear();
+    this->_edge_data = new_edge_data;
 }
 
 inline void UDataGraph::RelabelNode(const NodeId nodeId, const Label newLabel) {
@@ -592,11 +629,22 @@ inline void UDataGraph::WriteEdges(std::ofstream& Out,const SaveParams& savePara
     INDEX Src = 0;
     for (auto const &edges: this->_graph) {
         for (auto Dst: edges) {
-            Out.write(reinterpret_cast<char *>(&Src), sizeof(INDEX));
-            Out.write(reinterpret_cast<char *>(&Dst), sizeof(INDEX));
-            for (int j = 0; j < _edge_data_size; ++j) {
-                auto val = _edge_data[Src][Dst][j];
-                Out.write(reinterpret_cast<char *>(&val), sizeof(val));
+            if (Dst >= Src) {
+                //std::cout << "Saving Edge " << Src << " " << Dst << std::endl;
+                if (saveParams.Format == GraphFormat::BGF) {
+                    Out.write((char *) (&Src), sizeof(INDEX));
+                    Out.write((char *) (&Dst), sizeof(INDEX));
+                }
+                else if (saveParams.Format == GraphFormat::BGFS){
+                    auto int_src = static_cast<unsigned int>(Src);
+                    auto int_dst = static_cast<unsigned int>(Dst);
+                    Out.write((char *) (&int_src), sizeof(unsigned int));
+                    Out.write((char *) (&int_dst), sizeof(unsigned int));
+                }
+                for (int j = 0; j < _edge_data_size; ++j) {
+                    auto val = _edge_data[Src][Dst][j];
+                    Out.write(reinterpret_cast<char *>(&val), sizeof(val));
+                }
             }
         }
         ++Src;
