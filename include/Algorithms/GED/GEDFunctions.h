@@ -2,19 +2,19 @@
 // Created by florian on 29.08.25.
 //
 
-#ifndef GEDEXAMPLE_GEDFUNCTIONS_H
-#define GEDEXAMPLE_GEDFUNCTIONS_H
-#include <map>
-
+#ifndef GED_FUNCTIONS_H
+#define GED_FUNCTIONS_H
 #include "GEDEvaluation.h"
 #include "typedefs.h"
+#include "GraphDataStructures/GraphData.h"
+
 
 // for approximated GED computation we use the gedlib library see https://github.com/dbblumenthal/gedlib
 // the following functions are only to embedd the library results in our code base, i.e., the evaluation of the result
 
 // main function to run the examples
 template<typename T>
-inline std::vector<T> CreateEditPath(const GEDEvaluation<T>& result)
+inline std::vector<T> CreateEditPath(const GEDEvaluation<T>& result, bool connected_only=false)
 {
     std::cout << "Time: " << result.time << " seconds" << std::endl;
     // print node mapping
@@ -33,16 +33,12 @@ inline std::vector<T> CreateEditPath(const GEDEvaluation<T>& result)
     result.get_edit_path(edit_path, 0);
     // print edit path length
     std::cout << "Edit Path Length: " << edit_path.edit_path_graphs.size() - 1 << std::endl;
-    std::vector<T> edit_path_graphs;
-    for (const auto& g : edit_path.edit_path_graphs) {
-        edit_path_graphs.emplace_back(g);
-    }
-    edit_path_graphs.back().SetName(edit_path.target_graph.GetName());
     // print all the graphs
     //for (const auto& g : edit_path_graphs.graphData) {
     //    std::cout << g << std::endl;
     //}
-    return edit_path_graphs;
+    edit_path.edit_path_graphs.back().SetName(edit_path.target_graph.GetName());
+    return edit_path.edit_path_graphs;
 }
 
 template<typename T>
@@ -88,7 +84,7 @@ inline void ReadEditPathInfo(std::string& edit_path_info, std::vector<std::tuple
 }
 
 template<typename T>
-void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const GraphData<T> &graph_data, const std::string &edit_path_output = "../Data/EditPaths/") {
+void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const GraphData<T> &graph_data, const std::string &edit_path_output = "../Data/EditPaths/", bool connected_only = false) {
     // check whether file already exists
     if (std::filesystem::exists(edit_path_output + graph_data.GetName() + "_edit_paths.bgf")) {
         std::cout << "Edit paths for " << graph_data.GetName() << " already exist." << std::endl;
@@ -109,8 +105,16 @@ void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const Grap
         std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
         ++counter;
         auto edit_path_graphs = CreateEditPath<T>(result);
+        // throw an error if the edit path length does not match the rounded distance (to the next int)
+        if (edit_path_graphs.size() - 1 != std::round(result.distance)) {
+            throw std::runtime_error("Error: Edit path length does not match the distance for graphs " + std::to_string(result.graph_ids.first) + " and " + std::to_string(result.graph_ids.second)
+                + ". Edit path length: " + std::to_string(edit_path_graphs.size() - 1) + ", Distance: " + std::to_string(result.distance));
+        }
         int path_counter = 0;
         for (auto& g : edit_path_graphs) {
+            if (connected_only && !g.GetConnectivity()) {
+                continue;
+            }
             g.SetName(graph_data.GetName() + "_" + std::to_string(result.graph_ids.first) + "_" + std::to_string(result.graph_ids.second) + "_" + std::to_string(path_counter));
             all_path_graphs.add(g);
             ++path_counter;
@@ -366,4 +370,4 @@ void MergeGEDResults(const std::string &results_path, const std::string& search_
 
 
 
-#endif //GEDEXAMPLE_GEDFUNCTIONS_H
+#endif //GED_FUNCTIONS_H

@@ -2,8 +2,8 @@
 // Created by florian on 23.10.23.
 //
 
-#ifndef TESTGRAPHLIB_GRAPHLABELEDBASE_H
-#define TESTGRAPHLIB_GRAPHLABELEDBASE_H
+#ifndef GRAPH_DIRECTED_FEATURE_BASE_H
+#define GRAPH_DIRECTED_FEATURE_BASE_H
 #include "GraphDirectedBase.h"
 
 struct DDataGraph : DGraphStruct{
@@ -622,4 +622,4 @@ inline INDEX DDataGraph::AddNodes(const INDEX number, const std::vector<Label> &
     return DGraphStruct::AddNodes(number, labels);
 }
 
-#endif //TESTGRAPHLIB_GRAPHLABELEDBASE_H
+#endif //GRAPH_DIRECTED_FEATURE_BASE_H

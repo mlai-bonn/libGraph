@@ -2,11 +2,86 @@
 // Created by florian on 26.10.23.
 //
 
-#ifndef GOOGLE_TESTS_GRAPHSTRUCTS_H
-#define GOOGLE_TESTS_GRAPHSTRUCTS_H
+#ifndef GRAPH_STRUCTS_H
+#define GRAPH_STRUCTS_H
 
 #include "typedefs.h"
 #include <iostream>
+
+/**
+ * Defines the type of the graph (general, tree, outerplanar)
+ * Some algorithms can be optimized if the type is known in advance
+*/
+enum class GraphType{
+    GENERAL,
+    TREE,
+    OUTERPLANAR,
+};
+
+inline std::ostream& operator<<(std::ostream& os, const GraphType& graphType) {
+    switch (graphType) {
+        case GraphType::GENERAL:
+            os << "GENERAL";
+            break;
+        case GraphType::TREE:
+            os << "TREE";
+            break;
+        case GraphType::OUTERPLANAR:
+            os << "OUTERPLANAR";
+            break;
+    }
+    return os;
+}
+
+/**
+ * Defines the format of the graph file (for saving and loading)
+*/
+enum class GraphFormat{
+    BGF,
+    BGFS,
+    BINARY,
+    EDGES,
+    PEREGRINE_DATA,
+    PEREGRINE_SMALL,
+    DIMACS,
+    AIDS,
+};
+
+inline std::ostream& operator<<(std::ostream& os, const GraphFormat& graphFormat) {
+    switch (graphFormat) {
+        case GraphFormat::BGF:
+            os << "BGF";
+            break;
+        case GraphFormat::BGFS:
+            os << "BGFS";
+            break;
+        case GraphFormat::BINARY:
+            os << "BINARY";
+            break;
+        case GraphFormat::EDGES:
+            os << "EDGES";
+
+        default:
+            os << "UNKNOWN";
+            break;
+    }
+    return os;
+}
+
+/**
+ * Struct for saving the graph to a file
+ * graphPath: path to the graph file
+ * Name: name of the graph
+ * Format: format of the graph file
+ * Labeled: if true the graph will be saved with labels
+ */
+struct SaveParams{
+    std::string graphPath;
+    std::string Name;
+    GraphFormat Format = GraphFormat::BGFS;
+    bool Labeled = false;
+};
+
 
 
 struct NodePair{
@@ -63,4 +138,4 @@ struct hashNodePair
 };
 
 
-#endif //GOOGLE_TESTS_GRAPHSTRUCTS_H
+#endif //GRAPH_STRUCTS_H

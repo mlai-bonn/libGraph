@@ -4,6 +4,8 @@
 #include <vector>
 #include <LoadSave.h>
 
+#include "LoadSaveGraphDatasets.h"
+
 // hello world
 
 int main() {
@@ -26,9 +28,9 @@ int main() {
         std::filesystem::create_directory(output_path);
     }
 
-    LoadSave::PreprocessTUDortmundGraphData(dataset_name, input_path, output_path);
+    LoadSaveGraphDatasets::PreprocessTUDortmundGraphData(dataset_name, input_path, output_path);
     GraphData<UDataGraph> loadedGraphs;
-    LoadSave::LoadPreprocessedTUDortmundGraphData(dataset_name, output_path, loadedGraphs);
+    LoadSaveGraphDatasets::LoadPreprocessedTUDortmundGraphData(dataset_name, output_path, loadedGraphs);
 
     // print the loaded graphs
     for ( auto &x : loadedGraphs.graphData) {

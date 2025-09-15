@@ -2,8 +2,8 @@
 // Created by florian on 03.11.23.
 //
 
-#ifndef GOOGLE_TESTS_GRAPHEXTENDED_H
-#define GOOGLE_TESTS_GRAPHEXTENDED_H
+#ifndef GRAPH_EXTENDED_H
+#define GRAPH_EXTENDED_H
 
 /**
  * @brief Extended GraphBase class
@@ -68,4 +68,4 @@ GraphExtended::GraphExtended(NodeId size, const Labels &labels) : GraphStruct(si
     _distances = std::vector<NodeId>(size, 0);
     _parents = std::vector<NodeId>(size, 0);
 }
-#endif //GOOGLE_TESTS_GRAPHEXTENDED_H
+#endif //GRAPH_EXTENDED_H

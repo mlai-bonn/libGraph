@@ -2,8 +2,8 @@
 // Created by florian on 09.09.25.
 //
 
-#ifndef GEDEXAMPLE_GEDSTRUCTS_H
-#define GEDEXAMPLE_GEDSTRUCTS_H
+#ifndef GED_STRUCTS_H
+#define GED_STRUCTS_H
 #include <iosfwd>
 #include <unordered_set>
 
@@ -137,6 +137,8 @@ struct EditPath {
     std::unordered_set<EditOperation, EditOperationHash> remaining_node_insertions;
     std::unordered_set<EditOperation, EditOperationHash> remaining_edge_relabels;
     std::unordered_set<EditOperation, EditOperationHash> remaining_node_relabels;
+
+    void Update(T& graph, const EditOperation& operation);
 };
 
 // print Edit Path using the sequence of operations
@@ -150,5 +152,28 @@ inline std::ostream& operator<<(std::ostream& os, const EditPath<T>& edit_path) 
     return os;
 }
 
+template<typename T>
+void EditPath<T>::Update(T& graph, const EditOperation& operation) {
+    this->edit_path_graphs.emplace_back(graph);
+    this->sequence_of_operations.push_back(operation);
+    this->remaining_operations.erase(operation);
+    if (operation.operationObject == OperationObject::NODE) {
+        if (operation.type == EditType::DELETE) {
+            this->remaining_node_deletions.erase(operation);
+        } else if (operation.type == EditType::INSERT) {
+            this->remaining_node_insertions.erase(operation);
+        } else if (operation.type == EditType::RELABEL) {
+            this->remaining_node_relabels.erase(operation);
+        }
+    } else if (operation.operationObject == OperationObject::EDGE) {
+        if (operation.type == EditType::DELETE) {
+            this->remaining_edge_deletions.erase(operation);
+        } else if (operation.type == EditType::INSERT) {
+            this->remaining_edge_insertions.erase(operation);
+        } else if (operation.type == EditType::RELABEL) {
+            this->remaining_edge_relabels.erase(operation);
+        }
+    }
+}
 
-#endif //GEDEXAMPLE_GEDSTRUCTS_H
+#endif //GED_STRUCTS_H

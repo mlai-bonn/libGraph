@@ -2,11 +2,10 @@
 // Created by florian on 23.10.23.
 //
 
-#ifndef TESTGRAPHLIB_GRAPHLABELEDBASE_H
-#define TESTGRAPHLIB_GRAPHLABELEDBASE_H
-#include "GraphUndirectedBase.h"
+#ifndef GRAPHUNDIRECTEDFEATUREBASE
+#define GRAPHUNDIRECTEDFEATUREBASE
 
-struct UDataGraph : UGraphStruct{
+struct UDataGraph : GraphStruct{
     /**
      * Default constructor
      */
@@ -99,7 +98,7 @@ struct UDataGraph : UGraphStruct{
     static bool dijkstra(const UDataGraph& graph, NodeId src, NodeId dest, double (*weight_function)(const UDataGraph&, EDGE), std::vector<NodeId>& path, std::vector<double>& distances, double& length);
 
     bool operator==(const UDataGraph &rhs) const {
-        if ((UGraphStruct) *this != (UGraphStruct) rhs){
+        if ((GraphStruct) *this != (GraphStruct) rhs){
             return false;
         }
         if (_edge_data_size != rhs._edge_data_size){
@@ -138,10 +137,10 @@ private:
 /// Default constructor
 inline UDataGraph::UDataGraph() = default;
 
-inline UDataGraph::UDataGraph(const std::string &name, const INDEX size) : UGraphStruct(name, size) {
+inline UDataGraph::UDataGraph(const std::string &name, const INDEX size) : GraphStruct(name, size) {
 }
 
-inline UDataGraph::UDataGraph(const std::string& name, const INDEX size, const Labels &labels) : UGraphStruct(name, size, labels) {
+inline UDataGraph::UDataGraph(const std::string& name, const INDEX size, const Labels &labels) : GraphStruct(name, size, labels) {
 }
 
 /// Read directed data _graph from file TODO binary extension
@@ -159,7 +158,7 @@ inline void UDataGraph::Load(const std::string &graphPath, bool relabeling, bool
     if (std::filesystem::is_regular_file(graphPath)) {
         std::string extension = std::filesystem::path(graphPath).extension().string();
         if (extension == ".bgf"){
-            UGraphStruct::Load(graphPath, relabeling,withLabels,labelPath);
+            GraphStruct::Load(graphPath, relabeling,withLabels,labelPath);
         }
         else if (extension == ".edges" || extension == ".txt") {
             std::string graph_name = std::filesystem::path(graphPath).stem().string();
@@ -279,7 +278,7 @@ inline void UDataGraph::Load(const std::string &graphPath, bool relabeling, bool
         }
 
         this->sortNeighborIds();
-        if (CheckTree()){
+        if (GraphFunctions::CheckTree(*this)){
             this->graphType = GraphType::TREE;
         }
     }
@@ -289,7 +288,7 @@ inline void UDataGraph::Load(const std::string &graphPath, bool relabeling, bool
 }
 
 inline void UDataGraph::Save(const SaveParams& saveParams) {
-    UGraphStruct::Save(saveParams);
+    GraphStruct::Save(saveParams);
 }
 
 /// Get the data of an edge using the data type
@@ -360,12 +359,16 @@ inline void UDataGraph::set_edge_data_names(const std::unordered_map<std::string
 
 inline INDEX UDataGraph::AddNodes(const INDEX number, const std::vector<Label>& labels,
     const std::vector<std::vector<double>>& nodeData) {
-    const INDEX result =  UGraphStruct::AddNodes(number, labels, nodeData);
+    const INDEX result =  GraphStruct::AddNodes(number, labels);
     // Check whether nodeData size equals the number and add the data
     if ( nodeData.size() == number) {
         for (INDEX i = 0; i < number; ++i) {
             this->_node_data.emplace_back(nodeData.at(i));
         }
+    }
+    else {
+        // throw exception
+        throw std::invalid_argument("Node data size does not match the number of nodes added.");
     }
     return result;
 }
@@ -382,7 +385,7 @@ inline bool UDataGraph::AddEdge(const NodeId source, const NodeId destination, c
 inline bool UDataGraph::AddEdge(NodeId source, NodeId destination, const std::vector<double>& edgeData,
                                 bool check_existence) {
     add_edge_data(EDGE{source, destination}, edgeData);
-    return UGraphStruct::AddEdge(source, destination);
+    return GraphStruct::AddEdge(source, destination);
 
 }
 
@@ -394,7 +397,7 @@ inline bool UDataGraph::AddEdge(const std::pair<NodeId, NodeId> &edge, const std
 inline bool UDataGraph::RemoveEdge(const NodeId source, const NodeId destination) {
     this->_edge_data[source].erase(destination);
     this->_edge_data[destination].erase(source);
-    return UGraphStruct::RemoveEdge(source, destination);
+    return GraphStruct::RemoveEdge(source, destination);
 }
 
 inline bool UDataGraph::RemoveEdge(const std::pair<NodeId, NodeId> &edge) {
@@ -403,7 +406,7 @@ inline bool UDataGraph::RemoveEdge(const std::pair<NodeId, NodeId> &edge) {
 
 inline void UDataGraph::RelabelEdge(const NodeId source, const NodeId destination, const std::vector<double> &edgeData) {
     this->_edge_data[source][destination] = edgeData;
-    UGraphStruct::RelabelEdge(source, destination, edgeData);
+    GraphStruct::RelabelEdge(source, destination, edgeData);
 }
 
 inline void UDataGraph::RelabelEdge(const std::pair<NodeId, NodeId> &edge, std::vector<double> &newEdgeData) {
@@ -411,7 +414,7 @@ inline void UDataGraph::RelabelEdge(const std::pair<NodeId, NodeId> &edge, std::
 }
 
 inline void UDataGraph::RemoveNode(const NodeId nodeId) {
-    UGraphStruct::RemoveNode(nodeId);
+    GraphStruct::RemoveNode(nodeId);
     this->_node_data.erase(this->_node_data.begin() + nodeId);
     this->_edge_data.erase(nodeId);
     std::unordered_map<INDEX, std::unordered_map<INDEX, std::vector<double>>> new_edge_data;
@@ -439,7 +442,7 @@ inline void UDataGraph::RemoveNode(const NodeId nodeId) {
 }
 
 inline void UDataGraph::RelabelNode(const NodeId nodeId, const Label newLabel) {
-    UGraphStruct::RelabelNode(nodeId, newLabel);
+    GraphStruct::RelabelNode(nodeId, newLabel);
 }
 
 
@@ -550,7 +553,7 @@ inline bool UDataGraph::dijkstra(const UDataGraph &graph, NodeId src, NodeId des
 inline void UDataGraph::Init(const std::string &name, int size, int edges, int nodeFeatures, int edgeFeatures,
                              const std::vector<std::string> &nodeFeatureNames,
                              const std::vector<std::string> &edgeFeatureNames) {
-    UGraphStruct::Init(name, size, edges, nodeFeatures, edgeFeatures, nodeFeatureNames, edgeFeatureNames);
+    GraphStruct::Init(name, size, edges, nodeFeatures, edgeFeatures, nodeFeatureNames, edgeFeatureNames);
     this->_node_data_size = (int) nodeFeatureNames.size();
     this->_edge_data_size = (int) edgeFeatureNames.size();
 
@@ -652,11 +655,17 @@ inline void UDataGraph::WriteEdges(std::ofstream& Out,const SaveParams& savePara
 }
 
 inline INDEX UDataGraph::AddNodes(const INDEX number) {
-    return UGraphStruct::AddNodes(number);
+    for (INDEX i = 0; i < number; ++i) {
+        this->_node_data.emplace_back();
+    }
+    return GraphStruct::AddNodes(number);
 }
 
 inline INDEX UDataGraph::AddNodes(const INDEX number, const std::vector<Label> &labels) {
-    return UGraphStruct::AddNodes(number, labels);
+    for (INDEX i = 0; i < number; ++i) {
+        this->_node_data.emplace_back();
+    }
+    return GraphStruct::AddNodes(number, labels);
 }
 
-#endif //TESTGRAPHLIB_GRAPHLABELEDBASE_H
+#endif //GRAPHUNDIRECTEDFEATUREBASE

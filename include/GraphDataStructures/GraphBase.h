@@ -2,8 +2,8 @@
 // Created by Florian on 15.04.2021.
 //
 
-#ifndef HOPS_GRAPHBASE_H
-#define HOPS_GRAPHBASE_H
+#ifndef GRAPH_BASE_H
+#define GRAPH_BASE_H
 #include <vector>
 #include <set>
 #include <random>
@@ -15,80 +15,7 @@
 #include <iostream>
 #include "typedefs.h"
 #include "GraphFunctions.h"
-
-/**
- * Defines the type of the graph (general, tree, outerplanar)
- * Some algorithms can be optimized if the type is known in advance
-*/
-enum class GraphType{
-    GENERAL,
-    TREE,
-    OUTERPLANAR,
-};
-
-inline std::ostream& operator<<(std::ostream& os, const GraphType& graphType) {
-    switch (graphType) {
-        case GraphType::GENERAL:
-            os << "GENERAL";
-            break;
-        case GraphType::TREE:
-            os << "TREE";
-            break;
-        case GraphType::OUTERPLANAR:
-            os << "OUTERPLANAR";
-            break;
-    }
-    return os;
-}
-
-/**
- * Defines the format of the graph file (for saving and loading)
-*/
-enum class GraphFormat{
-    BGF,
-    BGFS,
-    BINARY,
-    EDGES,
-    PEREGRINE_DATA,
-    PEREGRINE_SMALL,
-    DIMACS,
-    AIDS,
-};
-
-inline std::ostream& operator<<(std::ostream& os, const GraphFormat& graphFormat) {
-    switch (graphFormat) {
-        case GraphFormat::BGF:
-            os << "BGF";
-            break;
-        case GraphFormat::BGFS:
-            os << "BGFS";
-            break;
-        case GraphFormat::BINARY:
-            os << "BINARY";
-            break;
-        case GraphFormat::EDGES:
-            os << "EDGES";
-
-        default:
-            os << "UNKNOWN";
-            break;
-    }
-    return os;
-}
-
-/**
- * Struct for saving the graph to a file
- * graphPath: path to the graph file
- * Name: name of the graph
- * Format: format of the graph file
- * Labeled: if true the graph will be saved with labels
- */
-struct SaveParams{
-    std::string graphPath;
-    std::string Name;
-    GraphFormat Format = GraphFormat::BGFS;
-    bool Labeled = false;
-};
+#include "LoadSave.h"
 
 
 struct EdgeIterator;
@@ -143,7 +70,7 @@ struct GraphStruct{
      * @param format format of the graph file
      * @param search_name if not empty only graphs with the given name will be loaded
      */
-    void Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format = "", const std::string& search_name = "");
+    virtual void Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format = "", const std::string& search_name = "");
 
     /**
      * Function for saving the graph to a file
@@ -172,7 +99,7 @@ struct GraphStruct{
      * Get the name of the graph
      * @return name of the graph
      */
-    std::string GetName() const{return _name;};
+    virtual std::string GetName() const{return _name;};
 
     // TODO check the following functions and comment them
 
@@ -207,15 +134,15 @@ struct GraphStruct{
 
     /**
      * Resets the labels of the whole graph to the given labels
-     * @param Labels
+     * @param labels new labels for the graph
      */
-    void SetLabels(const Labels *labels);
+    void SetLabels(const Labels *labels) ;
 
     /**
      * Set the name of the graph
      * @param name name of the graph
      */
-    void SetName(const std::string& name);
+    void SetName(const std::string& name) ;
 
     // Data access (const functions that do not change the underlying graph data)
     virtual double GetNodeData(NodeId node, const std::string& type) const {return 0;};
@@ -234,6 +161,8 @@ struct GraphStruct{
     virtual void WriteNodeFeatures(std::ofstream& Out,const SaveParams& saveParams);
     virtual void WriteEdges(std::ofstream& Out,const SaveParams& saveParams);
 
+    bool GetConnectivity();
+
 
 
 
@@ -244,11 +173,10 @@ struct GraphStruct{
     std::string GetPath(){return _path;};
 
     void SetType(GraphType type);
+
     GraphType GetType() const;
 
-
-
-    void write_graph_nodes(const std::string& graphPath, const std::string& fileName, const Nodes& nodes);
+    virtual void write_graph_nodes(const std::string& graphPath, const std::string& fileName, const Nodes& nodes);
 
 
     const std::vector<Nodes>& graph() const {return _graph;};
@@ -256,49 +184,33 @@ struct GraphStruct{
     INDEX nodes() const;
 
     INDEX edges() const;
+
     void set_edge_num(INDEX edges){ _edges=edges;};
 
-    INDEX degree(NodeId nodeId) const;
-    INDEX degree(NodeId nodeId, Label label);
-    const std::vector<INDEX>& degreeByLabel(NodeId nodeId);
-    const std::vector<Label>& labels() const;
-    Label label(NodeId nodeId) const;
-    const Nodes& get_neighbors(NodeId nodeId) const;
-    Nodes& neighbors(NodeId nodeId);
-    NodeId neighbor(NodeId nodeId, INDEX neighborIdx) const;
-    NodeId neighbor(NodeId nodeId, INDEX neighborIdx, Label label);
-    NodeId random_neighbor_in_range(NodeId nodeId, INDEX minIdx, std::mt19937_64& gen);
+    virtual INDEX degree(NodeId nodeId) const;
 
-    static bool ReadBGF(const std::string& extension, std::ifstream& In, int& saveVersion, int& graphNumber, std::vector<std::string>& graphsNames,
-                         std::vector<GraphType>& graphsTypes,
-                         std::vector<INDEX>& graphsSizes,
-                         std::vector<std::vector<std::string>>& graphsNodeFeatureNames,
-                         std::vector<INDEX>& graphsEdges,
-                         std::vector<std::vector<std::string>>& graphsEdgeFeatureNames);
-    void InitLabels();
-    template<typename T>
-    static void LoadGraphsFromPath(const std::string& graphPath, const std::string& labelPath, std::vector<T> &graphs, const std::string & searchName = "", const std::string & extension = "", bool sort = true, std::set<int>* graphSizes = nullptr, int patternNum = -1);
-    static void Convert(const std::string & graphPath, const std::string& Name = "", GraphFormat Format = GraphFormat::BGF, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "", bool Labeled = false);
+    virtual INDEX degree(NodeId nodeId, Label label);
 
-    /// Converts all graphs in a directory using the same extension to the given format
-    /// \param path
-    /// \param Format
-    static void Convert(const std::string & path, GraphFormat Format = GraphFormat::BGF, const std::string & extension = ".txt");
-    bool CheckTree() const;
-    bool CheckSpanningTree(const GraphStruct& spanningTree) const;
+    virtual const std::vector<INDEX>& degreeByLabel(NodeId nodeId);
 
-    static void BFSDistances(const GraphStruct &graph, INDEX root, std::vector<INDEX> &distances);
-    static void GetComponents(const GraphStruct& graph, std::vector<INDEX> & components);
-    static void GetComponents(const GraphStruct& graph, std::vector<Nodes> & components);
-    static void GetLargestComponent(const GraphStruct& graph, Nodes& nodes);
-    static GraphStruct GetLargestComponent(const GraphStruct& graph);
-    static GraphStruct SubGraph(const GraphStruct& graph, const Nodes& nodeIds);
-    static bool IsConnected(const GraphStruct& graph);
-    static bool ReachableNodes(const GraphStruct &graph, NodeId root, std::vector<INDEX> & reachability, INDEX Id, INDEX& number);
+    virtual const std::vector<Label>& labels() const;
 
-    static void DFS(const GraphStruct &graph, GraphStruct &tree, Nodes& nodeOrder, NodeId rootNodeId = -1, int seed = 0);
-    static void OptOrdering(const GraphStruct &graph, Nodes& nodeOrder);
-    static void ReorderGraph(GraphStruct &graph, const Nodes& nodeOrder);
+    virtual Label label(NodeId nodeId) const;
+
+    virtual const Nodes& get_neighbors(NodeId nodeId) const;
+
+    virtual Nodes& neighbors(NodeId nodeId);
+
+    virtual NodeId neighbor(NodeId nodeId, INDEX neighborIdx) const;
+
+    virtual NodeId neighbor(NodeId nodeId, INDEX neighborIdx, Label label);
+
+    virtual NodeId random_neighbor_in_range(NodeId nodeId, INDEX minIdx, std::mt19937_64& gen);
+
+    virtual void InitLabels();
+
+
+
 
     //Static functions
     //compare the given labeled degree vector with the labeled degree vector of the node with Id:srcId of this _graph
@@ -592,12 +504,10 @@ public:
     virtual bool IsEdge(const EdgeIterator& edge) const;
     virtual bool AddEdge(const EdgeIterator& edge);
     virtual bool AddEdge(const EdgeIterator& edge, bool check_existence);
-
-
     virtual bool RemoveEdge(const EdgeIterator& edge);
 
     //Get get_neighbors by []
-    const Nodes& operator[](NodeId nodeId){return _graph[nodeId];};
+    const Nodes& operator[](const NodeId nodeId){return _graph[nodeId];};
     void sortNeighborIds();
     bool has_neighbor_label(NodeId nodeId, Label label);
 
@@ -605,8 +515,8 @@ public:
         return this->degree(i) < this->degree(j);
     };
 
-    void degree_sort(Nodes& nodes){
-        std::sort(nodes.begin(), nodes.end(), [this](NodeId l,NodeId r){return comp_degree(l,r);});
+    void degree_sort(Nodes& nodes) const {
+        std::ranges::sort(nodes, [this](const NodeId l, const NodeId r){return comp_degree(l,r);});
     }
 
 
@@ -626,6 +536,9 @@ protected:
     INDEX _edges = 0;
     std::vector<Nodes> _graph;
     std::vector<INDEX> _degrees;
+
+    bool _checked_connected = false;
+    bool _is_connected = false;
 
     //store original node Ids
     std::unordered_map<INDEX ,INDEX> IdsToOriginalIds;
@@ -849,7 +762,7 @@ inline bool GraphStruct::AddEdge(NodeId source, NodeId destination, const bool c
             std::swap(this->_graph[destination][ElementId], this->_graph[destination][ElementId - 1]);
             --ElementId;
         }
-
+        this->_checked_connected = false;
         ++this->_edges;
         ++this->_degrees[source];
         ++this->_degrees[destination];
@@ -1031,7 +944,7 @@ inline NodeId GraphStruct::random_neighbor_in_range(NodeId nodeId, INDEX minIdx,
 /// \param withLabels
 /// \param labelPath
 inline GraphStruct::GraphStruct(const std::string &graphPath, bool relabeling, bool withLabels, const std::string & labelPath, const std::string& format, const std::string& search_name) {
-Load(graphPath, relabeling, withLabels, labelPath, format, search_name);
+    GraphStruct::Load(graphPath, relabeling, withLabels, labelPath, format, search_name);
 }
 
 /// Save _graph in certain path and format
@@ -1282,268 +1195,6 @@ inline void GraphStruct::SetLabels(const Labels* labels) {
     }
 }
 
-inline INDEX GraphStruct::AddNodes(const INDEX number) {
-    // Emplace back the graph adjacency list
-    for(INDEX i = 0; i < number; i++) {
-        this->_graph.emplace_back();
-        this->_degrees.emplace_back(0);
-        ++this->_nodes;
-        this->_labels.emplace_back(0); // default label 0
-    }
-    // node data is only used in the child class GraphLabeledBase
-    this->update_graph_struct();
-    return static_cast<INDEX>(this->_graph.size()) - 1;
-}
-
-inline INDEX GraphStruct::AddNodes(const INDEX number, const std::vector<Label>& labels) {
-    // Emplace back the graph adjacency list
-    for(INDEX i = 0; i < number; i++) {
-        this->_graph.emplace_back();
-        this->_degrees.emplace_back(0);
-        ++this->_nodes;
-    }
-    // If the label vector matches the number of nodes
-    if (labels.size() == number) {
-        for (auto const label : labels) {
-            this->_labels.emplace_back(label);
-        }
-    }
-    // node data is only used in the child class GraphLabeledBase
-    this->update_graph_struct();
-    return static_cast<INDEX>(this->_graph.size()) - 1;
-}
-
-inline INDEX GraphStruct::AddNodes(const INDEX number, const std::vector<Label>& labels,
-    const std::vector<std::vector<double>>& nodeData) {
-    return AddNodes(number, labels);
-}
-
-inline void GraphStruct::RemoveNode(const NodeId nodeId) {
-    --this->_nodes;
-    // Iterate over all nodes and remove nodeId and decrease Id by 1 if Id is greater than nodeId
-    INDEX node_counter = 0;
-    for (auto& nodes : this->_graph) {
-        bool found = false;
-        for (INDEX j = 0; j < nodes.size(); ++j) {
-            if (nodes[j] == nodeId) {
-                found = true;
-            }
-            else {
-                if (nodes[j] > nodeId) {
-                    --nodes[j];
-                }
-                if (found) {
-                    nodes[j-1] = nodes[j];
-                }
-            }
-        }
-        if (found) {
-            nodes.pop_back();
-            --this->_degrees[node_counter];
-        }
-        ++node_counter;
-    }
-    this->_graph.erase(this->_graph.begin() + nodeId);
-    this->_degrees.erase(this->_degrees.begin() + nodeId);
-    this->_labels.erase(this->_labels.begin() + nodeId);
-    this->update_graph_struct();
-}
-
-inline void GraphStruct::RemoveNodes(const std::vector<NodeId> &nodeIds) {
-    for (const auto nodeId : nodeIds) {
-        this->RemoveNode(nodeId);
-    }
-}
-
-inline void GraphStruct::RelabelNode(const NodeId nodeId, const Label newLabel) {
-    this->_labels[nodeId] = newLabel;
-    // TODO make the update more efficient (based on update event)
-    this->update_node_label_information();
-}
-
-inline void GraphStruct::RelabelNode(const NodeId nodeId, const Label newLabel, const std::vector<double>& nodeData) {
-    this->RelabelNode(nodeId, newLabel);
-}
-
-inline bool GraphStruct::AddEdge(const NodeId source, const NodeId destination) {
-    return AddEdge(source, destination, true);
-}
-
-inline bool GraphStruct::AddEdge(const std::pair<NodeId, NodeId> &edge) {
-    return AddEdge(edge.first, edge.second, true);
-}
-
-
-inline bool GraphStruct::CheckSpanningTree(const GraphStruct &spanningTree) const {
-    if (spanningTree.nodes() != this->nodes() || !spanningTree.CheckTree()) {
-        return false;
-    }
-    NodeId Counter = 0;
-    for (auto const & Nodes : spanningTree.graph()) {
-        for (auto Node : Nodes) {
-            if (!this->IsEdge(Counter, Node)) {
-                return false;
-            }
-        }
-        ++Counter;
-    }
-    return true;
-}
-
-inline bool GraphStruct::CheckTree() const {
-    for (INDEX i = 0; i < this->nodes(); ++i) {
-        if(this->degree(i) == 0){
-            return false;
-        }
-    }
-    return this->nodes() == this->edges() + 1;
-}
-
-inline void GraphStruct::BFSDistances(const GraphStruct &graph, INDEX root, std::vector<INDEX> &distances) {
-    if (distances.size() != graph.nodes()){
-        distances.clear();
-        distances.resize(graph.nodes(), -1);
-    }
-    else{
-        std::fill(distances.begin(), distances.end(), -1);
-    }
-    std::vector<bool> visitedNodes = std::vector<bool>(graph.nodes(), false);
-    visitedNodes[root] = true;
-    distances[root] = 0;
-    std::deque<NodeId> nodes = std::deque<NodeId>();
-    nodes.push_back(root);
-    while (!nodes.empty()){
-        NodeId currentNode = nodes.back();
-        nodes.pop_back();
-        for (NodeId i = 0; i < graph.degree(currentNode); ++i) {
-            NodeId neighbor = graph.neighbor(currentNode, i);
-            if (!visitedNodes[neighbor]){
-                visitedNodes[neighbor] = true;
-                distances[neighbor] = distances[currentNode] + 1;
-                nodes.push_front(neighbor);
-            }
-        }
-    }
-}
-
-inline bool GraphStruct::ReachableNodes(const GraphStruct &graph, NodeId root, std::vector<INDEX> & reachability, INDEX Id, INDEX& number){
-    number = 1;
-    reachability[root] = Id;
-    std::deque<NodeId> nodes;
-    nodes.push_back(root);
-    while (!nodes.empty()){
-        NodeId currentNode = nodes.back();
-        nodes.pop_back();
-        for (NodeId i = 0; i < graph.degree(currentNode); ++i) {
-            NodeId neighbor = graph.neighbor(currentNode, i);
-            if (reachability[neighbor] != Id){
-                reachability[neighbor] = Id;
-                nodes.push_front(neighbor);
-                ++number;
-            }
-        }
-    }
-    return number == graph.nodes();
-}
-
-inline bool GraphStruct::IsConnected(const GraphStruct& graph){
-    std::vector<INDEX> reachability = std::vector<INDEX>(graph.nodes(), -1);
-    INDEX number;
-    return GraphStruct::ReachableNodes(graph, 0, reachability, 0, number);
-}
-
-inline void GraphStruct::GetComponents(const GraphStruct& graph, std::vector<INDEX> & components){
-    components.clear();
-    components.resize(graph.nodes(), -1);
-    INDEX number = 0;
-    INDEX pos = 0;
-    INDEX Id = 0;
-    while (number < graph.nodes()){
-        INDEX compSize = 0;
-        while(components[pos] != -1){
-            ++pos;
-        }
-        GraphStruct::ReachableNodes(graph, pos, components, Id, compSize);
-        number += compSize;
-        ++Id;
-        ++pos;
-    }
-
-}
-
-inline void GraphStruct::GetComponents(const GraphStruct& graph, std::vector<Nodes> & components){
-    std::vector<INDEX> com;
-    GraphStruct::GetComponents(graph, com);
-    for (INDEX i = 0; i < com.size(); ++i) {
-        INDEX componentId = com[i];
-        if (components.empty() || components.size() <= componentId){
-            components.resize(componentId + 1, Nodes());
-        }
-        components[componentId].emplace_back(i);
-    }
-}
-
-inline void GraphStruct::GetLargestComponent(const GraphStruct& graph, Nodes &nodes) {
-    std::vector<Nodes> components;
-    GraphStruct::GetComponents(graph, components);
-    INDEX maxSize = 0;
-    INDEX maxIndex = 0;
-    for (INDEX i = 0; i < components.size(); ++i) {
-        auto compSize = (INDEX) components[i].size();
-        if (compSize > maxSize){
-            maxSize = compSize;
-            maxIndex = i;
-        }
-    }
-    nodes = components[maxIndex];
-}
-
-inline GraphStruct GraphStruct::SubGraph(const GraphStruct& graph, const Nodes& nodeIds){
-    GraphStruct g = GraphStruct(graph.GetName() + "_subgraph", static_cast<INDEX>(nodeIds.size()));
-    for (INDEX i = 0; i < nodeIds.size(); ++i) {
-        g.IdsToOriginalIds.emplace(nodeIds[i], i);
-    }
-    for (INDEX srcNode : nodeIds) {
-        for (INDEX dstNode : graph.graph()[srcNode]) {
-            if (std::find(nodeIds.begin(), nodeIds.end(), dstNode) != nodeIds.end()){
-                g.AddEdge(g.IdsToOriginalIds[srcNode], g.IdsToOriginalIds[dstNode], true);
-            }
-        }
-    }
-    return g;
-}
-
-inline GraphStruct GraphStruct::GetLargestComponent(const GraphStruct& graph){
-    Nodes nodes;
-    GraphStruct::GetLargestComponent(graph, nodes);
-    return SubGraph(graph, nodes);
-}
-
-
-
-
-inline void GraphStruct::Convert(const std::string &graphPath, const std::string &Name,
-                                 GraphFormat Format, bool relabeling, bool withLabels, const std::string &labelPath, bool Labeled) {
-    GraphStruct graphStruct = GraphStruct(graphPath, relabeling, withLabels, labelPath);
-    graphStruct.Save({"", Name, Format, Labeled});
-}
-
-inline void GraphStruct::Convert(const std::string &path, GraphFormat Format, const std::string &extension) {
-    std::vector<std::string> files;
-    for (const auto &entry: std::filesystem::directory_iterator(path)) {
-        if (entry.is_regular_file()) {
-            files.emplace_back(entry.path().string());
-        }
-    }
-    for(const auto& f_path : files){
-        if (std::filesystem::path(f_path).extension() == extension){
-            GraphStruct graphStruct = GraphStruct(f_path, true, false, "");
-            graphStruct.Save({"", "", Format, false});
-        }
-    }
-
-}
-
 inline void GraphStruct::Load(const std::string &graphPath, bool relabeling, bool withLabels, const std::string &labelPath, const std::string& format, const std::string& search_name) {
     int graphId = 0;
     std::string path = graphPath;
@@ -1587,7 +1238,7 @@ inline void GraphStruct::Load(const std::string &graphPath, bool relabeling, boo
             std::vector<std::vector<std::string>> graphsEdgeFeatureNames;
             std::ifstream In(path, std::ios::in | std::ios::binary);
 
-            if (GraphStruct::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes,
+            if (LoadSave::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes,
                                      graphsNodeFeatureNames, graphsEdges, graphsEdgeFeatureNames)) {
                 for (int i = 0; i < graphNumber; ++i) {
                     //Create _graph
@@ -1981,7 +1632,7 @@ inline void GraphStruct::Load(const std::string &graphPath, bool relabeling, boo
     }
 
     this->sortNeighborIds();
-    if (CheckTree()){
+    if (GraphFunctions::CheckTree(*this)){
         this->SetType(GraphType::TREE);
     }
 
@@ -2148,77 +1799,7 @@ inline void GraphStruct::SetName(const std::string &name) {
     this->_name = name;
 }
 
-inline bool GraphStruct::ReadBGF(const std::string& extension,std::ifstream& In, int &saveVersion,  int &graphNumber, std::vector<std::string> &graphsNames,
-                                 std::vector<GraphType> &graphsTypes, std::vector<INDEX> &graphsSizes,
-                                 std::vector<std::vector<std::string>> &graphsNodeFeatureNames,
-                                 std::vector<INDEX> &graphsEdges,
-                                 std::vector<std::vector<std::string>> &graphsEdgeFeatureNames) {
 
-    In.read((char *) (&saveVersion), sizeof(int));
-    if (saveVersion == 1) {
-        In.read((char *) (&graphNumber), sizeof(int));
-        for (int i = 0; i < graphNumber; ++i) {
-            std::string graphName;
-            unsigned int stringLength;
-            GraphType Type;
-            INDEX Size;
-            unsigned int nodeFeatures;
-            std::vector<std::string> nodeFeatureNames;
-
-            In.read((char *) (&stringLength), sizeof(unsigned int));
-            graphName.resize(stringLength);
-            In.read((char *) graphName.c_str(), stringLength);
-            graphsNames.emplace_back(graphName);
-            In.read((char *) (&Type), sizeof(GraphType));
-            graphsTypes.emplace_back(Type);
-            if (extension == ".bgf") {
-                In.read((char *) (&Size), sizeof(INDEX));
-            }
-            else if (extension == ".bgfs"){
-                unsigned int int_size;
-                In.read((char *) (&int_size), sizeof(unsigned int));
-                Size = int_size;
-            }
-            graphsSizes.emplace_back(Size);
-
-            In.read((char *) (&nodeFeatures), sizeof(unsigned int));
-            for (int j = 0; j < nodeFeatures; ++j) {
-                unsigned int nodeFeatureStringLength;
-                std::string nodeFeatureName;
-                In.read((char *) (&nodeFeatureStringLength), sizeof(unsigned int));
-                nodeFeatureName.resize(nodeFeatureStringLength);
-                In.read((char *) nodeFeatureName.c_str(), nodeFeatureStringLength);
-                nodeFeatureNames.emplace_back(nodeFeatureName);
-            }
-            graphsNodeFeatureNames.emplace_back(nodeFeatureNames);
-
-            INDEX Edges;
-            if (extension == ".bgf") {
-                In.read((char *) (&Edges), sizeof(INDEX));
-            }
-            else if (extension == ".bgfs"){
-                unsigned int int_edges;
-                In.read((char *) (&int_edges), sizeof(unsigned int));
-                Edges = int_edges;
-            }
-            graphsEdges.emplace_back(Edges);
-            unsigned int edgeFeatures;
-            std::vector<std::string> edgeFeatureNames;
-            In.read((char *) (&edgeFeatures), sizeof(unsigned int));
-            for (int j = 0; j < edgeFeatures; ++j) {
-                unsigned int edgeFeatureStringLength;
-                std::string edgeFeatureName;
-                In.read((char *) (&edgeFeatureStringLength), sizeof(unsigned int));
-                edgeFeatureName.resize(edgeFeatureStringLength);
-                In.read((char *) edgeFeatureName.c_str(), edgeFeatureStringLength);
-                edgeFeatureNames.emplace_back(edgeFeatureName);
-            }
-            graphsEdgeFeatureNames.emplace_back(edgeFeatureNames);
-        }
-        return true;
-    }
-    return false;
-}
 
 inline void GraphStruct::InitLabels() {
     //Add _graph labels if possible
@@ -2327,102 +1908,17 @@ inline void GraphStruct::WriteEdges(std::ofstream& Out, const SaveParams &savePa
     }
 }
 
-inline void GraphStruct::DFS(const GraphStruct &graph, GraphStruct &tree, Nodes &nodeOrder, NodeId rootNodeId, const int seed) {
-    std::mt19937_64 gen(seed);
-    NodeId max = -1;
-    if (rootNodeId == max) {
-        rootNodeId = std::uniform_int_distribution<INDEX>(0, graph.nodes() - 1)(gen);
+inline bool GraphStruct::GetConnectivity() {
+    if (this->_checked_connected) {
+        return this->_is_connected;
     }
-    std::deque<std::pair<INDEX, INDEX>> swappedIds;
-    std::vector<NodeId> neighborIds = std::vector<NodeId>(graph.maxDegree, 0);
-    std::iota(neighborIds.begin(), neighborIds.end(), 0);
-    for (int i = 0; i < graph.nodes(); ++i) {
-        tree.AddNodes(1);
-    }
-    tree.graphType = GraphType::TREE;
-    std::unordered_set<INDEX> visitedNodes;
-    std::vector<NodeId> CurrentNodes;
-    CurrentNodes.emplace_back(rootNodeId);
-    nodeOrder.emplace_back(rootNodeId);
-    while (!CurrentNodes.empty()) {
-        NodeId NextNodeId = CurrentNodes.back();
-        CurrentNodes.pop_back();
-        if (visitedNodes.find(NextNodeId) == visitedNodes.end()) {
-            visitedNodes.insert(NextNodeId);
-            nodeOrder.emplace_back(NextNodeId);
-            INDEX degree = graph.get_neighbors(NextNodeId).size();
-            for (INDEX i = 0; i < degree; ++i) {
-                //Get random neighbor
-                INDEX idx = std::uniform_int_distribution<INDEX>(i, degree - 1)(gen);
-                NodeId NeighborNodeId = graph.get_neighbors(NextNodeId)[neighborIds[idx]];
-                std::swap(neighborIds[idx], neighborIds[i]);
-                swappedIds.emplace_front(std::pair<int, int>{idx, i});
-                if (visitedNodes.find(NeighborNodeId) == visitedNodes.end()) {
-                    CurrentNodes.emplace_back(NeighborNodeId);
-                }
-            }
-            tree.AddEdge(NextNodeId, CurrentNodes.back(), true);
-            for (auto const &[a, b]: swappedIds) {
-                std::swap(neighborIds[b], neighborIds[a]);
-            }
-            swappedIds.clear();
-        }
-    }
-}
 
-inline void GraphStruct::OptOrdering(const GraphStruct &graph, Nodes &nodeOrder) {
-    NodeId rootNodeId;
-    NodeId max_degree = 0;
-    for (int i = 0; i < graph.nodes(); ++i) {
-        if (graph.degree(i) > max_degree){
-            max_degree = graph.degree(i);
-            rootNodeId = i;
-        }
-    }
-    std::unordered_set<INDEX> visitedNodes = {rootNodeId};
-    std::vector<NodeId> CurrentNodes;
-    CurrentNodes.emplace_back(rootNodeId);
-    nodeOrder.emplace_back(rootNodeId);
-    while (!CurrentNodes.empty()){
-        NodeId NextNodeId = CurrentNodes.back();
-        CurrentNodes.pop_back();
-        std::vector<std::pair<NodeId, INDEX>> node_degrees;
-        for(auto n : graph.get_neighbors(NextNodeId)){
-            node_degrees.emplace_back(n, graph.degree(n));
-        }
-        std::sort(node_degrees.begin(), node_degrees.end(), [&](const auto& a, const auto& b)
-        {
-            return a.second > b.second;
-        });
-        for (auto [n, d] : node_degrees) {
-            if (visitedNodes.find(n) == visitedNodes.end()){
-                CurrentNodes.emplace_back(n);
-                nodeOrder.emplace_back(n);
-                visitedNodes.insert(n);
-            }
-        }
-    }
-}
+    std::vector<INDEX> reachability = std::vector<INDEX>(this->nodes(), -1);
+    INDEX number;
+    this->_is_connected = GraphFunctions::ReachableNodes(*this, 0, reachability, 0, number);
+    this->_checked_connected = true;
 
-inline void GraphStruct::ReorderGraph(GraphStruct &graph, const Nodes &nodeOrder) {
-
-    std::unordered_map<NodeId, NodeId> nodeMap;
-    int counter = 0;
-    for (auto node : nodeOrder) {
-        nodeMap.insert({node, counter});
-        ++counter;
-    }
-    std::vector<Nodes> newNodes = std::vector<Nodes>(graph.nodes());
-    counter = 0;
-    for (auto node : nodeOrder) {
-        const Nodes& neighbors = graph.get_neighbors(node);
-        for (auto n : neighbors) {
-            newNodes[counter].emplace_back(nodeMap[n]);
-        }
-        ++counter;
-    }
-    graph.set_graph(newNodes);
-
+    return this->_is_connected;
 }
 
 inline void GraphStruct::SetType(GraphType type) {
@@ -2433,6 +1929,101 @@ inline  GraphType GraphStruct::GetType() const {
     return this->graphType;
 }
 
+inline INDEX GraphStruct::AddNodes(const INDEX number) {
+    // Emplace back the graph adjacency list
+    for(INDEX i = 0; i < number; i++) {
+        this->_graph.emplace_back();
+        this->_degrees.emplace_back(0);
+        ++this->_nodes;
+        this->_labels.emplace_back(0); // default label 0
+    }
+    // if nodes are added the _graph is not connected anymore
+    if (number > 0) {
+        this->_is_connected = false;
+    }
+    this->update_graph_struct();
+    return static_cast<INDEX>(this->_graph.size()) - 1;
+}
+
+inline INDEX GraphStruct::AddNodes(const INDEX number, const std::vector<Label>& labels) {
+    GraphStruct::AddNodes(number);
+    // If the label vector matches the number of nodes
+    if (labels.size() == number) {
+        for (INDEX i = 0; i < number; ++i) {
+            this->_labels[this->_nodes - number + i] = labels[i];
+        }
+    }
+    // node data is only used in the child class GraphLabeledBase
+    this->update_graph_struct();
+    return static_cast<INDEX>(this->_graph.size()) - 1;
+}
+
+inline INDEX GraphStruct::AddNodes(const INDEX number, const std::vector<Label>& labels,
+    const std::vector<std::vector<double>>& nodeData) {
+    return GraphStruct::AddNodes(number, labels);
+}
+
+inline void GraphStruct::RemoveNode(const NodeId nodeId) {
+    // Raise error if node does not have degree 0
+    if (this->_degrees[nodeId] != 0) {
+        std::cerr << "Error: Node " << nodeId << " has degree " << this->_degrees[nodeId] << " and cannot be removed!" << std::endl;
+        return;
+    }
+    --this->_nodes;
+    // Iterate over all nodes and remove nodeId and decrease Id by 1 if Id is greater than nodeId
+    INDEX node_counter = 0;
+    for (auto& nodes : this->_graph) {
+        bool found = false;
+        for (INDEX j = 0; j < nodes.size(); ++j) {
+            if (nodes[j] == nodeId) {
+                found = true;
+            }
+            else {
+                if (nodes[j] > nodeId) {
+                    --nodes[j];
+                }
+                if (found) {
+                    nodes[j-1] = nodes[j];
+                }
+            }
+        }
+        if (found) {
+            nodes.pop_back();
+            --this->_degrees[node_counter];
+        }
+        ++node_counter;
+    }
+    this->_graph.erase(this->_graph.begin() + nodeId);
+    this->_degrees.erase(this->_degrees.begin() + nodeId);
+    this->_labels.erase(this->_labels.begin() + nodeId);
+    this->update_graph_struct();
+}
+
+inline void GraphStruct::RemoveNodes(const std::vector<NodeId> &nodeIds) {
+    for (const auto nodeId : nodeIds) {
+        this->RemoveNode(nodeId);
+    }
+}
+
+inline void GraphStruct::RelabelNode(const NodeId nodeId, const Label newLabel) {
+    this->_labels[nodeId] = newLabel;
+    // TODO make the update more efficient (based on update event)
+    this->update_node_label_information();
+}
+
+inline void GraphStruct::RelabelNode(const NodeId nodeId, const Label newLabel, const std::vector<double>& nodeData) {
+    this->RelabelNode(nodeId, newLabel);
+}
+
+inline bool GraphStruct::AddEdge(const NodeId source, const NodeId destination) {
+    return GraphStruct::AddEdge(source, destination, true);
+}
+
+inline bool GraphStruct::AddEdge(const std::pair<NodeId, NodeId> &edge) {
+    return GraphStruct::AddEdge(edge.first, edge.second, true);
+}
+
+
 inline bool GraphStruct::RemoveEdge(NodeId source, NodeId destination) {
     auto it_source = std::find(this->_graph[source].begin(), this->_graph[source].end(), destination);
     auto it_destination = std::find(this->_graph[destination].begin(), this->_graph[destination].end(), source);
@@ -2442,20 +2033,21 @@ inline bool GraphStruct::RemoveEdge(NodeId source, NodeId destination) {
         --_degrees[source];
         --_degrees[destination];
         --this->_edges;
+        this->_checked_connected = false;
         return true;
     }
     return false;
 }
 
 inline bool GraphStruct::RemoveEdge(const std::pair<NodeId, NodeId> &edge) {
-    return RemoveEdge(edge.first, edge.second);
+    return GraphStruct::RemoveEdge(edge.first, edge.second);
 }
 
 inline bool GraphStruct::RemoveEdge(const EdgeIterator &edge) {
-    return RemoveEdge(*edge);
+    return GraphStruct::RemoveEdge(*edge);
 }
 
-inline void GraphStruct::Reset(INDEX size) {
+inline void GraphStruct::Reset(const INDEX size) {
     this->_graph.resize(size);
     this->_degrees.resize(size);
     this->_nodes = size;
@@ -2470,4 +2062,7 @@ inline void GraphStruct::Reset(INDEX size) {
 
 
 
-#endif //HOPS_GRAPHBASE_H
+
+
+
+#endif //GRAPH_BASE_H

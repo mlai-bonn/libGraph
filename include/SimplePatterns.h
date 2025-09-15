@@ -2,8 +2,8 @@
 // Created by florian on 15.12.21.
 //
 
-#ifndef HOPS_SIMPLEPATTERNS_H
-#define HOPS_SIMPLEPATTERNS_H
+#ifndef SIMPLEPATTERNS_H
+#define SIMPLEPATTERNS_H
 
 
 #include <list>
@@ -11,27 +11,38 @@
 
 class SimplePatterns {
 public:
-    static GraphStruct Circle(int size, const Labels* labels = nullptr, int num_labels = 2);
-    static GraphStruct StarGraph(int size, const Labels* labels = nullptr, int num_labels = 2);
-    static GraphStruct Triangle(const Labels* labels = nullptr, int num_labels = 2);
-    static GraphStruct MaxPreClosure(int i, Labels *labels = nullptr, int num_labels = 2);
+    template<typename T>
+    static T Circle(int size, const Labels* labels = nullptr, int num_labels = 2);
+    template<typename T>
+    static T StarGraph(int size, const Labels* labels = nullptr, int num_labels = 2);
+    template<typename T>
+    static T Triangle(const Labels* labels = nullptr, int num_labels = 2);
+    template<typename T>
+    static T MaxPreClosure(int i, Labels *labels = nullptr, int num_labels = 2);
 
-    static GraphStruct FullyConnected(int i, const Labels* labels = nullptr, int num_labels = 2);
+    template<typename T>
+    static T FullyConnected(int i, const Labels* labels = nullptr, int num_labels = 2);
 
-    static GraphStruct DoubleTriangle(const Labels *labels = nullptr, int num_labels = 2);
+    template<typename T>
+    static T DoubleTriangle(const Labels *labels = nullptr, int num_labels = 2);
 
-    static GraphStruct Path(int i, Labels *labels = nullptr, int num_labels = 2);
-    static GraphStruct ErdosRenyi(int size, int edges, int seed = 0, bool connected = false);
+    template<typename T>
+    static T Path(int i, Labels *labels = nullptr, int num_labels = 2);
+    template<typename T>
+    static T ErdosRenyi(int size, int edges, int seed = 0, bool connected = false);
 
-    static GraphStruct FullyBipartite(int partitionASize, int partitionBSize);
+    template<typename T>
+    static T FullyBipartite(int partitionASize, int partitionBSize);
 };
 
-inline GraphStruct SimplePatterns::Triangle(const Labels* labels, int num_labels) {
-    return Circle(3, labels, num_labels);
+template<typename T>
+inline T SimplePatterns::Triangle(const Labels* labels, int num_labels) {
+    return Circle<T>(3, labels, num_labels);
 }
 
-inline GraphStruct SimplePatterns::DoubleTriangle(const Labels* labels, int num_labels) {
-    GraphStruct G = GraphStruct(4, Labels());
+template<typename T>
+inline T SimplePatterns::DoubleTriangle(const Labels* labels, int num_labels) {
+    T G = T(4, Labels());
     G.AddEdge(0, 1);
     G.AddEdge(0, 2);
     G.AddEdge(1, 2);
@@ -51,8 +62,9 @@ inline GraphStruct SimplePatterns::DoubleTriangle(const Labels* labels, int num_
     return G;
 }
 
-inline GraphStruct SimplePatterns::FullyConnected(int i, const Labels* labels, int num_labels) {
-    GraphStruct G = GraphStruct(i, Labels());
+template<typename T>
+inline T SimplePatterns::FullyConnected(int i, const Labels* labels, int num_labels) {
+    T G = T(i, Labels());
     for (int j = 0; j < i; ++j) {
         for (int k = j + 1; k < i; ++k) {
             G.AddEdge(j, k);
@@ -70,8 +82,9 @@ inline GraphStruct SimplePatterns::FullyConnected(int i, const Labels* labels, i
     return G;
 }
 
-inline GraphStruct SimplePatterns::Path(int i, Labels *labels, int num_labels) {
-    GraphStruct G = GraphStruct(i + 1, Labels());
+template<typename T>
+inline T SimplePatterns::Path(int i, Labels *labels, int num_labels) {
+    T G = T(i + 1, Labels());
     for (int j = 0; j < i; ++j) {
         G.AddEdge(j, j + 1);
     }
@@ -89,8 +102,9 @@ inline GraphStruct SimplePatterns::Path(int i, Labels *labels, int num_labels) {
     return G;
 }
 
-inline GraphStruct SimplePatterns::Circle(int size, const Labels *labels, int num_labels) {
-    GraphStruct G = GraphStruct(size, Labels());
+template<typename T>
+inline T SimplePatterns::Circle(int size, const Labels *labels, int num_labels) {
+    T G = T(size, Labels());
     for (int i = 0; i < size; ++i) {
         G.AddEdge(i, (i + 1) % size);
     }
@@ -107,8 +121,9 @@ inline GraphStruct SimplePatterns::Circle(int size, const Labels *labels, int nu
     return G;
 }
 
-inline GraphStruct SimplePatterns::StarGraph(int size, const Labels *labels, int num_labels) {
-    GraphStruct G = GraphStruct(size, Labels());
+template<typename T>
+inline T SimplePatterns::StarGraph(int size, const Labels *labels, int num_labels) {
+    T G = T(size, Labels());
     for (int i = 0; i < size - 1; ++i) {
         G.AddEdge(0, i + 1);
     }
@@ -125,14 +140,15 @@ inline GraphStruct SimplePatterns::StarGraph(int size, const Labels *labels, int
     return G;
 }
 
-inline GraphStruct SimplePatterns::ErdosRenyi(int size, int edges, int seed, bool connected) {
+template<typename T>
+inline T SimplePatterns::ErdosRenyi(int size, int edges, int seed, bool connected) {
     std::mt19937_64 gen(seed);
-    GraphStruct G = GraphStruct(size, Labels());
+    T G = T(size, Labels());
     if (connected){
         int max_tries = 1000000;
         int tries = 0;
-        while (!GraphStruct::IsConnected(G) && tries < max_tries) {
-            G = GraphStruct(size, Labels());
+        while (!T::IsConnected(G) && tries < max_tries) {
+            G = T(size, Labels());
             while (G.edges() < edges) {
                 int src = std::uniform_int_distribution<int>(0, size - 1)(gen);
                 int dst = std::uniform_int_distribution<int>(0, size - 1)(gen);
@@ -156,8 +172,9 @@ inline GraphStruct SimplePatterns::ErdosRenyi(int size, int edges, int seed, boo
     return G;
 }
 
-GraphStruct SimplePatterns::MaxPreClosure(int i, Labels *labels, int num_labels) {
-    GraphStruct G = GraphStruct(4+2*i, Labels());
+template<typename T>
+T SimplePatterns::MaxPreClosure(int i, Labels *labels, int num_labels) {
+    T G = T(4+2*i, Labels());
     G.AddEdge(0, 2);
     G.AddEdge(0, 3);
     G.AddEdge(1, 2);
@@ -180,8 +197,9 @@ GraphStruct SimplePatterns::MaxPreClosure(int i, Labels *labels, int num_labels)
     return G;
 }
 
-GraphStruct SimplePatterns::FullyBipartite(int partitionASize, int partitionBSize) {
-    GraphStruct G = GraphStruct(partitionASize + partitionBSize, Labels());
+template<typename T>
+T SimplePatterns::FullyBipartite(int partitionASize, int partitionBSize) {
+    T G = T(partitionASize + partitionBSize, Labels());
     for (int i = 0; i < partitionASize; ++i) {
         for (int j = partitionASize; j < partitionASize + partitionBSize; ++j) {
             G.AddEdge(i, j);
@@ -192,4 +210,4 @@ GraphStruct SimplePatterns::FullyBipartite(int partitionASize, int partitionBSiz
 }
 
 
-#endif //HOPS_SIMPLEPATTERNS_H
+#endif //SIMPLEPATTERNS_H

@@ -2,12 +2,12 @@
 // Created by florian on 23.10.23.
 //
 
-#ifndef TESTGRAPHLIB_GRAPHDIRECTEDBASE_H
-#define TESTGRAPHLIB_GRAPHDIRECTEDBASE_H
+#ifndef GRAPH_DIRECTED_BASE_H
+#define GRAPH_DIRECTED_BASE_H
 
 #include "GraphBase.h"
 
-struct DGraphStruct : public GraphStruct{
+struct DGraphStruct : public GraphStruct {
     //Constructors
     DGraphStruct()= default;
     explicit DGraphStruct(const std::string & graphPath, bool relabeling = true, bool withLabels = false, const std::string& labelPath = "");
@@ -27,9 +27,7 @@ struct DGraphStruct : public GraphStruct{
     // Graph manipulation (functions that change the underlying graph data)
     // change behaviour of adding edges because of directedness
     INDEX AddNodes(INDEX number) override;
-
     INDEX AddNodes(INDEX number, const std::vector<Label>& labels) override;
-
     INDEX AddNodes(INDEX number, const std::vector<Label>& labels, const std::vector<std::vector<double>>& nodeData) override;
     // Edges
     bool AddEdge(NodeId source, NodeId destination) override;
@@ -508,4 +506,4 @@ inline void DGraphStruct::WriteEdges(std::ofstream& Out, const SaveParams& saveP
 
 
 
-#endif //TESTGRAPHLIB_GRAPHDIRECTEDBASE_H
+#endif //GRAPH_DIRECTED_BASE_H

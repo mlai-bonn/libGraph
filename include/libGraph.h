@@ -12,6 +12,7 @@
 #include "GraphStaticFunctions.h"
 #include "Load.h"
 #include "LoadSave.h"
+#include "LoadSaveGraphDatasets.h"
 #include "SimplePatterns.h"
 #include "typedefs.h"
 

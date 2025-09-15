@@ -2,8 +2,8 @@
 // Created by florian on 09.09.25.
 //
 
-#ifndef GEDEXAMPLE_GEDLIBWRAPPER_H
-#define GEDEXAMPLE_GEDLIBWRAPPER_H
+#ifndef GED_LIB_WRAPPER_H
+#define GED_LIB_WRAPPER_H
 
 // For the following code GEDLIB has to be included and #define GEDLIB must be set in the main file
 #ifdef GEDLIB
@@ -182,4 +182,4 @@ void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &en
 
 #endif
 
-#endif //GEDEXAMPLE_GEDLIBWRAPPER_H
+#endif //GED_LIB_WRAPPER_H

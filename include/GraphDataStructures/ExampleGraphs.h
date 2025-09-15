@@ -2,8 +2,8 @@
 // Created by florian on 23.10.23.
 //
 
-#ifndef GOOGLE_TESTS_EXAMPLEGRAPHS_H
-#define GOOGLE_TESTS_EXAMPLEGRAPHS_H
+#ifndef EXAMPLE_GRAPHS_H
+#define EXAMPLE_GRAPHS_H
 
 
 
@@ -60,4 +60,4 @@ inline GraphStruct Chepoi_Outerplanar_Graph() {
 }
 
 
-#endif //GOOGLE_TESTS_EXAMPLEGRAPHS_H
+#endif //EXAMPLE_GRAPHS_H

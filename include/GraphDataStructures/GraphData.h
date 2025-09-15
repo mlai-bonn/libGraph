@@ -2,8 +2,13 @@
 // Created by florian on 13.09.25.
 //
 
-#ifndef TUDATASETS_GRAPHDATA_H
-#define TUDATASETS_GRAPHDATA_H
+#ifndef GRAPH_DATA_H
+#define GRAPH_DATA_H
+
+#include "GraphStructs.h"
+
+enum class GraphFormat;
+
 template <typename T>
 class GraphData {
 public:
@@ -51,7 +56,7 @@ void GraphData<T>::LoadBGF(std::vector<T> &graphs, const std::string &graphPath,
         extension = ".bgfs";
     }
 
-    if (GraphStruct::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes,
+    if (LoadSave::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes,
                              graphsNodeFeatureNames, graphsEdges, graphsEdgeFeatureNames)) {
         for (int i = 0; i < graphNumber; ++i) {
             graphs.emplace_back();
@@ -378,7 +383,7 @@ void GraphData<T>::Load(const std::string &graphPath) {
             std::vector<std::vector<std::string>> graphsEdgeFeatureNames;
             std::ifstream In(graphPath, std::ios::in | std::ios::binary);
 
-            if (GraphStruct::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes,
+            if (LoadSave::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes,
                                      graphsNodeFeatureNames, graphsEdges, graphsEdgeFeatureNames)) {
                 for (int i = 0; i < graphNumber; ++i) {
                     this->graphData.emplace_back();
@@ -592,7 +597,7 @@ inline void GraphData<T>::add(const T& graph) {
 template<typename T>
 inline void
 GraphData<T>::add(const std::string &graphPath, const std::string &labelPath, const std::string& searchName, const std::string & extension, bool sort, std::set<int> *graphSizes, int patternNum) {
-    GraphStruct::LoadGraphsFromPath(graphPath, labelPath, this->graphData, searchName, extension, sort, graphSizes, patternNum);
+    LoadGraphsFromPath(graphPath, labelPath, this->graphData, searchName, extension, sort, graphSizes, patternNum);
 }
 
 /// Add a vector of undirected _graph to a _graph
@@ -610,40 +615,5 @@ inline void GraphData<T>::add_graph(const std::string& graphPath, bool withLabel
     this->graphData.emplace_back(graphPath, withLabels);
 }
 
-template<typename T>
-inline void GraphStruct::LoadGraphsFromPath(const std::string& graphPath, const std::string& labelPath, std::vector<T> &graphs, const std::string & searchName, const std::string & extension, const bool sort, std::set<int>* graphSizes, int patternNum)
-{
-    std::unordered_map<INDEX, INDEX> sizesNumMap;
-    if (graphSizes != nullptr) {
-        for (INDEX size : *graphSizes) {
-            sizesNumMap.insert({size, 0});
-        }
-    }
-        for (const auto &entry: std::filesystem::directory_iterator(graphPath)) {
-            if (std::filesystem::is_regular_file(entry)) {
-                if (entry.path().extension().string() == extension || extension.empty()) {
-                    std::string path = entry.path().string();
-                    if (searchName.empty() || path.find(searchName) != std::string::npos) {
-                        T graph(path, true, true, labelPath);
-                        if (graphSizes == nullptr ||
-                            graphSizes->find(static_cast<int>(graph.nodes())) != graphSizes->end()) {
-                            if (patternNum == -1 || graphSizes == nullptr ||
-                                sizesNumMap[graph.nodes()] < patternNum) {
-                                graphs.emplace_back(graph);
-                                if (graphSizes != nullptr) {
-                                    ++sizesNumMap[graph.nodes()];
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if (sort) {
-            std::sort(graphs.begin(), graphs.end(), GraphStruct::sort_by_name());
-        }
 
-}
-
-
-#endif //TUDATASETS_GRAPHDATA_H
+#endif //GRAPH_DATA_H
