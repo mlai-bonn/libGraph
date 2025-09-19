@@ -28,7 +28,7 @@ The following steps are necessary to build the library:
 ```bash
 git clone https://github.com/dbblumenthal/gedlib.git
 ```
-2. Follow the instructions in the gedlib repository to build the library.
+2. Follow the [instructions](https://github.com/dbblumenthal/gedlib/blob/master/README.md) in the gedlib repository to build the library.
    Hints:
     - You need: CMake, Doxygen and OpenMP
     - If using C++20 standard (as in this repo) replace boost.1.69.0 by boost.1.89.0 [(download)](https://archives.boost.io/release/1.89.0/source/boost_1_89_0.tar.gz).
