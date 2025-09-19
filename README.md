@@ -33,10 +33,10 @@ git clone https://github.com/dbblumenthal/gedlib.git
     - You need: CMake, Doxygen and OpenMP
     - If using C++20 standard (as in this repo) replace boost.1.69.0 by boost.1.89.0 [(download)](https://archives.boost.io/release/1.89.0/source/boost_1_89_0.tar.gz).
     - If everything is installed properly, use:
-   ```bash
-   python install.py
-   ``` 
-   to build the library.
+      ```bash
+      python install.py
+      ``` 
+      to build the library.
 3. In [examples/algorithms/ged](examples/algorithms/ged) we provide an example for using the gedlib library with our graph classes.
 
 
