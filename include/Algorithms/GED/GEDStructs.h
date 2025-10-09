@@ -75,6 +75,22 @@ struct EditOperation {
         return edge < other.edge;
     }
 
+    void WriteToBinary(std::ofstream& file) const {
+        file.write(reinterpret_cast<const char *>(&operationObject), sizeof(operationObject));
+        file.write(reinterpret_cast<const char *>(&type), sizeof(type));
+        file.write(reinterpret_cast<const char *>(&node), sizeof(node));
+        file.write(reinterpret_cast<const char *>(&edge.first), sizeof(edge.first));
+        file.write(reinterpret_cast<const char *>(&edge.second), sizeof(edge.second));
+    }
+
+    void ReadFromBinary(std::ifstream& file) {
+        file.read(reinterpret_cast<char *>(&operationObject), sizeof(operationObject));
+        file.read(reinterpret_cast<char *>(&type), sizeof(type));
+        file.read(reinterpret_cast<char *>(&node), sizeof(node));
+        file.read(reinterpret_cast<char *>(&edge.first), sizeof(edge.first));
+        file.read(reinterpret_cast<char *>(&edge.second), sizeof(edge.second));
+    }
+
 };
 
 class EditOperationHash {
