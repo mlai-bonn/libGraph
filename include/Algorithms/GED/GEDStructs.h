@@ -115,6 +115,10 @@ inline std::ostream& operator<<(std::ostream& os, const EditOperation& operation
         case OperationObject::EDGE:
             os << "EDGE " << operation.edge.first << "--" << operation.edge.second;
             break;
+        default:
+            // raise error
+            os << "UNKNOWN OBJECT";
+            break;
     }
     switch (operation.type) {
         case EditType::INSERT:

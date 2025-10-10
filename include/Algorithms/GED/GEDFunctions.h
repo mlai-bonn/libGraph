@@ -42,27 +42,43 @@ inline EditPath<T> CreateEditPath(const GEDEvaluation<T>& result, bool connected
 }
 
 template<typename T>
-inline void WriteEditPathInfo(const std::vector<GEDEvaluation<T>>& results, const std::vector<std::vector<EditOperation>>& edit_operations, const GraphData<T>& graph_data, const std::string& edit_path_info) {
+inline void WriteEditPathInfo(const std::vector<GEDEvaluation<T>>& results, const std::vector<std::vector<EditOperation>>& edit_operations, const GraphData<T>& graph_data, const std::string& edit_path_info, bool binary=true) {
     // create also a MUTAG_edit_paths.bin storing source_id, step_id, target_id for each graph
-    std::ofstream ofs(edit_path_info, std::ios::binary);
+    std::ofstream ofs(edit_path_info, std::ios::out);
+    if (binary) {
+        ofs = std::ofstream(edit_path_info, std::ios::binary);
+    }
+
     if (!ofs) {
         std::cerr << "Error opening file for writing: " << edit_path_info << std::endl;
         return;
     }
     int counter = 0;
-    for (const auto& result : results) {
-        INDEX source_id = result.graph_ids.first;
-        INDEX target_id = result.graph_ids.second;
-        auto edit_path = CreateEditPath<T>(result);
-        for (INDEX step_id = 0; step_id < edit_path.edit_path_graphs.size(); ++step_id) {
-            // write source_id, step_id, target_id
-            ofs.write(reinterpret_cast<const char *>(&source_id), sizeof(source_id));
-            ofs.write(reinterpret_cast<const char *>(&step_id), sizeof(step_id));
-            ofs.write(reinterpret_cast<const char *>(&target_id), sizeof(target_id));
-            edit_operations[counter][step_id].WriteToBinary(ofs);
+    if (binary) {
+        for (const auto& result : results) {
+            INDEX source_id = result.graph_ids.first;
+            INDEX target_id = result.graph_ids.second;
+            for (INDEX step_id = 0; step_id < result.distance; ++step_id) {
+                // write source_id, step_id, target_id
+                ofs.write(reinterpret_cast<const char *>(&source_id), sizeof(source_id));
+                ofs.write(reinterpret_cast<const char *>(&step_id), sizeof(step_id));
+                ofs.write(reinterpret_cast<const char *>(&target_id), sizeof(target_id));
+                edit_operations[counter][step_id].WriteToBinary(ofs);
+            }
+            ++counter;
+        }
+        ofs.close();
+    }
+    else {
+        for (const auto& result : results) {
+            INDEX source_id = result.graph_ids.first;
+            INDEX target_id = result.graph_ids.second;
+            for (INDEX step_id = 0; step_id < result.distance; ++step_id) {
+                ofs << source_id << " " << step_id << " " << target_id << " " << edit_operations[counter][step_id];
+            }
+            ++counter;
         }
     }
-    ofs.close();
 }
 
 inline void ReadEditPathInfo(std::string& edit_path_info, std::vector<std::tuple<INDEX, INDEX, INDEX, EditOperation>>& info) {
@@ -137,6 +153,7 @@ void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const Grap
     };
     all_path_graphs.Save(params);
     WriteEditPathInfo(results, edit_operations, graph_data, edit_path_output + graph_data.GetName() + "_edit_paths_info.bin");
+    WriteEditPathInfo(results, edit_operations, graph_data, edit_path_output + graph_data.GetName() + "_edit_paths_info.txt", false);
 
 }
 
