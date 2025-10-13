@@ -371,27 +371,29 @@ inline void CSVFromGEDResults(const std::string &results_path, const std::vector
         return;
     }
     // Write Header source_id, target_id, lower_bound, upper_bound, distance
-    distance_ofs << "source_id, target_id, lower_bound, upper_bound, approximated distance" << std::endl;
+    distance_ofs << "source_id, target_id, lower_bound, upper_bound, approximated distance, time" << std::endl;
     for (const auto& result : results) {
-        distance_ofs << result.graph_ids.first << "," << result.graph_ids.second << "," << result.lower_bound << "," << result.upper_bound << "," << result.distance << std::endl;
+        distance_ofs << result.graph_ids.first << "," << result.graph_ids.second << "," << result.lower_bound << "," << result.upper_bound << "," << result.distance << "," << result.time << std::endl;
     }
     distance_ofs.close();
 }
 
 template<typename T>
-void MergeGEDResults(const std::string &results_path, const std::string& search_string, const GraphData<T>& graph_data) {
+void MergeGEDResults(const std::string &tmp_path, const std::string &results_path, const std::string& search_string, const GraphData<T>& graph_data) {
     // Merge all mappings in tmp folder
     std::vector<GEDEvaluation<T>> merged_results;
-    MergeBinaries(results_path + "tmp/", search_string, graph_data, merged_results);
+    MergeBinaries(tmp_path, search_string, graph_data, merged_results);
     // Save final result
     GEDResultToBinary(results_path, merged_results);
     // remove all databasename related files in tmp folder
-    for (const auto& entry : std::filesystem::directory_iterator(results_path + "tmp/")) {
+    for (const auto& entry : std::filesystem::directory_iterator(tmp_path)) {
         if (entry.path().string().find(graph_data.GetName() + "_") != std::string::npos) {
             std::filesystem::remove(entry.path());
         }
     }
 }
+
+
 
 
 

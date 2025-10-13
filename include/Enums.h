@@ -2,8 +2,10 @@
 // Created by Florian on 16.04.2021.
 //
 
-#ifndef HOPS_ENUMS_H
-#define HOPS_ENUMS_H
+#ifndef LIBGRAPH_ENUMS_H
+#define LIBGRAPH_ENUMS_H
+
+#include <iostream>
 
 enum ROOT_NODE_CONDITION {
     TREE_GIVEN,
@@ -77,4 +79,4 @@ inline std::ostream& operator<<(std::ostream& os, const HOPS_TYPE& type) {
     return os;
 }
 
-#endif //HOPS_ENUMS_H
+#endif //LIBGRAPH_ENUMS_H

@@ -6,15 +6,16 @@
 #include "Algorithms/GED/GEDEvaluation.h"
 #include "Algorithms/GED/GEDLIBWrapper.h"
 #include "GraphDataStructures/GraphBase.h"
+#include "GraphDataStructures/GraphUndirectedFeaturedBase.h"
 #include "src/env/ged_env.hpp"
 
 // main function to run the examples
 
 int main() {
-    const GraphStruct triangle = SimplePatterns::Circle(3);
-    const GraphStruct square = SimplePatterns::Circle(5);
+    const UDataGraph triangle = SimplePatterns::Circle(3);
+    const UDataGraph square = SimplePatterns::Circle(5);
 
-    GraphData<GraphStruct> graph_data;
+    GraphData<UDataGraph> graph_data;
     graph_data.add(triangle);
     graph_data.add(square);
 
@@ -45,7 +46,7 @@ int main() {
     }
     std::cout << std::endl;
 
-    EditPath edit_path;
+    EditPath<UDataGraph> edit_path;
     result.get_edit_path(edit_path, 0);
     // print edit path length
     std::cout << "Edit Path Length: " << edit_path.edit_path_graphs.size() - 1 << std::endl;

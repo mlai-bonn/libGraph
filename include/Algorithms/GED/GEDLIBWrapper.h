@@ -9,6 +9,7 @@
 #ifdef GEDLIB
 #include "GEDFunctions.h"
 #include "src/env/ged_env.hpp"
+#include <numeric>
 
 // description of the wrapper functions
 
@@ -52,6 +53,8 @@ void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &en
                                    const GraphData<T> &graph_data,
                                    const std::vector<std::pair<INDEX,INDEX>> &graph_ids,
                                    const std::string &results_path);
+
+bool CheckValidMapping(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env, const int source_graph_id, const int target_graph_id);
 
 
 
@@ -141,7 +144,7 @@ void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &en
         return;
     }
     // create tmp directory
-    std::filesystem::create_directory(results_path + "tmp/");
+    std::filesystem::create_directory(results_path);
     // counter for number of computed results
     int counter = 0;
     // time variable
@@ -150,7 +153,7 @@ void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &en
     for (const auto& [i,j] : graph_ids) {
         if (j > i) {
             // Check if mapping already exists in the tmp folder
-            if (std::filesystem::exists(results_path + "tmp/" + graph_data.GetName() + "_" + std::to_string(i) + "_" + std::to_string(j) + "_ged_mapping.bin")) {
+            if (std::filesystem::exists(results_path + graph_data.GetName() + "_" + std::to_string(i) + "_" + std::to_string(j) + "_ged_mapping.bin")) {
                 //std::cout << "Mapping between graph " << i << " and graph " << j << " already exists. Skipping." << std::endl;
                 ++counter;
                 continue;
@@ -165,18 +168,158 @@ void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &en
             const double estimated_time_left = estimated_total_time - elapsed_seconds;
             //std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
             env.run_method(i, j);
+            // check if the mappings are valid
+            bool valid = CheckValidMapping(env, i, j);
             GEDEvaluation<T> result = ComputeGEDResult(env, graph_data, i, j);
             // print calculated (approximated Distance)
             //std::cout << "Approximated Distance " << i << " to " << j << " : " << result.distance << std::endl;
             // save result to binary
-            GEDResultToBinary(results_path + "tmp/", result);
+            GEDResultToBinary(results_path, result);
             //std::cout << "Saved intermediate result for graphs " << i << " and " << j << std::endl;
             ++counter;
         }
     }
 }
 
+std::string GEDMethodToString(const ged::Options::GEDMethod method) {
+    switch (method) {
+#ifdef GUROBI
+        case ged::Options::GEDMethod::F1:
+            return "F1";
+        case ged::Options::GEDMethod::F2:
+            return "F2";
+        case ged::Options::GEDMethod::COMPACT_MIP:
+            return "COMPACT_MIP";
+        case ged::Options::GEDMethod::BLP_NO_EDGE_LABELS:
+            return "BLP_NO_EDGE_LABELS";
+#endif
+        case ged::Options::GEDMethod::BRANCH:
+            return "BRANCH";
+        case ged::Options::GEDMethod::BRANCH_FAST:
+            return "BRANCH_FAST";
+        case ged::Options::GEDMethod::BRANCH_TIGHT:
+            return "BRANCH_TIGHT";
+        case ged::Options::GEDMethod::BRANCH_UNIFORM:
+            return "BRANCH_UNIFORM";
+        case ged::Options::GEDMethod::BRANCH_COMPACT:
+            return "BRANCH_COMPACT";
+        case ged::Options::GEDMethod::PARTITION:
+            return "PARTITION";
+        case ged::Options::GEDMethod::HYBRID:
+            return "HYBRID";
+        case ged::Options::GEDMethod::RING:
+            return "RING";
+        case ged::Options::GEDMethod::ANCHOR_AWARE_GED:
+            return "ANCHOR_AWARE_GED";
+        case ged::Options::GEDMethod::WALKS:
+            return "WALKS";
+        case ged::Options::GEDMethod::IPFP:
+            return "IPFP";
+        case ged::Options::GEDMethod::BIPARTITE:
+            return "BIPARTITE";
+        case ged::Options::GEDMethod::SUBGRAPH:
+            return "SUBGRAPH";
+        case ged::Options::GEDMethod::NODE:
+            return "NODE";
+        case ged::Options::GEDMethod::RING_ML:
+            return "RING_ML";
+        case ged::Options::GEDMethod::BIPARTITE_ML:
+            return "BIPARTITE_ML";
+        case ged::Options::GEDMethod::REFINE:
+            return "REFINE";
+        case ged::Options::GEDMethod::BP_BEAM:
+            return "BP_BEAM";
+        case ged::Options::GEDMethod::SIMULATED_ANNEALING:
+            return "SIMULATED_ANNEALING";
+        case ged::Options::GEDMethod::HED:
+            return "HED";
+        case ged::Options::GEDMethod::STAR:
+            return "STAR";
+        default:
+            return "Unknown";
+    }
+}
 
+ged::Options::GEDMethod GEDMethodFromString(const std::string& methodStr) {
+#ifdef GUROBI
+    if (methodStr == "F1") return ged::Options::GEDMethod::F1;
+    if (methodStr == "F2") return ged::Options::GEDMethod::F2;
+    if (methodStr == "COMPACT_MIP") return ged::Options::GEDMethod::COMPACT_MIP;
+    if (methodStr == "BLP_NO_EDGE_LABELS") return ged::Options::GEDMethod::BLP_NO_EDGE_LABELS;
+#endif
+    if (methodStr == "BRANCH") return ged::Options::GEDMethod::BRANCH;
+    if (methodStr == "BRANCH_FAST") return ged::Options::GEDMethod::BRANCH_FAST;
+    if (methodStr == "BRANCH_TIGHT") return ged::Options::GEDMethod::BRANCH_TIGHT;
+    if (methodStr == "BRANCH_UNIFORM") return ged::Options::GEDMethod::BRANCH_UNIFORM;
+    if (methodStr == "BRANCH_COMPACT") return ged::Options::GEDMethod::BRANCH_COMPACT;
+    if (methodStr == "PARTITION") return ged::Options::GEDMethod::PARTITION;
+    if (methodStr == "HYBRID") return ged::Options::GEDMethod::HYBRID;
+    if (methodStr == "RING") return ged::Options::GEDMethod::RING;
+    if (methodStr == "ANCHOR_AWARE_GED") return ged::Options::GEDMethod::ANCHOR_AWARE_GED;
+    if (methodStr == "WALKS") return ged::Options::GEDMethod::WALKS;
+    if (methodStr == "IPFP") return ged::Options::GEDMethod::IPFP;
+    if (methodStr == "BIPARTITE") return ged::Options::GEDMethod::BIPARTITE;
+    if (methodStr == "SUBGRAPH") return ged::Options::GEDMethod::SUBGRAPH;
+    if (methodStr == "NODE") return ged::Options::GEDMethod::NODE;
+    if (methodStr == "RING_ML") return ged::Options::GEDMethod::RING_ML;
+    if (methodStr == "BIPARTITE_ML") return ged::Options::GEDMethod::BIPARTITE_ML;
+    if (methodStr == "REFINE") return ged::Options::GEDMethod::REFINE;
+    if (methodStr == "BP_BEAM") return ged::Options::GEDMethod::BP_BEAM;
+    if (methodStr == "SIMULATED_ANNEALING") return ged::Options::GEDMethod::SIMULATED_ANNEALING;
+    if (methodStr == "HED") return ged::Options::GEDMethod::HED;
+    if (methodStr == "STAR") return ged::Options::GEDMethod::STAR;
+    // Fallback: BP_BEAM
+    return ged::Options::GEDMethod::BP_BEAM;
+}
+
+std::string EditCostsToString(const ged::Options::EditCosts costs) {
+    switch (costs) {
+        case ged::Options::EditCosts::CHEM_1:
+            return "CHEM_1";
+        case ged::Options::EditCosts::CHEM_2:
+            return "CHEM_2";
+        case ged::Options::EditCosts::CMU:
+            return "CMU";
+        case ged::Options::EditCosts::GREC_1:
+            return "GREC_1";
+        case ged::Options::EditCosts::GREC_2:
+            return "GREC_2";
+        case ged::Options::EditCosts::PROTEIN:
+            return "PROTEIN";
+        case ged::Options::EditCosts::FINGERPRINT:
+            return "FINGERPRINT";
+        case ged::Options::EditCosts::LETTER:
+            return "LETTER";
+        case ged::Options::EditCosts::CONSTANT:
+            return "CONSTANT";
+        default:
+            return "Unknown";
+    }
+}
+
+ged::Options::EditCosts EditCostsFromString(const std::string& costsStr) {
+    if (costsStr == "CHEM_1") return ged::Options::EditCosts::CHEM_1;
+    if (costsStr == "CHEM_2") return ged::Options::EditCosts::CHEM_2;
+    if (costsStr == "CMU") return ged::Options::EditCosts::CMU;
+    if (costsStr == "GREC_1") return ged::Options::EditCosts::GREC_1;
+    if (costsStr == "GREC_2") return ged::Options::EditCosts::GREC_2;
+    if (costsStr == "PROTEIN") return ged::Options::EditCosts::PROTEIN;
+    if (costsStr == "FINGERPRINT") return ged::Options::EditCosts::FINGERPRINT;
+    if (costsStr == "LETTER") return ged::Options::EditCosts::LETTER;
+    if (costsStr == "CONSTANT") return ged::Options::EditCosts::CONSTANT;
+    // Fallback: CONSTANT
+    return ged::Options::EditCosts::CONSTANT;
+}
+
+inline bool CheckValidMapping(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const int source_graph_id, const int target_graph_id) {
+    ged::NodeMap node_map = env.get_node_map(source_graph_id, target_graph_id);
+    const auto& forward_map = node_map.get_forward_map();
+    const auto& backward_map = node_map.get_backward_map();
+    // check for duplicates smaller or equal the size of the other map
+    bool valid = (std::set<INDEX>(forward_map.begin(), forward_map.end()).size() == forward_map.size()) &&
+                 (std::set<INDEX>(backward_map.begin(), backward_map.end()).size() == backward_map.size());
+    return valid;
+}
 
 
 
