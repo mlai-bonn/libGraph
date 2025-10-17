@@ -312,7 +312,7 @@ ged::Options::EditCosts EditCostsFromString(const std::string& costsStr) {
 }
 
 inline bool CheckValidMapping(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const int source_graph_id, const int target_graph_id) {
-    ged::NodeMap node_map = env.get_node_map(source_graph_id, target_graph_id);
+    const ged::NodeMap& node_map = env.get_node_map(source_graph_id, target_graph_id);
     const auto& forward_map = node_map.get_forward_map();
     const auto& backward_map = node_map.get_backward_map();
     // check for duplicates smaller or equal the size of the other map
