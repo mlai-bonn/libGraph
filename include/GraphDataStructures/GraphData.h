@@ -395,7 +395,7 @@ void GraphData<T>::Load(const std::string &graphPath) {
                     graph.SetPath(graphPath);
                     //Read the nodes
                     for (int j = 0; j < graphsSizes[i]; ++j) {
-                        std::cout << "Reading node " << j << " of graph " << i << std::endl;
+                        //std::cout << "Reading node " << j << " of graph " << i << std::endl;
                         for (int k = 0; k < graphsNodeFeatureNames[i].size(); ++k) {
                             double val = 0;
                             if (extension == ".bgf") {
@@ -406,13 +406,13 @@ void GraphData<T>::Load(const std::string &graphPath) {
                                 val = int_val;
                             }
                             graph.ReadNodeFeatures(val, j, graphsNodeFeatureNames[i][k]);
-                            std::cout << "Feature values: " << val;
+                            //std::cout << "Feature values: " << val;
                         }
-                        std::cout << std::endl;
+                        //std::cout << std::endl;
                     }
                     // print nodes loaded for graph i
-                    std::cout << "Loaded " << graphsSizes[i] << " nodes for graph " << i << std::endl;
-                    std::cout << "Reading edges for graph " << i << std::endl;
+                    //std::cout << "Loaded " << graphsSizes[i] << " nodes for graph " << i << std::endl;
+                    //std::cout << "Reading edges for graph " << i << std::endl;
                     //Read the edges
                     INDEX added_edges = 0;
                     INDEX original_edges = graph.edges();
@@ -430,18 +430,18 @@ void GraphData<T>::Load(const std::string &graphPath) {
                             Src = (INDEX) int_Src;
                             Dst = (INDEX) int_Dst;
                         }
-                        std::cout << Src << " " << Dst;
-                        if (graphsEdgeFeatureNames.size() > 0) {
-                            std::cout << " with features: ";
-                        }
+                        //std::cout << Src << " " << Dst;
+                        //if (graphsEdgeFeatureNames.size() > 0) {
+                        //    std::cout << " with features: ";
+                        //}
                         std::vector<double> edgeData;
                         for (int k = 0; k < graphsEdgeFeatureNames[i].size(); ++k) {
                             double val;
                             In.read((char *) (&val), sizeof(val));
                             edgeData.emplace_back(val);
-                            std::cout << val << " ";
+                            //std::cout << val << " ";
                         }
-                        std::cout << std::endl;
+                        //std::cout << std::endl;
                         if (graph.AddEdge(Src, Dst, edgeData)) {
                             ++added_edges;
                         }

@@ -316,7 +316,7 @@ inline bool CheckValidMapping(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged:
     const auto& forward_map = node_map.get_forward_map();
     const auto& backward_map = node_map.get_backward_map();
     // check for duplicates smaller or equal the size of the other map
-    bool valid = (std::set<INDEX>(forward_map.begin(), forward_map.end()).size() == forward_map.size()) &&
+    bool valid = (std::set<INDEX>(forward_map.begin(), forward_map.end()).size() == forward_map.size()) ||
                  (std::set<INDEX>(backward_map.begin(), backward_map.end()).size() == backward_map.size());
     return valid;
 }
