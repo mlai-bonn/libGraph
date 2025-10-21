@@ -15,7 +15,7 @@ int main() {
     const std::string input_path = "../Data/Graphs/";
     std::string output_path = "../Data/ProcessedGraphs/";
 
-    // check whether folder "../Data/" exsits
+    // check whether folder "../Data/" exists
     if (!std::filesystem::exists(input_path + dataset_name))
     {
         std::cout << "Input path " << input_path + dataset_name << " does not exist." << std::endl;

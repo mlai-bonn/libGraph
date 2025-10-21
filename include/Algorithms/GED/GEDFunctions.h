@@ -42,43 +42,61 @@ inline EditPath<T> CreateEditPath(const GEDEvaluation<T>& result, bool connected
 }
 
 template<typename T>
-inline void WriteEditPathInfo(const std::vector<GEDEvaluation<T>>& results, const std::vector<std::vector<EditOperation>>& edit_operations, const GraphData<T>& graph_data, const std::string& edit_path_info, bool binary=true) {
+inline void WriteEditPathInfo(const std::vector<GEDEvaluation<T>>& results, const std::vector<std::vector<EditOperation>>& edit_operations, const GraphData<T>& graph_data, const std::string& output_path) {
     // create also a MUTAG_edit_paths.bin storing source_id, step_id, target_id for each graph
-    std::ofstream ofs(edit_path_info, std::ios::out);
-    if (binary) {
-        ofs = std::ofstream(edit_path_info, std::ios::binary);
-    }
-
-    if (!ofs) {
-        std::cerr << "Error opening file for writing: " << edit_path_info << std::endl;
-        return;
-    }
-    int counter = 0;
-    if (binary) {
-        for (const auto& result : results) {
-            INDEX source_id = result.graph_ids.first;
-            INDEX target_id = result.graph_ids.second;
-            for (INDEX step_id = 0; step_id < result.distance; ++step_id) {
-                // write source_id, step_id, target_id
-                ofs.write(reinterpret_cast<const char *>(&source_id), sizeof(source_id));
-                ofs.write(reinterpret_cast<const char *>(&step_id), sizeof(step_id));
-                ofs.write(reinterpret_cast<const char *>(&target_id), sizeof(target_id));
-                edit_operations[counter][step_id].WriteToBinary(ofs);
-            }
-            ++counter;
+    // create one edit_path_pairs.txt file per dataset storing source_id, step_id, target_id for each graph
+    std::string edit_path_pairs = output_path + "_edit_path_pairs.txt";
+    std::ofstream ofs(edit_path_pairs, std::ios::out);
+    INDEX counter = 0;
+    INDEX entries = 0;
+    for (const auto& result : results) {
+        INDEX source_id = result.graph_ids.first;
+        INDEX target_id = result.graph_ids.second;
+        for (INDEX step_id = 0; step_id < edit_operations[counter].size(); ++step_id) {
+            ofs << source_id << " " << step_id << " " << target_id << std::endl;
+            ++entries;
         }
-        ofs.close();
+        ++counter;
     }
-    else {
-        for (const auto& result : results) {
-            INDEX source_id = result.graph_ids.first;
-            INDEX target_id = result.graph_ids.second;
-            for (INDEX step_id = 0; step_id < result.distance; ++step_id) {
-                ofs << source_id << " " << step_id << " " << target_id << " " << edit_operations[counter][step_id];
-            }
-            ++counter;
+    // remove last empty line
+    ofs.seekp(-1, std::ios_base::end);
+    ofs.close();
+    // write a binary file with source_id, step_id, target_id, edit_operation
+    std::string edit_path_data = output_path + "_edit_path_data.bin";
+    ofs.open(edit_path_data, std::ios::binary);
+    counter = 0;
+    // write number of entries
+    ofs.write(reinterpret_cast<const char *>(&entries), sizeof(entries));
+    for (const auto& result : results) {
+        std::cout << "Writing edit path data for graphs " << result.graph_ids.first << " and " << result.graph_ids.second << std::endl;
+        INDEX source_id = result.graph_ids.first;
+        INDEX target_id = result.graph_ids.second;
+        for (INDEX step_id = 0; step_id < edit_operations[counter].size(); ++step_id) {
+            std::cout << "Writing step " << step_id << " of edit path." << std::endl;
+            // write source_id, step_id, target_id
+            ofs.write(reinterpret_cast<const char *>(&source_id), sizeof(source_id));
+            ofs.write(reinterpret_cast<const char *>(&step_id), sizeof(step_id));
+            ofs.write(reinterpret_cast<const char *>(&target_id), sizeof(target_id));
+            edit_operations[counter][step_id].WriteToBinary(ofs);
         }
+        ++counter;
     }
+    ofs.close();
+   counter = 0;
+    // create also a text file with source_id, step_id, target_id, edit_operation
+    std::string edit_path_data_txt = output_path + "_edit_path_data.txt";
+    ofs.open(edit_path_data_txt, std::ios::out);
+    for (const auto& result : results) {
+        INDEX source_id = result.graph_ids.first;
+        INDEX target_id = result.graph_ids.second;
+        for (INDEX step_id = 0; step_id < edit_operations[counter].size(); ++step_id) {
+            ofs << source_id << " " << step_id << " " << target_id << " " << edit_operations[counter][step_id];
+        }
+        ++counter;
+    }
+    // remove last empty line
+    ofs.seekp(-1, std::ios_base::end);
+    ofs.close();
 }
 
 inline void ReadEditPathInfo(std::string& edit_path_info, std::vector<std::tuple<INDEX, INDEX, INDEX, EditOperation>>& info) {
@@ -89,7 +107,10 @@ inline void ReadEditPathInfo(std::string& edit_path_info, std::vector<std::tuple
         return;
     }
     info.clear();
-    while (!ifs.eof()) {
+    // read number of entries
+    INDEX entries;
+    ifs.read(reinterpret_cast<char *>(&entries), sizeof(entries));
+    for (INDEX i = 0; i < entries; ++i) {
         EditOperation op;
         INDEX source_id;
         INDEX step_id;
@@ -101,7 +122,6 @@ inline void ReadEditPathInfo(std::string& edit_path_info, std::vector<std::tuple
         op.ReadFromBinary(ifs);
         info.emplace_back(std::make_tuple(source_id, step_id, target_id, op));
     }
-
 }
 
 template<typename T>
@@ -134,6 +154,11 @@ void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const Grap
             throw std::runtime_error("Error: Edit path length does not match the distance for graphs " + std::to_string(result.graph_ids.first) + " and " + std::to_string(result.graph_ids.second)
                 + ". Edit path length: " + std::to_string(edit_path.edit_path_graphs.size() - 1) + ", Distance: " + std::to_string(result.distance));
         }
+        // also throw an error if the path length does not match the number of edit operations
+        if (edit_path.edit_path_graphs.size() - 1 != edit_path.sequence_of_operations.size()) {
+            throw std::runtime_error("Error: Edit path length does not match the number of edit operations for graphs " + std::to_string(result.graph_ids.first) + " and " + std::to_string(result.graph_ids.second)
+                + ". Edit path length: " + std::to_string(edit_path.edit_path_graphs.size() - 1) + ", Number of edit operations: " + std::to_string(edit_path.sequence_of_operations.size()));
+        }
         int path_counter = 0;
         for (auto& g : edit_path.edit_path_graphs) {
             if (connected_only && !g.GetConnectivity()) {
@@ -152,8 +177,18 @@ void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const Grap
         true,
     };
     all_path_graphs.Save(params);
-    WriteEditPathInfo(results, edit_operations, graph_data, edit_path_output + graph_data.GetName() + "_edit_paths_info.bin");
-    WriteEditPathInfo(results, edit_operations, graph_data, edit_path_output + graph_data.GetName() + "_edit_paths_info.txt", false);
+    INDEX number_of_path_graphs = all_path_graphs.size();
+    std::cout << "Saved " << number_of_path_graphs << " edit path graphs to " << edit_path_output + graph_data.GetName() + "_edit_paths.bgf" << std::endl;
+    INDEX number_of_results = 0;
+    for (const auto& result : results) {
+        // round distance to next int
+        number_of_results += static_cast<INDEX>(std::round(result.distance));
+    }
+    INDEX number_of_operations = 0;
+    for (const auto& ops : edit_operations) {
+        number_of_operations += static_cast<INDEX>(ops.size());
+    }
+    WriteEditPathInfo(results, edit_operations, graph_data, edit_path_output + graph_data.GetName());
 
 }
 
