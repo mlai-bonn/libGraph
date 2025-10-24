@@ -137,7 +137,9 @@ void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const Grap
     std::vector<std::vector<EditOperation>> edit_operations;
     // time variable
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    int results_counter = 0;
     for (const auto& result : results) {
+        std::cout << "Processing result " << results_counter + 1 << " of " << results.size() << std::endl;
         std::cout << "Computing Path between graph " << result.graph_ids.first << " and graph " << result.graph_ids.second << std::endl;
         // estimated time in minutes
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -168,6 +170,7 @@ void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const Grap
             all_path_graphs.add(g);
             ++path_counter;
         }
+        ++results_counter;
     }
     // save the final result in the tmp folder under datasetname_i.bgfs
     SaveParams params = {
