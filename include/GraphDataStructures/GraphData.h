@@ -422,6 +422,7 @@ void GraphData<T>::Load(const std::string &graphPath) {
                         if (extension == ".bgf") {
                             In.read(reinterpret_cast<char *>(&Src), sizeof(INDEX));
                             In.read(reinterpret_cast<char *>(&Dst), sizeof(INDEX));
+                            // Check for errors
                         } else if (extension == ".bgfs") {
                             unsigned int int_Src;
                             unsigned int int_Dst;
@@ -446,7 +447,7 @@ void GraphData<T>::Load(const std::string &graphPath) {
                             ++added_edges;
                         }
                     }
-                    std::cout << "Graph " << i << " with " << added_edges << " edges loaded." << std::endl;
+                    std::cout << "Graph " << graph.GetName() << " with id " << i << " with " << added_edges << " edges loaded." << std::endl;
                     graph.set_edge_num(added_edges);
                     graph.InitLabels();
                 }
@@ -597,7 +598,7 @@ inline void GraphData<T>::add(const T& graph) {
 template<typename T>
 inline void
 GraphData<T>::add(const std::string &graphPath, const std::string &labelPath, const std::string& searchName, const std::string & extension, bool sort, std::set<int> *graphSizes, int patternNum) {
-    LoadGraphsFromPath(graphPath, labelPath, this->graphData, searchName, extension, sort, graphSizes, patternNum);
+    LoadSave::LoadGraphsFromPath(graphPath, labelPath, this->graphData, searchName, extension, sort, graphSizes, patternNum);
 }
 
 /// Add a vector of undirected _graph to a _graph

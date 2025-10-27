@@ -8,7 +8,6 @@
 #include "GraphDataStructures/GraphStructs.h"
 #include "GraphDataStructures/GraphBase.h"
 #include "GraphDataStructures/GraphData.h"
-#include "GraphDataStructures/GraphUndirectedBase.h"
 #include "GraphDataStructures/GraphExtended.h"
 #include "GraphDataStructures/GraphDirectedBase.h"
 #include "GraphDataStructures/GraphDirectedFeaturedBase.h"

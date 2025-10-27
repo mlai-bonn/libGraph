@@ -30,7 +30,7 @@ LayeringPartition::LayeringPartition(const GraphStruct &graph, NodeId root_node_
     if (root_node_id == -1) {
         root_node_id = std::uniform_int_distribution<NodeId>(0, graph.nodes() - 1)(generator);
     }
-    GraphStruct::BFSDistances(graph, root_node_id, distances);
+    GraphFunctions::BFSDistances(graph, root_node_id, distances);
 
     std::vector<std::vector<NodeId>> spheres;
     std::vector<GraphStruct> sphereGraphs;
@@ -57,7 +57,7 @@ LayeringPartition::LayeringPartition(const GraphStruct &graph, NodeId root_node_
     // create the sphere graphs
     for (int level = 0; level < spheres.size(); ++level) {
         // create the sphere _graph
-        sphereGraphs.emplace_back(GraphStruct(spheres[level].size(), {}));
+        sphereGraphs.emplace_back(GraphStruct("Sphere Graph", spheres[level].size()));
         for (NodeId i = 0; i < spheres[level].size(); ++i) {
             NodeId currentNodeId = spheres[level][i];
             // iterate over the neighbors of the current node
@@ -125,7 +125,7 @@ LayeringPartition::LayeringPartition(const GraphStruct &graph, NodeId root_node_
 
             GraphStruct & levelGraph = sphereGraphs[level];
             //modify sphere _graph of the current level
-            NodeId id = levelGraph.add_node();
+            NodeId id = levelGraph.AddNode();
 
             std::vector<bool> levelEdges = std::vector<bool>(levelGraph.nodes(), false);
             for (auto & node : connectedComponent) {
@@ -161,7 +161,7 @@ struct LayeringTree {
 LayeringTree::LayeringTree(GraphStruct &graph, int seed, NodeId root_node_id) : layeringPartition(graph, root_node_id, seed) {
     // create the layering tree
     std::mt19937_64 generator(seed);
-    tree = GraphStruct(graph.nodes(), {});
+    tree = GraphStruct("Layering Tree", graph.nodes());
     // iterate over the layering partitions
     for (int i = 1; i < layeringPartition.partitions.size(); ++i) {
         // iterate over the clusters of the current layering partition

@@ -81,7 +81,7 @@ inline int BFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
 
 
         std::mt19937_64 generator(seed);
-        tree = GraphStruct(graph.nodes(), {});
+        tree = GraphStruct("Tree", graph.nodes());
         if (root_node_id == -1){
             root_node_id = std::uniform_int_distribution<NodeId>(0, graph.nodes() - 1)(generator);
         }
@@ -174,7 +174,7 @@ inline int BFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_
         graph.ResetSearchInformation();
 
         std::mt19937_64 generator(seed);
-        tree = GraphStruct(graph.nodes(), {});
+        tree = GraphStruct("Tree", graph.nodes());
         if (root_node_id == -1){
             root_node_id = std::uniform_int_distribution<NodeId>(0, graph.nodes() - 1)(generator);
         }
@@ -262,7 +262,8 @@ inline int BFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_
 
 inline int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId root_node_id, std::vector<bool>& visited, std::vector<INDEX>& distances, bool deterministic, int seed){
     int components = 0;
-    tree = GraphStruct(graph.nodes(), {});
+    std::string graph_name = graph.GetName() + "_DFSSpanningTree" + "_Component_0";
+    tree = GraphStruct(graph_name, graph.nodes());
     if (graph.nodes() > 0) {
         ++components;
 
@@ -280,7 +281,8 @@ inline int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
         }
 
         std::mt19937_64 generator(seed);
-        tree = GraphStruct(graph.nodes(), {});
+        graph_name = graph.GetName() + "_DFSSpanningTree" + "_Component_" + std::to_string(components);
+        tree = GraphStruct(graph_name, graph.nodes());
         std::stack<NodeId> stack;
         INDEX number_nodes_visited = 0;
         std::vector<NodeId> unvisited_nodes;
@@ -363,13 +365,15 @@ inline int DFSSpanningTree(const GraphStruct& graph, GraphStruct& tree, NodeId r
 
 inline int DFSSpanningTree(GraphExtended& graph, GraphStruct& tree, NodeId root_node_id, bool deterministic, int seed){
     int components = 0;
-    tree = GraphStruct(graph.nodes(), {});
+    std::string graph_name = graph.GetName() + "_DFSSpanningTree" + "_Component_0";
+    tree = GraphStruct(graph_name, graph.nodes());
     if (graph.nodes() > 0) {
         ++components;
         graph.ResetSearchInformation();
 
         std::mt19937_64 generator(seed);
-        tree = GraphStruct(graph.nodes(), {});
+        graph_name = graph.GetName() + "_DFSSpanningTree" + "_Component_" + std::to_string(components);
+        tree = GraphStruct(graph_name, graph.nodes());
         std::stack<NodeId> stack;
         INDEX number_nodes_visited = 0;
         std::vector<NodeId> unvisited_nodes;

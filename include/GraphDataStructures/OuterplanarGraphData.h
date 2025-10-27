@@ -73,7 +73,7 @@ void OuterplanarGraphData::set() {
         auto & currentComponent = components[i];
         if (currentComponent.size() > 2) {
             Components.emplace_back();
-            Components.back().component = SubGraph(static_cast<GraphStruct>(*this), currentComponent);
+            Components.back().component = GraphFunctions::SubGraph(static_cast<GraphStruct>(*this), currentComponent);
             Components.back().component.SetType(GraphType::OUTERPLANAR);
             Components.back().getInnerFaces();
         }
@@ -90,7 +90,7 @@ void OuterplanarGraphData::set() {
     for (int i = 0; i < nodeToComponents.size(); ++i) {
         auto & comps = nodeToComponents[i];
         if (comps.size() > 1 || max_component_size(i) == 2){
-            NodeId currentNode = bbTree.tree.add_node();
+            NodeId currentNode = bbTree.tree.AddNode();
             bbTree.nodeToBBNodes[i] = {currentNode};
             bbTree.BBNodesToNodeOrComponent[currentNode] = {i, -1};
         }
@@ -102,7 +102,7 @@ void OuterplanarGraphData::set() {
     for (auto & component : components) {
         auto & currentComponent = component;
         if (currentComponent.size() > 2) {
-            NodeId component_node = bbTree.tree.add_node();
+            NodeId component_node = bbTree.tree.AddNode();
             for (unsigned int j : currentComponent) {
                 bbTree.nodeToBBNodes[j].emplace_back(component_node);
                 bbTree.BBNodesToNodeOrComponent[component_node] = {-1, c};

@@ -125,7 +125,7 @@ inline void GraphAlgorithms::GetBiconnectedComponents(const GraphStruct &graph, 
     GraphAlgorithms::GetBiconnectedComponents(graph, component_nodes);
     components.clear();
     for (const auto& component : component_nodes){
-            components.emplace_back(GraphStruct::SubGraph(graph, component));
+            components.emplace_back(GraphFunctions::SubGraph(graph, component));
     }
 }
 
@@ -157,8 +157,8 @@ inline void GraphAlgorithms::GetBiconnectedOuterplanarFaces(const GraphStruct &c
             int near_degree = degrees[n1];
             int next_degree = degrees[n2];
             if (component.IsEdge(n1, n2)) {
-                NodeId newNode1 = currentFace.back().add_node();
-                NodeId newNode2 = currentFace.back().add_node();
+                NodeId newNode1 = currentFace.back().AddNode();
+                NodeId newNode2 = currentFace.back().AddNode();
                 currentFace.back().AddEdge(newNode1, newNode2, false);
                 ++face_num;
                 currentFace.pop_back();
@@ -166,9 +166,9 @@ inline void GraphAlgorithms::GetBiconnectedOuterplanarFaces(const GraphStruct &c
                 --degrees[n1];
                 --degrees[n2];
             } else {
-                NodeId newCurrent = currentFace.back().add_node();
-                NodeId newNode1 = currentFace.back().add_node();
-                NodeId newNode2 = currentFace.back().add_node();
+                NodeId newCurrent = currentFace.back().AddNode();
+                NodeId newNode1 = currentFace.back().AddNode();
+                NodeId newNode2 = currentFace.back().AddNode();
 
                 currentFace.back().AddEdge(newCurrent, newNode1, false);
                 currentFace.back().AddEdge(newCurrent, newNode2, false);
@@ -289,7 +289,7 @@ bool GraphAlgorithms::IsOuterPlanar(const GraphStruct &graph, NodeId src, NodeId
     for (const auto& component : components) {
         if (component.size() > 2) {
             if (src == -1 || dst == -1 || (std::find(component.begin(), component.end(), src) != component.end() && std::find(component.begin(), component.end(), src) != component.end())) {
-                GraphStruct componentGraph = GraphStruct::SubGraph(graph, component);
+                GraphStruct componentGraph = GraphFunctions::SubGraph(graph, component);
                 if (componentGraph.edges() > 2 * componentGraph.nodes() - 3) {
                     return false;
                 } else {
@@ -300,7 +300,7 @@ bool GraphAlgorithms::IsOuterPlanar(const GraphStruct &graph, NodeId src, NodeId
                     std::vector<NodePair> edges;
                     //Preprocessing on get_node degrees
                     for (auto node : componentGraph) {
-                        algorithmGraph.add_node();
+                        algorithmGraph.AddNode();
                         INDEX degree = componentGraph.degree(node);
                         if (degree == 2) {
                             degree2Nodes.emplace_back(node);
@@ -643,7 +643,7 @@ inline INDEX GraphAlgorithms::GetConnectedComponents(GraphExtended &graph, std::
     std::vector<std::vector<NodeId>> cmp_vector;
     GetConnectedComponents(graph, cmp_vector);
     for (const auto& cmp : cmp_vector){
-        connected_components.emplace_back(GraphExtended::SubGraph(graph, cmp));
+        connected_components.emplace_back(GraphFunctions::SubGraph(graph, cmp));
     }
     return connected_components.size();
 }
@@ -670,7 +670,7 @@ inline void GraphAlgorithms::GetLargestConnectedComponent(GraphExtended &graph, 
         largest_connected_component = graph;
     }
     else {
-        largest_connected_component = GraphExtended(GraphStruct::SubGraph(graph, largest_connected_component_nodes));
+        largest_connected_component = GraphExtended(GraphFunctions::SubGraph(graph, largest_connected_component_nodes));
     }
 
 }
@@ -735,7 +735,7 @@ inline INDEX GraphAlgorithms::GetConnectedComponents(const GraphStruct &graph, s
     std::vector<std::vector<NodeId>> cmp_vector;
     GetConnectedComponents(graph, cmp_vector, visited);
     for (const auto& cmp : cmp_vector){
-        connected_components.emplace_back(GraphExtended::SubGraph(graph, cmp));
+        connected_components.emplace_back(GraphFunctions::SubGraph(graph, cmp));
     }
     return connected_components.size();
 }
@@ -762,7 +762,7 @@ inline void GraphAlgorithms::GetLargestConnectedComponent(const GraphStruct &gra
         largest_connected_component = graph;
     }
     else {
-        largest_connected_component = GraphStruct::SubGraph(graph, largest_connected_component_nodes);
+        largest_connected_component = GraphFunctions::SubGraph(graph, largest_connected_component_nodes);
     }
 
 }
@@ -807,7 +807,7 @@ void GraphAlgorithms::GetBiconnectedComponents(GraphExtended &graph, std::vector
     GraphAlgorithms::GetBiconnectedComponents(graph, component_nodes);
     components.clear();
     for (const auto& component : component_nodes){
-        components.emplace_back(GraphExtended::SubGraph(graph, component));
+        components.emplace_back(GraphFunctions::SubGraph(graph, component));
     }
 }
 

@@ -221,7 +221,7 @@ void OuterPlanarSubgraphMitchell::GetBiconnectedComponentsMitchell() {
             treeEdges.emplace_back(NodePair(component[0], component[1]));
         }
         else{
-            this->biconnectedComponents.emplace_back(GraphStruct::SubGraph(_graph, component));
+            this->biconnectedComponents.emplace_back(GraphFunctions::SubGraph(_graph, component));
         }
     }
 

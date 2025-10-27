@@ -241,7 +241,7 @@ inline NodeId Hops::getRootNodeByCondition(ROOT_NODE_CONDITION condition, std::m
 }
 
 inline LABEL_TYPE Hops::PatternPreprocessing(const DGraphStruct & spanTree, int pattern_seed) {
-    this->currentPatternIsTree = this->currentPattern->CheckTree();
+    this->currentPatternIsTree = GraphFunctions::CheckTree(*this->currentPattern);
 
     LABEL_TYPE labelType = this->currentGraph->labelType;
     if (this->runParameters.labelType == LABEL_TYPE::UNLABELED || this->currentGraph->labelType == LABEL_TYPE::UNLABELED || this->runParameters.labelType != this->currentGraph->labelType)
@@ -252,7 +252,7 @@ inline LABEL_TYPE Hops::PatternPreprocessing(const DGraphStruct & spanTree, int 
     NodeId PatternRootNode = std::numeric_limits<NodeId>::max();
     std::mt19937_64 randomGenerator(pattern_seed);
     //Generate or check spanning tree for patternId
-    if (spanTree.nodes() > 0 && !this->currentPattern->CheckSpanningTree(spanTree)){
+    if (spanTree.nodes() > 0 && !GraphFunctions::CheckSpanningTree(*this->currentPattern, spanTree)){
         throw std::invalid_argument("Spanning tree is not valid");
     }
     else{

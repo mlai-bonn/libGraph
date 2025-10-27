@@ -23,19 +23,19 @@ public:
     static std::unordered_set<Label> GetUniqueLabelsByNodes(Nodes& nodeIds, const Labels& GraphLabels);
 
     template<typename T>
-    void GetComponents(T &graph, std::vector<INDEX> &components);
+    static void GetComponents(T &graph, std::vector<INDEX> &components);
 
     template<typename T>
-    void GetComponents(T &graph, std::vector<Nodes> &components);
+    static void GetComponents(T &graph, std::vector<Nodes> &components);
 
     template<typename T>
-    void GetLargestComponent(T &graph, Nodes &nodes);
+    static void GetLargestComponent(T &graph, Nodes &nodes);
 
     template<typename T>
-    T SubGraph(T &graph, const Nodes &nodeIds);
+    static T SubGraph(const T &graph, const Nodes &nodeIds);
 
     template<typename T>
-    T GetLargestComponent(T &graph);
+    static T GetLargestComponent(T &graph);
 
     template <typename T>
     static bool ReachableNodes(T& graph, NodeId root, std::vector<INDEX>& reachability, INDEX Id, INDEX& number);
@@ -49,8 +49,8 @@ public:
     template<typename T>
     static void ReorderGraph(T &graph, const Nodes& nodeOrder);
 
-    template<typename T>
-    static bool CheckSpanningTree(const T &graph, T &spanningTree);
+    template<typename T1, typename T2>
+    static bool CheckSpanningTree(const T1 &graph, T2 &spanningTree);
     template<typename T>
     static bool CheckTree(const T& graph);
 
@@ -127,8 +127,9 @@ template<typename T>
 }
 
 template<typename T>
- T GraphFunctions::SubGraph(T &graph, const Nodes& nodeIds){
-    T g = T(graph.GetName() + "_subgraph", static_cast<INDEX>(nodeIds.size()));
+ T GraphFunctions::SubGraph(const T &graph, const Nodes& nodeIds){
+    std::string graph_name = graph.GetName() + "_subgraph";
+    T g = T(graph_name, static_cast<INDEX>(nodeIds.size()));
     for (INDEX i = 0; i < nodeIds.size(); ++i) {
         g.IdsToOriginalIds.emplace(nodeIds[i], i);
     }
@@ -282,9 +283,10 @@ inline void GraphFunctions::ReorderGraph(T &graph, const Nodes &nodeOrder) {
 
 }
 
-template<typename T>
-inline bool GraphFunctions::CheckSpanningTree(const T& graph, T &spanningTree) {
-    if (spanningTree.nodes() != graph.nodes() || !spanningTree.CheckTree()) {
+template<typename T1, typename T2>
+inline bool GraphFunctions::CheckSpanningTree(const T1& graph, T2 &spanningTree) {
+    if (spanningTree.nodes() != graph.nodes() || !GraphFunctions::CheckTree(spanningTree))
+    {
         return false;
     }
     NodeId Counter = 0;

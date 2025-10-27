@@ -360,7 +360,7 @@ inline void DGraphStruct::Load(const std::string &graphPath, bool relabeling, bo
     }
 
     this->sortNeighborIds();
-    if (CheckTree()) {
+    if (GraphFunctions::CheckTree(*this)) {
         this->graphType = GraphType::TREE;
     }
 }

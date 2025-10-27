@@ -11,7 +11,7 @@ GraphStruct Bi_Conn_Wiki_Graph();
 GraphStruct Chepoi_Outerplanar_Graph();
 
 inline GraphStruct Bi_Conn_Wiki_Graph() {
-    GraphStruct graph = GraphStruct(14, {});
+    GraphStruct graph = GraphStruct("BiConnWikiExample", 14, {});
     graph.AddEdge(0, 1, false);
 
     graph.AddEdge(0, 2, false);
@@ -37,7 +37,7 @@ inline GraphStruct Bi_Conn_Wiki_Graph() {
 }
 
 inline GraphStruct Chepoi_Outerplanar_Graph() {
-    GraphStruct outerplanar_graph = GraphStruct(15, {});
+    GraphStruct outerplanar_graph = GraphStruct("Chepoi_Outerplanar", 15, {});
     outerplanar_graph.AddEdge(0, 1, false);
     outerplanar_graph.AddEdge(0, 2, false);
     outerplanar_graph.AddEdge(1, 2, false);

@@ -86,7 +86,7 @@ void EvaluateApproximations::Evaluation(ParametersEvaluation &params) {
     }
 
     for (int i = 0; i < _graph.nodes(); ++i) {
-        GraphStruct::BFSDistances(_graph, i, graphDistances);
+        GraphFunctions::BFSDistances(_graph, i, graphDistances);
         switch (params.approximationType) {
             case ApproximationType::RANDOM_SPANNING_TREES:
                 std::fill(approximationDistances.begin(), approximationDistances.end(), std::numeric_limits<INDEX>::max());
@@ -94,7 +94,7 @@ void EvaluateApproximations::Evaluation(ParametersEvaluation &params) {
 
                 for (auto& spanningTree : spanningTrees){
                     std::vector<INDEX> spanningTreeDistances;
-                    GraphStruct::BFSDistances(spanningTree, i, spanningTreeDistances);
+                    GraphFunctions::BFSDistances(spanningTree, i, spanningTreeDistances);
                     for (int j = 0; j < _graph.nodes(); ++j) {
                         approximationDistances[j] = std::min(approximationDistances[j], spanningTreeDistances[j]);
                     }
@@ -107,7 +107,7 @@ void EvaluateApproximations::Evaluation(ParametersEvaluation &params) {
             case ApproximationType::LAYERING_TREE:
                 // run the layering tree approximation
                 // create the layering trees
-                GraphStruct::BFSDistances(layeringTree.tree, i, approximationDistances);
+                GraphFunctions::BFSDistances(layeringTree.tree, i, approximationDistances);
                 break;
         }
 

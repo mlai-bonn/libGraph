@@ -133,7 +133,7 @@ public:
                                           "HopsIterations/second","Zero/second", "NonZero/second", "PreprocessingTime", "EvaluationTime", "SnapshotTimes", "SnapshotIterations",
                                           "Snapshots", "SnapshotErrors"},
                                          {std::to_string(t), graph->GetName(), std::to_string(graph->nodes()), std::to_string(graph->edges()), pattern->GetName(), std::to_string(pattern->nodes()),
-                                          std::to_string(pattern->edges()), std::to_string(pattern->CheckTree()), std::to_string(threads), std::to_string(hopsTime),
+                                          std::to_string(pattern->edges()), std::to_string(GraphFunctions::CheckTree(*pattern)), std::to_string(threads), std::to_string(hopsTime),
                                           std::to_string(hopsEstimation), std::to_string(parameters.iteration_per_node.back()), std::to_string(hopsIterations), std::to_string(hopsZeroIterations), std::to_string(hopsIterations - hopsZeroIterations),
                                           std::to_string((double) hopsIterations/hopsTime), std::to_string((double ) hopsZeroIterations/hopsTime), std::to_string((double)(hopsIterations - hopsZeroIterations)/hopsTime),
                                           std::to_string((double) preprocessingTime.count() / 1000000), std::to_string(hopsTime ), StaticFunctionsLib::vectorToString(snapShotTimes), StaticFunctionsLib::vectorToString(snapshotIterations),

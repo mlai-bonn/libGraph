@@ -135,7 +135,9 @@ inline void LoadSave::LoadGraphsFromPath(const std::string& graphPath, const std
         }
     }
     if (sort) {
-        std::sort(graphs.begin(), graphs.end(), T::sort_by_name());
+        // `T::sort_by_name` may be a dependent nested type (a comparator type).
+        // Use `typename` and brace-init to create a temporary comparator object.
+        std::sort(graphs.begin(), graphs.end(), typename T::sort_by_name{});
     }
 
 }

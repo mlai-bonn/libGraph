@@ -40,7 +40,7 @@ struct DDataGraph : DGraphStruct{
 
     void Init(const std::string& name, int size, int edges, int nodeFeatures, int edgeFeatures, const std::vector<std::string>& nodeFeatureNames, const std::vector<std::string>& edgeFeatureNames) override;
     void ReadNodeFeatures(double value, INDEX pos, const std::string& nodeFeatureName) override;
-    bool ReadEdges(INDEX Src, INDEX Dst, std::vector<double>& edgeData) override;
+    bool ReadEdges(INDEX Src, INDEX Dst, std::vector<double>& edgeData);
 
     void WriteGraph(std::ofstream& Out, const SaveParams& saveParams) override;
     void WriteNodeFeatures(std::ofstream& Out,const SaveParams& saveParams) override;
@@ -204,7 +204,7 @@ inline void DDataGraph::Load(const std::string &graphPath, bool relabeling, bool
                 ++nodeCounter;
             }
             for (auto edge: graphEdges) {
-                DDataGraph::AddEdge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second], original_edge_data[edge.first][edge.second]);
+                DDataGraph::AddEdge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second], original_edge_data[edge.first][edge.second], true);
             }
             if (!labelPath.empty() && withLabels) {
                 std::string label_extension = std::filesystem::path(labelPath).extension().string();
@@ -271,7 +271,7 @@ inline void DDataGraph::Load(const std::string &graphPath, bool relabeling, bool
         }
 
         this->sortNeighborIds();
-        if (CheckTree()){
+        if (GraphFunctions::CheckTree(*this)){
             this->graphType = GraphType::TREE;
         }
     }
@@ -334,16 +334,6 @@ inline void DDataGraph::add_edge_data(const EDGE &edge, int index, double data) 
 /// \param data
 inline void DDataGraph::add_edge_data(const EDGE &edge, const std::vector<double> &data) {
     _edge_data[edge.first][edge.second] = data;
-}
-
-/// Add an data edge to a directed data _graph
-/// \param source
-/// \param destination
-/// \param data
-/// \return
-inline bool DDataGraph::add_edge(NodeId source, NodeId destination, std::vector<double>& data) {
-    add_edge_data(EDGE{source, destination}, data);
-    return DGraphStruct::add_edge(source, destination);
 }
 
 inline void DDataGraph::set_node_data_names(const std::unordered_map<std::string, int> &nodeDataNames) {
@@ -541,7 +531,7 @@ void DDataGraph::ReadNodeFeatures(double value, INDEX pos, const std::string &no
 }
 
 bool DDataGraph::ReadEdges(INDEX Src, INDEX Dst, std::vector<double> &edgeData) {
-    return this->add_edge(Src, Dst, edgeData);
+    return this->AddEdge(Src, Dst, edgeData, true);
 }
 
 

@@ -107,6 +107,9 @@ struct GraphStruct{
 
     // Graph manipulation (functions that change the underlying graph data)
     // Nodes
+    virtual INDEX AddNode();
+    virtual INDEX AddNode(Label label);
+    virtual INDEX AddNode(Label label, const std::vector<double>& nodeData);
     virtual INDEX AddNodes(INDEX number);
     virtual INDEX AddNodes(INDEX number, const std::vector<Label>& labels);
     virtual INDEX AddNodes(INDEX number, const std::vector<Label>& labels, const std::vector<std::vector<double>>& nodeData);
@@ -499,6 +502,9 @@ public:
     std::unordered_map<Label, INDEX> labelFrequencyMap{};
     std::pair<std::unordered_map<Label, Label>, std::unordered_map<Label, Label>> labelMappingPair{};
 
+    //store original node Ids
+    std::unordered_map<INDEX ,INDEX> IdsToOriginalIds;
+
     virtual bool IsEdge(NodeId source, NodeId destination) const;
     virtual bool IsEdge(const std::pair<NodeId, NodeId>& edge) const;
     virtual bool IsEdge(const EdgeIterator& edge) const;
@@ -540,8 +546,7 @@ protected:
     bool _checked_connected = false;
     bool _is_connected = false;
 
-    //store original node Ids
-    std::unordered_map<INDEX ,INDEX> IdsToOriginalIds;
+
 
     //for labels
     Labels _labels = Labels();
@@ -1971,6 +1976,18 @@ inline INDEX GraphStruct::AddNodes(const INDEX number, const std::vector<Label>&
 inline INDEX GraphStruct::AddNodes(const INDEX number, const std::vector<Label>& labels,
     const std::vector<std::vector<double>>& nodeData) {
     return GraphStruct::AddNodes(number, labels);
+}
+
+inline INDEX GraphStruct::AddNode() {
+    return GraphStruct::AddNodes(1);
+}
+
+inline INDEX GraphStruct::AddNode(const Label label) {
+    return GraphStruct::AddNodes(1, std::vector<Label>{label});
+}
+
+inline INDEX GraphStruct::AddNode(const Label label, const std::vector<double>& nodeData) {
+    return GraphStruct::AddNodes(1, std::vector<Label>{label});
 }
 
 inline void GraphStruct::RemoveNode(const NodeId nodeId) {

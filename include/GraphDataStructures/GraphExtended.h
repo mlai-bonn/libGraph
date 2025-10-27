@@ -14,7 +14,8 @@ class GraphExtended : public GraphStruct {
 public:
     // default constructor
     GraphExtended() = default;
-    GraphExtended(NodeId size, const Labels& labels);
+    GraphExtended(const std::string& name, INDEX size);
+    GraphExtended(const std::string& name, NodeId size, const Labels& labels);
     explicit GraphExtended(const GraphStruct& graph);
 
     // read from path
@@ -47,7 +48,7 @@ inline void GraphExtended::ResetSearchInformation() {
     }
 }
 
-    GraphExtended::GraphExtended(const std::string &path)  : GraphStruct(path) {
+inline GraphExtended::GraphExtended(const std::string &path)  : GraphStruct(path) {
 
         _visited_id = 0;
         _visited = std::vector<NodeId>(this->nodes(), 0);
@@ -55,14 +56,21 @@ inline void GraphExtended::ResetSearchInformation() {
         _parents = std::vector<NodeId>(this->nodes(), 0);
     }
 
-GraphExtended::GraphExtended(const GraphStruct &graph)  : GraphStruct(graph) {
+inline GraphExtended::GraphExtended(const GraphStruct &graph)  : GraphStruct(graph) {
     _visited_id = 0;
     _visited = std::vector<NodeId>(graph.nodes(), 0);
     _distances = std::vector<NodeId>(graph.nodes(), 0);
     _parents = std::vector<NodeId>(graph.nodes(), 0);
 }
 
-GraphExtended::GraphExtended(NodeId size, const Labels &labels) : GraphStruct(size, labels) {
+inline GraphExtended::GraphExtended(const std::string& name, INDEX size) : GraphStruct(name, size) {
+    _visited_id = 0;
+    _visited = std::vector<NodeId>(size, 0);
+    _distances = std::vector<NodeId>(size, 0);
+    _parents = std::vector<NodeId>(size, 0);
+}
+
+inline GraphExtended::GraphExtended(const std::string& name, NodeId size, const Labels &labels) : GraphStruct(name, size, labels) {
     _visited_id = 0;
     _visited = std::vector<NodeId>(size, 0);
     _distances = std::vector<NodeId>(size, 0);
