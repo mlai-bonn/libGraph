@@ -384,11 +384,12 @@ void BinaryToGEDResult(const std::string &input_path, const GraphData<T>& graph_
 
 template<typename T>
 void MergeBinaries(const std::string& input_path, const std::string& search_string, const GraphData<T>& graph_data, std::vector<GEDEvaluation<T>> &results) {
-    // read all mappings from binary files in the input path
-    for (const auto& entry : std::filesystem::directory_iterator(input_path)) {
-        if (entry.path().extension() == ".bin" && entry.path().filename().string().find(search_string) != std::string::npos) {
-            results.emplace_back();
-            BinaryToGEDResult(entry.path().string(), graph_data, results.back());
+    // read all mappings from binary files in the input path (search all paths in input_path with .bin extension and search_string in the filename)
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(input_path)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".bin") {
+            if (entry.path().extension() == ".bin" && entry.path().filename().string().find(search_string) != std::string::npos) {
+                BinaryToGEDResult(entry.path().string(), graph_data, results);
+            }
         }
     }
     // sort results by graph ids (first, second)

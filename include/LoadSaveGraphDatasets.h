@@ -262,7 +262,10 @@ void LoadSaveGraphDatasets::LoadTUDortmundGraphData(const std::string &path, con
                     }
                 }
             }
+            std::cout << "Graph " << data_graph.GetName() << " has " << data_graph.nodes() << " nodes and " << data_graph.edges() << " edges." << std::endl;
+            std::cout << "Number of Labels: " << (*graphsNodeLabels)[graph_counter].size() << std::endl;
             data_graph.SetLabels(&(*graphsNodeLabels)[graph_counter]);
+            std::cout << "Set node labels for graph " << data_graph.GetName() << std::endl;
             ++graph_counter;
         }
     }

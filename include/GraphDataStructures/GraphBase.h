@@ -167,7 +167,7 @@ struct GraphStruct{
 
 
     // Setters and Getters
-    INDEX GetNumLabels() const{return _labels.size();};
+    INDEX GetNumLabels() const{return _labelSet.size();};
 
     void SetPath(const std::string& path){_path = path;};
     std::string GetPath(){return _path;};
@@ -625,6 +625,10 @@ inline void GraphStruct::update_node_label_information() {
     this->labelMap = GraphFunctions::GetGraphLabelMap(_labels);
     this->labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
     this->labelMappingPair = GraphFunctions::GetLabelMappingPair(_labels);
+    this->_labelSet = std::set<Label>{};
+    for (auto const& label : _labels) {
+        this->_labelSet.insert(label);
+    }
     // Map original label to new label
     //this->labelMappingPair.first = std::unordered_map<Label, Label>();
     //for (Label label = 0; label < this->_labels.size(); ++label) {}
@@ -633,20 +637,26 @@ inline void GraphStruct::update_node_label_information() {
     //for (auto const& [label, index] : this->labelMap) {
     //    this->labelMappingPair.second[index] = label;
     //}
+
+
+    // If there are more than 10 labels use dense representation otherwise sparse (map vs vector)
     if (GetNumLabels() >= 10){
         labelType = LABEL_TYPE::LABELED_DENSE;
-    }
-    else{
-        labelType = LABEL_TYPE::LABELED_SPARSE;
-    }
-
-    if (labelType == LABEL_TYPE::LABELED_SPARSE) {
-        this->labeledVectorGraph.resize( nodes(), std::vector<std::vector<INDEX>>(GetNumLabels(), std::vector<INDEX>()));
-        this->labeledDegreeVector.resize(nodes(), std::vector<INDEX>(GetNumLabels(), 0));
-    } else if (labelType == LABEL_TYPE::LABELED_DENSE) {
         this->labeledMapGraph.resize(nodes(),std::unordered_map<Label, Nodes>{});
         this->labeledDegreeMap.resize(nodes(), std::unordered_map<Label, INDEX>{});
     }
+    else{
+        labelType = LABEL_TYPE::LABELED_SPARSE;
+        this->labeledVectorGraph.resize( nodes(), std::vector<std::vector<INDEX>>());
+        for (NodeId Id = 0; Id < nodes(); ++Id) {
+            this->labeledVectorGraph[Id].resize(GetNumLabels(), std::vector<INDEX>{});
+        }
+        this->labeledDegreeVector.resize(nodes(), std::vector<INDEX>());
+        for (NodeId Id = 0; Id < nodes(); ++Id) {
+            this->labeledDegreeVector[Id].resize(GetNumLabels(), 0);
+        }
+    }
+
     //set labels of neighbor Nodes
     for (NodeId Id = 0; Id < nodes(); ++Id) {
         for (NodeId neighborId: _graph[Id]) {

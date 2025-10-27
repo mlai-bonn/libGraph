@@ -33,7 +33,7 @@ void AddGraphsToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::Labe
  * @param method The method to be used
  */
 template<typename T>
-void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<T>& graph_data, ged::Options::EditCosts edit_costs = ged::Options::EditCosts::CONSTANT, ged::Options::GEDMethod method = ged::Options::GEDMethod::BP_BEAM);
+void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<T>& graph_data, ged::Options::EditCosts edit_costs = ged::Options::EditCosts::CONSTANT, ged::Options::GEDMethod method = ged::Options::GEDMethod::BP_BEAM, const std::string& method_options = "");
 /* Evaluates the result of a GEDLIB computation
  * @param env The GEDLIB environment
  * @param graphs The graphs used in the computation
@@ -94,11 +94,11 @@ void AddGraphsToGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::Labe
 }
 
 template<typename T>
-void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<T>& graph_data, ged::Options::EditCosts edit_costs, ged::Options::GEDMethod method) {
+void InitializeGEDEnvironment(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const GraphData<T>& graph_data, ged::Options::EditCosts edit_costs, ged::Options::GEDMethod method, const std::string& method_options) {
     env.set_edit_costs(edit_costs);
     AddGraphsToGEDEnvironment(env, graph_data);
     env.init();
-    env.set_method(method);
+    env.set_method(method, method_options);
     env.init_method();
 }
 
