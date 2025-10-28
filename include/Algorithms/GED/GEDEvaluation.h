@@ -81,6 +81,24 @@ inline void GEDEvaluation<T>::get_edit_operations(std::unordered_set<EditOperati
         }
     }
 
+    // Find relabeled edges id is in SOURCE SPACE
+    for (auto source_i = 0; source_i < graphs.first.nodes(); ++source_i) {
+        for (auto source_j : graphs.first.get_neighbors(source_i)) {
+            if (source_i < source_j) {
+                NodeId target_i = mapping_first[source_i];
+                NodeId target_j = mapping_first[source_j];
+                if (target_i < mapping_second.size() && target_j < mapping_second.size()) {
+                    if (graphs.first.IsEdge(source_i, source_j) && graphs.second.IsEdge(target_i, target_j)) {
+                        // check if labels are different
+                        if (graphs.first.GetEdgeData({source_i, source_j}, "label") != graphs.second.GetEdgeData({target_i, target_j}, "label")) {
+                            relabeled_edges.insert({source_i, source_j});
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Edge operations
     // Find deleted edges id is in SOURCE SPACE
     for (NodeId source_i = 0; source_i < graphs.first.nodes(); ++source_i) {
@@ -115,23 +133,7 @@ inline void GEDEvaluation<T>::get_edit_operations(std::unordered_set<EditOperati
             }
         }
     }
-    // Find relabeled edges id is in SOURCE SPACE
-    for (auto source_i = 0; source_i < graphs.first.nodes(); ++source_i) {
-        for (auto source_j : graphs.first.get_neighbors(source_i)) {
-            if (source_i < source_j) {
-                NodeId target_i = mapping_first[source_i];
-                NodeId target_j = mapping_first[source_j];
-                if (target_i < mapping_second.size() && target_j < mapping_second.size()) {
-                    if (graphs.first.IsEdge(source_i, source_j) && graphs.second.IsEdge(target_i, target_j)) {
-                        // check if labels are different
-                        if (graphs.first.GetEdgeData({source_i, source_j}, "label") != graphs.second.GetEdgeData({target_i, target_j}, "label")) {
-                            relabeled_edges.insert({source_i, source_j});
-                        }
-                    }
-                }
-            }
-        }
-    }
+
     // Create the edit operations
     for (auto x : deleted_nodes) {
         EditOperation operation = {

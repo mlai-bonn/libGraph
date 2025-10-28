@@ -152,10 +152,10 @@ void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const Grap
         // add operations
         edit_operations.push_back(edit_path.sequence_of_operations);
         // throw an error if the edit path length does not match the rounded distance (to the next int)
-        //if (edit_path.edit_path_graphs.size() - 1 != std::round(result.distance)) {
-        //    throw std::runtime_error("Error: Edit path length does not match the distance for graphs " + std::to_string(result.graph_ids.first) + " and " + std::to_string(result.graph_ids.second)
-        //        + ". Edit path length: " + std::to_string(edit_path.edit_path_graphs.size() - 1) + ", Distance: " + std::to_string(result.distance));
-        //}
+        if (edit_path.edit_path_graphs.size() - 1 != std::round(result.distance)) {
+            throw std::runtime_error("Error: Edit path length does not match the distance for graphs " + std::to_string(result.graph_ids.first) + " and " + std::to_string(result.graph_ids.second)
+                + ". Edit path length: " + std::to_string(edit_path.edit_path_graphs.size() - 1) + ", Distance: " + std::to_string(result.distance));
+        }
         // also throw an error if the path length does not match the number of edit operations
         if (edit_path.edit_path_graphs.size() - 1 != edit_path.sequence_of_operations.size()) {
             throw std::runtime_error("Error: Edit path length does not match the number of edit operations for graphs " + std::to_string(result.graph_ids.first) + " and " + std::to_string(result.graph_ids.second)
