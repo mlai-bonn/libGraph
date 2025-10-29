@@ -45,7 +45,7 @@ template<typename T>
 inline void WriteEditPathInfo(const std::vector<GEDEvaluation<T>>& results, const std::vector<std::vector<EditOperation>>& edit_operations, const GraphData<T>& graph_data, const std::string& output_path) {
     // create also a MUTAG_edit_paths.bin storing source_id, step_id, target_id for each graph
     // create one edit_path_pairs.txt file per dataset storing source_id, step_id, target_id for each graph
-    std::string edit_path_pairs = output_path + "_edit_path_pairs.txt";
+    std::string edit_path_pairs = output_path + "_edit_paths_pairs.txt";
     std::ofstream ofs(edit_path_pairs, std::ios::out);
     INDEX counter = 0;
     INDEX entries = 0;
@@ -62,7 +62,7 @@ inline void WriteEditPathInfo(const std::vector<GEDEvaluation<T>>& results, cons
     ofs.seekp(-1, std::ios_base::end);
     ofs.close();
     // write a binary file with source_id, step_id, target_id, edit_operation
-    std::string edit_path_data = output_path + "_edit_path_data.bin";
+    std::string edit_path_data = output_path + "_edit_paths_data.bin";
     ofs.open(edit_path_data, std::ios::binary);
     counter = 0;
     // write number of entries
@@ -84,7 +84,7 @@ inline void WriteEditPathInfo(const std::vector<GEDEvaluation<T>>& results, cons
     ofs.close();
    counter = 0;
     // create also a text file with source_id, step_id, target_id, edit_operation
-    std::string edit_path_data_txt = output_path + "_edit_path_data.txt";
+    std::string edit_path_data_txt = output_path + "_edit_paths_data.txt";
     ofs.open(edit_path_data_txt, std::ios::out);
     for (const auto& result : results) {
         INDEX source_id = result.graph_ids.first;

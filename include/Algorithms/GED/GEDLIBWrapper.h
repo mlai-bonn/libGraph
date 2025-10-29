@@ -8,6 +8,7 @@
 // For the following code GEDLIB has to be included and #define GEDLIB must be set in the main file
 #ifdef GEDLIB
 #include "GEDFunctions.h"
+#include "GEDEvaluation.h"
 #include "src/env/ged_env.hpp"
 #include <numeric>
 
@@ -52,9 +53,9 @@ template<typename T>
 void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
                                    const GraphData<T> &graph_data,
                                    const std::vector<std::pair<INDEX,INDEX>> &graph_ids,
-                                   const std::string &results_path);
+                                   const std::string &results_path, ged::Options::GEDMethod method, const std::string& method_options);
 
-bool CheckValidMapping(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env, const int source_graph_id, const int target_graph_id);
+
 
 
 
@@ -131,7 +132,7 @@ template<typename T>
 void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
                                    const GraphData<T> &graph_data,
                                    const std::vector<std::pair<INDEX,INDEX>> &graph_ids,
-                                   const std::string &results_path) {
+                                   const std::string &results_path, ged::Options::GEDMethod method, const std::string& method_options) {
     // check whether the output path exists
     if (!std::filesystem::exists(results_path)) {
         std::cout << "The output path " << results_path << " does not exist." << std::endl;
@@ -168,9 +169,43 @@ void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &en
             const double estimated_time_left = estimated_total_time - elapsed_seconds;
             //std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
             env.run_method(i, j);
-            // check if the mappings are valid
-            bool valid = CheckValidMapping(env, i, j);
             GEDEvaluation<T> result = ComputeGEDResult(env, graph_data, i, j);
+            // check if the mapping is valid
+            bool valid = CheckResultsValidity(std::vector<GEDEvaluation<T>>{result}).empty();
+            // Try to fix using only one thread
+            if (!valid) {
+                std::cout << "The computation of the mapping between graph " << i << " and graph " << j << " resulted in an invalid mapping. Retrying with single thread." << std::endl;
+                // set --threads 1 in method
+                ged::Options::GEDMethod old_method = method;
+                // replace --threads x with --threads 1
+                std::string new_method_options = method_options;
+                const size_t pos = new_method_options.find("--threads");;
+                if (pos != std::string::npos) {
+                    size_t end_pos = new_method_options.find(" ", pos + 9);
+                    if (end_pos == std::string::npos) {
+                        end_pos = new_method_options.length();
+                    }
+                    new_method_options.replace(pos, end_pos - pos, "--threads 1");
+                }
+                else {
+                    if (!new_method_options.empty() && new_method_options.back() != ' ') {
+                        new_method_options += " ";
+                    }
+                    new_method_options += "--threads 1";
+                }
+                env.set_method(old_method, new_method_options);
+                env.run_method(i, j);
+                result = ComputeGEDResult(env, graph_data, i, j);
+                valid = CheckResultsValidity(std::vector<GEDEvaluation<T>>{result}).empty();
+                if (valid) {
+                    std::cout << "Successfully fixed the mapping between graph " << i << " and graph " << j << " by using a single thread." << std::endl;
+                }
+                else {
+                    std::cout << "Failed to fix the mapping between graph " << i << " and graph " << j << "." << std::endl;
+                }
+                // reset method
+                env.set_method(method, method_options);
+            }
             // print calculated (approximated Distance)
             //std::cout << "Approximated Distance " << i << " to " << j << " : " << result.distance << std::endl;
             // save result to binary
@@ -311,15 +346,7 @@ ged::Options::EditCosts EditCostsFromString(const std::string& costsStr) {
     return ged::Options::EditCosts::CONSTANT;
 }
 
-inline bool CheckValidMapping(const ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID>& env, const int source_graph_id, const int target_graph_id) {
-    const ged::NodeMap& node_map = env.get_node_map(source_graph_id, target_graph_id);
-    const auto& forward_map = node_map.get_forward_map();
-    const auto& backward_map = node_map.get_backward_map();
-    // check for duplicates smaller or equal the size of the other map
-    bool valid = (std::set<INDEX>(forward_map.begin(), forward_map.end()).size() == forward_map.size()) ||
-                 (std::set<INDEX>(backward_map.begin(), backward_map.end()).size() == backward_map.size());
-    return valid;
-}
+
 
 
 

@@ -33,6 +33,9 @@ struct GEDEvaluation {
 
 };
 
+template<typename T>
+std::vector<int> CheckResultsValidity(const std::vector<GEDEvaluation<T>>& results);
+
 template <typename T>
 inline void GEDEvaluation<T>::get_edit_operations(std::unordered_set<EditOperation, EditOperationHash>& edit_operations) const {
     edit_operations.clear();
@@ -428,6 +431,27 @@ inline void GEDEvaluation<T>::relabel_node(EditPath<T> &edit_path, const EditOpe
     new_graph.SetName(name);
 
     edit_path.Update(new_graph, operation);
+}
+
+template<typename T>
+inline std::vector<int> CheckResultsValidity(const std::vector<GEDEvaluation<T>>& results) {
+    std::vector<int> invalids;
+    for (size_t i = 0; i < results.size(); ++i) {
+        const auto& result = results[i];
+        const auto& fst = result.node_mapping.first;
+        const auto& snd = result.node_mapping.second;
+        auto first_set = std::set<std::decay_t<decltype(fst[0])>>{};
+        for (const auto& v : fst) first_set.insert(v);
+        auto second_set = std::set<std::decay_t<decltype(snd[0])>>{};
+        for (const auto& v : snd) second_set.insert(v);
+        bool has_duplicate = (first_set.size() != fst.size() && second_set.size() != snd.size());
+        bool distance_not_integer = false;
+        //(std::abs(result.distance - std::round(result.distance)) > 1e-6);
+        if (has_duplicate || distance_not_integer) {
+            invalids.push_back(static_cast<int>(i));
+        }
+    }
+    return invalids;
 }
 
 #endif //GED_EVALUATION_H
