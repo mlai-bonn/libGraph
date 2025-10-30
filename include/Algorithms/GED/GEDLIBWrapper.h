@@ -177,15 +177,14 @@ void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &en
                 std::cout << "The computation of the mapping between graph " << i << " and graph " << j << " resulted in an invalid mapping. Retrying with single thread." << std::endl;
                 // set --threads 1 in method
                 ged::Options::GEDMethod old_method = method;
-                // replace --threads x with --threads 1
+                // replace --threads xx with --threads 1 and remove the xx that can be multiple digits
                 std::string new_method_options = method_options;
-                const size_t pos = new_method_options.find("--threads");;
+                const size_t pos = new_method_options.find("--threads");
+                const size_t x_start = pos + 9;
+                // find the next space after x_start
+                const size_t x_end = new_method_options.find_first_of(" ", x_start);
                 if (pos != std::string::npos) {
-                    size_t end_pos = new_method_options.find(" ", pos + 9);
-                    if (end_pos == std::string::npos) {
-                        end_pos = new_method_options.length();
-                    }
-                    new_method_options.replace(pos, end_pos - pos, "--threads 1");
+                    new_method_options.replace(x_start, x_end - x_start, "1");
                 }
                 else {
                     if (!new_method_options.empty() && new_method_options.back() != ' ') {
