@@ -170,41 +170,6 @@ void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &en
             //std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
             env.run_method(i, j);
             GEDEvaluation<T> result = ComputeGEDResult(env, graph_data, i, j);
-            // check if the mapping is valid
-            bool valid = CheckResultsValidity(std::vector<GEDEvaluation<T>>{result}).empty();
-            // Try to fix using only one thread
-            if (!valid) {
-                std::cout << "The computation of the mapping between graph " << i << " and graph " << j << " resulted in an invalid mapping. Retrying with single thread." << std::endl;
-                // set --threads 1 in method
-                ged::Options::GEDMethod old_method = method;
-                // replace --threads xx with --threads 1 and remove the xx that can be multiple digits
-                std::string new_method_options = method_options;
-                const size_t pos = new_method_options.find("--threads");
-                const size_t x_start = pos + 9;
-                // find the next space after x_start
-                const size_t x_end = new_method_options.find_first_of(" ", x_start);
-                if (pos != std::string::npos) {
-                    new_method_options.replace(x_start, x_end - x_start, "1");
-                }
-                else {
-                    if (!new_method_options.empty() && new_method_options.back() != ' ') {
-                        new_method_options += " ";
-                    }
-                    new_method_options += "--threads 1";
-                }
-                env.set_method(old_method, new_method_options);
-                env.run_method(i, j);
-                result = ComputeGEDResult(env, graph_data, i, j);
-                valid = CheckResultsValidity(std::vector<GEDEvaluation<T>>{result}).empty();
-                if (valid) {
-                    std::cout << "Successfully fixed the mapping between graph " << i << " and graph " << j << " by using a single thread." << std::endl;
-                }
-                else {
-                    std::cout << "Failed to fix the mapping between graph " << i << " and graph " << j << "." << std::endl;
-                }
-                // reset method
-                env.set_method(method, method_options);
-            }
             // print calculated (approximated Distance)
             //std::cout << "Approximated Distance " << i << " to " << j << " : " << result.distance << std::endl;
             // save result to binary
