@@ -21,7 +21,7 @@ struct GEDEvaluation {
     double time = std::numeric_limits<double>::max();
 
     void get_edit_operations(std::unordered_set<EditOperation, EditOperationHash>& edit_operations) const;
-    void get_edit_path(EditPath<T>& edit_path, int seed = 0) const;
+    void get_edit_path(EditPath<T>& edit_path, int seed = 42, EditPathStrategy strategy = EditPathStrategy::Random) const;
 
     // edit path extension
     void remove_edge(EditPath<T>& edit_path, const EditOperation& operation) const;
@@ -189,7 +189,7 @@ inline void GEDEvaluation<T>::get_edit_operations(std::unordered_set<EditOperati
 }
 
 template <typename T>
-inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed) const {
+inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, EditPathStrategy strategy) const {
     edit_path.total_costs = distance;
     edit_path.edit_operations.clear();
     get_edit_operations(edit_path.edit_operations);
@@ -208,10 +208,16 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed) co
     edit_path.target_to_current = node_mapping.second;
     edit_path.node_mapping = node_mapping;
 
-    edit_path.remaining_operations = edit_path.edit_operations;
+    // get a random order of the edit_path.edit_operations and store it in edit_path.remaining_operations
+    std::vector<EditOperation> operations_vector(edit_path.edit_operations.begin(), edit_path.edit_operations.end());
+    std::mt19937_64 generator(seed);
+    std::ranges::shuffle(operations_vector, generator);
+    for (const auto& op : operations_vector) {
+        edit_path.remaining_operations.push_back(op);
+    }
 
 
-    for (auto x : edit_path.remaining_operations) {
+    for (auto x : operations_vector) {
         if (x.operationObject == OperationObject::NODE) {
             if (x.type == EditType::DELETE) {
                 edit_path.remaining_node_deletions.insert(x);
@@ -230,6 +236,63 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed) co
             }
         }
     }
+
+
+
+    // TODO different strategies to order the operations
+    switch (strategy) {
+        case EditPathStrategy::Random: {
+            // already random
+            break;
+        }
+        case EditPathStrategy::DeleteFirstEdgesNodes: {
+            // sort operations_vector to have deletions first, edges before nodes
+            std::sort(operations_vector.begin(), operations_vector.end(), [](const EditOperation& a, const EditOperation& b) {
+                if (a.type != b.type) {
+                    return a.type == EditType::DELETE;
+                } else {
+                    return a.operationObject == OperationObject::EDGE && b.operationObject == OperationObject::NODE;
+                }
+            });
+            break;
+        }
+        case EditPathStrategy::InsertFirstEdgesNodes: {
+            std::sort(operations_vector.begin(), operations_vector.end(), [](const EditOperation& a, const EditOperation& b) {
+                if (a.type != b.type) {
+                    return a.type == EditType::INSERT;
+                } else {
+                    return a.operationObject == OperationObject::EDGE && b.operationObject == OperationObject::NODE;
+                }
+            });
+            break;
+        }
+        case EditPathStrategy::DeleteFirstNodesEdges: {
+            std::sort(operations_vector.begin(), operations_vector.end(), [](const EditOperation& a, const EditOperation& b) {
+                if (a.type != b.type) {
+                    return a.type == EditType::DELETE;
+                } else {
+                    return a.operationObject == OperationObject::NODE && b.operationObject == OperationObject::EDGE;
+                }
+            });
+            break;
+        }
+        case EditPathStrategy::InsertFirstNodesEdges: {
+            std::sort(operations_vector.begin(), operations_vector.end(), [](const EditOperation& a, const EditOperation& b) {
+                if (a.type != b.type) {
+                    return a.type == EditType::INSERT;
+                } else {
+                    return a.operationObject == OperationObject::NODE && b.operationObject == OperationObject::EDGE;
+                }
+            });
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+
+
+
 
     // Get a meaningful sequence of edit_path operations
     while (!edit_path.remaining_operations.empty()) {
@@ -274,6 +337,8 @@ inline void GEDEvaluation<T>::remove_edge(EditPath<T> &edit_path, const EditOper
     const NodeId source_j = operation.edge.second;
     const NodeId current_i = edit_path.source_to_current[source_i];
     const NodeId current_j = edit_path.source_to_current[source_j];
+    EditOperation current_operation = operation;
+    current_operation.edge = {current_i, current_j};
     // if an edge deletion creates an isolated node, delete the node as well
     // new graph after deleting the edge
     T new_graph = edit_path.edit_path_graphs.back();
@@ -282,7 +347,7 @@ inline void GEDEvaluation<T>::remove_edge(EditPath<T> &edit_path, const EditOper
     new_graph.RemoveEdge(current_i, current_j);
     new_graph.GetConnectivity();
 
-    edit_path.Update(new_graph, operation);
+    edit_path.Update(new_graph, operation, current_operation);
     // check if node1 is isolated
     if (new_graph.degree(current_i) == 0) {
         for (const auto x : edit_path.remaining_node_deletions) {
@@ -307,6 +372,12 @@ template <typename T>
 inline void GEDEvaluation<T>::remove_node(EditPath<T> &edit_path, const EditOperation &operation) const {
     const NodeId source_node = operation.node;
     const NodeId current_node = edit_path.source_to_current[source_node];
+
+    const EditOperation current_operation = {
+        .operationObject = OperationObject::NODE,
+        .type = EditType::DELETE,
+        .node = current_node,
+    };
     // TODO check whether node has degree 0 o.w. delete all edges
     const T& last_graph = edit_path.edit_path_graphs.back();
     if (last_graph.degree(current_node) != 0) {
@@ -331,7 +402,7 @@ inline void GEDEvaluation<T>::remove_node(EditPath<T> &edit_path, const EditOper
     }
     edit_path.source_to_current[source_node] = -1;
 
-    edit_path.Update(new_graph, operation);
+    edit_path.Update(new_graph, operation, current_operation);
 }
 
 template <typename T>
@@ -342,6 +413,9 @@ inline void GEDEvaluation<T>::add_edge(EditPath<T> &edit_path, const EditOperati
 
     NodeId current_i = edit_path.target_to_current[target_i];
     NodeId current_j = edit_path.target_to_current[target_j];
+
+
+
     const bool first_node_inserted = current_i <= std::max(edit_path.source_graph.nodes(), edit_path.target_graph.nodes());
     const bool second_node_inserted = current_j <= std::max(edit_path.source_graph.nodes(), edit_path.target_graph.nodes());
 
@@ -367,13 +441,20 @@ inline void GEDEvaluation<T>::add_edge(EditPath<T> &edit_path, const EditOperati
     // new graph after inserting the edge
     current_i = edit_path.target_to_current[target_i];
     current_j = edit_path.target_to_current[target_j];
+
+    const EditOperation current_operation = {
+        .operationObject = OperationObject::EDGE,
+        .type = EditType::INSERT,
+        .edge = {current_i, current_j},
+    };
+
     T new_graph = last_graph;
     const std::string name = edit_path.source_graph.GetName() + "_step_" + std::to_string(edit_path.edit_path_graphs.size()) + "_" + edit_path.target_graph.GetName();
     new_graph.SetName(name);
     std::vector<double> edge_features = edit_path.target_graph.GetEdgeData(EDGE(target_i, target_j));
     new_graph.AddEdge(current_i, current_j, edge_features, true);
     new_graph.GetConnectivity();
-    edit_path.Update(new_graph, operation);
+    edit_path.Update(new_graph, operation, current_operation);
 }
 
 template <typename T>
@@ -393,7 +474,7 @@ inline void GEDEvaluation<T>::add_node(EditPath<T> &edit_path, const EditOperati
     //Update the maps
     edit_path.target_to_current[operation.node] = last_graph.nodes();
 
-    edit_path.Update(new_graph, operation);
+    edit_path.Update(new_graph, operation, operation);
 }
 
 template <typename T>
@@ -406,6 +487,13 @@ inline void GEDEvaluation<T>::relabel_edge(EditPath<T> &edit_path, const EditOpe
     NodeId target_j = edit_path.node_mapping.first[source_j];
     NodeId current_i = edit_path.target_to_current[target_i];
     NodeId current_j = edit_path.target_to_current[target_j];
+
+    const EditOperation current_operation = {
+        .operationObject = OperationObject::EDGE,
+        .type = EditType::RELABEL,
+        .edge = {current_i, current_j},
+    };
+
     std::vector<double> target_edge_data = edit_path.target_graph.GetEdgeData(EDGE(target_i, target_j));
 
     new_graph.RelabelEdge(current_i, current_j, target_edge_data);
@@ -413,7 +501,7 @@ inline void GEDEvaluation<T>::relabel_edge(EditPath<T> &edit_path, const EditOpe
     const std::string name = edit_path.source_graph.GetName() + "_step_" + std::to_string(edit_path.edit_path_graphs.size()) + "_" + edit_path.target_graph.GetName();
     new_graph.SetName(name);
 
-    edit_path.Update(new_graph, operation);
+    edit_path.Update(new_graph, operation, current_operation);
 }
 
 template <typename T>
@@ -421,6 +509,12 @@ inline void GEDEvaluation<T>::relabel_node(EditPath<T> &edit_path, const EditOpe
     const NodeId source_i = operation.node;
     const NodeId current_i = edit_path.source_to_current[source_i];
     const NodeId target_i = edit_path.node_mapping.first[source_i];
+
+    const EditOperation current_operation = {
+        .operationObject = OperationObject::NODE,
+        .type = EditType::RELABEL,
+        .node = current_i,
+    };
 
     const T& last_graph = edit_path.edit_path_graphs.back();
     T new_graph = last_graph;
@@ -430,7 +524,7 @@ inline void GEDEvaluation<T>::relabel_node(EditPath<T> &edit_path, const EditOpe
     const std::string name = edit_path.source_graph.GetName() + "_step_" + std::to_string(edit_path.edit_path_graphs.size()) + "_" + edit_path.target_graph.GetName();
     new_graph.SetName(name);
 
-    edit_path.Update(new_graph, operation);
+    edit_path.Update(new_graph, operation, current_operation);
 }
 
 template<typename T>
@@ -455,3 +549,4 @@ inline std::vector<int> CheckResultsValidity(const std::vector<GEDEvaluation<T>>
 }
 
 #endif //GED_EVALUATION_H
+

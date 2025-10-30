@@ -30,6 +30,64 @@ inline std::ostream& operator<<(std::ostream& os, const EditType& type) {
     }
 }
 
+enum class EditPathStrategy {
+    Random,
+    DeleteFirstEdgesNodes,
+    InsertFirstEdgesNodes,
+    DeleteFirstNodesEdges,
+    InsertFirstNodesEdges,
+  };
+
+inline std::string EditPathStrategyToString(const EditPathStrategy& strategy) {
+    switch (strategy) {
+        case EditPathStrategy::Random:
+            return "Random";
+        case EditPathStrategy::DeleteFirstEdgesNodes:
+            return "DeleteFirstEdgesNodes";
+        case EditPathStrategy::InsertFirstEdgesNodes:
+            return "InsertFirstEdgesNodes";
+        case EditPathStrategy::DeleteFirstNodesEdges:
+            return "DeleteFirstNodesEdges";
+        case EditPathStrategy::InsertFirstNodesEdges:
+            return "InsertFirstNodesEdges";
+        default:
+            return "Unknown";
+    }
+}
+
+inline EditPathStrategy StringToEditPathStrategy(const std::string& strategy_str) {
+    if (strategy_str == "Random") {
+        return EditPathStrategy::Random;
+    } else if (strategy_str == "DeleteFirstEdgesNodes") {
+        return EditPathStrategy::DeleteFirstEdgesNodes;
+    } else if (strategy_str == "InsertFirstEdgesNodes") {
+        return EditPathStrategy::InsertFirstEdgesNodes;
+    } else if (strategy_str == "DeleteFirstNodesEdges") {
+        return EditPathStrategy::DeleteFirstNodesEdges;
+    } else if (strategy_str == "InsertFirstNodesEdges") {
+        return EditPathStrategy::InsertFirstNodesEdges;
+    } else {
+        throw std::invalid_argument("Unknown EditPathStrategy string: " + strategy_str);
+    }
+}
+
+inline std::ostream& operator<<(std::ostream& os, const EditPathStrategy& strategy) {
+    switch (strategy) {
+        case EditPathStrategy::Random:
+            return os << "Random";
+        case EditPathStrategy::DeleteFirstEdgesNodes:
+            return os << "DeleteFirstEdgesNodes";
+        case EditPathStrategy::InsertFirstEdgesNodes:
+            return os << "InsertFirstEdgesNodes";
+        case EditPathStrategy::DeleteFirstNodesEdges:
+            return os << "DeleteFirstNodesEdges";
+        case EditPathStrategy::InsertFirstNodesEdges:
+            return os << "InsertFirstNodesEdges";
+        default:
+            return os;
+    }
+}
+
 
 enum class OperationObject {
     NODE,
@@ -139,6 +197,7 @@ struct EditPath {
     double total_costs;
     std::unordered_set<EditOperation, EditOperationHash> edit_operations;
     std::vector<EditOperation> sequence_of_operations;
+    std::vector<EditOperation> sequence_of_operations_current;
     std::vector<T> edit_path_graphs;
 
     T source_graph;
@@ -149,7 +208,7 @@ struct EditPath {
     std::vector<NodeId> target_to_current = std::vector<NodeId>();
     std::pair<Nodes, Nodes> node_mapping = {std::vector<NodeId>(), std::vector<NodeId>()};
 
-    std::unordered_set<EditOperation, EditOperationHash> remaining_operations;
+    std::list<EditOperation> remaining_operations;
     std::unordered_set<EditOperation, EditOperationHash> remaining_edit_operations;
     std::unordered_set<EditOperation, EditOperationHash> remaining_edge_deletions;
     std::unordered_set<EditOperation, EditOperationHash> remaining_edge_insertions;
@@ -158,7 +217,7 @@ struct EditPath {
     std::unordered_set<EditOperation, EditOperationHash> remaining_edge_relabels;
     std::unordered_set<EditOperation, EditOperationHash> remaining_node_relabels;
 
-    void Update(T& graph, const EditOperation& operation);
+    void Update(T& graph, const EditOperation& operation, const EditOperation& operation_current);
 };
 
 // print Edit Path using the sequence of operations
@@ -173,10 +232,11 @@ inline std::ostream& operator<<(std::ostream& os, const EditPath<T>& edit_path) 
 }
 
 template<typename T>
-void EditPath<T>::Update(T& graph, const EditOperation& operation) {
+void EditPath<T>::Update(T& graph, const EditOperation& operation, const EditOperation& operation_current) {
     this->edit_path_graphs.emplace_back(graph);
     this->sequence_of_operations.push_back(operation);
-    this->remaining_operations.erase(operation);
+    this->sequence_of_operations_current.push_back(operation_current);
+    this->remaining_operations.remove(operation);
     if (operation.operationObject == OperationObject::NODE) {
         if (operation.type == EditType::DELETE) {
             this->remaining_node_deletions.erase(operation);

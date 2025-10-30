@@ -125,7 +125,7 @@ inline void ReadEditPathInfo(std::string& edit_path_info, std::vector<std::tuple
 }
 
 template<typename T>
-void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const GraphData<T> &graph_data, const std::string &edit_path_output = "../Data/EditPaths/", bool connected_only = false) {
+void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const GraphData<T> &graph_data, const std::string &edit_path_output = "../Data/EditPaths/", bool connected_only = false, EditPathStrategy strategy = EditPathStrategy::Random) {
     // check whether file already exists
     if (std::filesystem::exists(edit_path_output + graph_data.GetName() + "_edit_paths.bgf")) {
         std::cout << "Edit paths for " << graph_data.GetName() << " already exist." << std::endl;

@@ -148,13 +148,13 @@ struct GraphStruct{
     void SetName(const std::string& name) ;
 
     // Data access (const functions that do not change the underlying graph data)
-    virtual double GetNodeData(NodeId node, const std::string& type) const {return 0;};
-    virtual double GetNodeData(NodeId node, int index) const {return 0;};
-    virtual const std::vector<double>& GetNodeData(NodeId node)const {return {0};};
+    virtual double GetNodeData(NodeId node, const std::string& type) const {return 0.0;};
+    virtual double GetNodeData(NodeId node, int index) const {return 0.0;};
+    virtual const std::vector<double>& GetNodeData(NodeId node)const {return std::vector<double>{0.0};};
 
-    virtual double GetEdgeData(const EDGE & edge, const std::string& type) const {return 0;};
-    virtual double GetEdgeData(const EDGE & edge, int index) const {return 0;};
-    virtual const std::vector<double>& GetEdgeData(const EDGE& edge) const {return {0};};
+    virtual double GetEdgeData(const EDGE & edge, const std::string& type) const {return 0.0;};
+    virtual double GetEdgeData(const EDGE & edge, int index) const {return 0.0;};
+    virtual const std::vector<double>& GetEdgeData(const EDGE& edge) const {return std::vector<double>{0.0};};
 
 
 
