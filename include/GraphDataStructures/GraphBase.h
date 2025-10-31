@@ -715,6 +715,10 @@ inline INDEX GraphStruct::edges() const {
 /// \param destination
 /// \return
 inline bool GraphStruct::IsEdge(NodeId source, NodeId destination) const {
+    // return false if source or destination are out of bounds
+    if (source >= this->nodes() || destination >= this->nodes()){
+        return false;
+    }
     if (this->degree(source) < this->degree(destination)){
         return std::binary_search(_graph[source].begin(), _graph[source].end(), destination);
     }

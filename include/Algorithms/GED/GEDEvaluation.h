@@ -494,45 +494,39 @@ inline void GEDEvaluation<T>::remove_node(EditPath<T> &edit_path, const EditOper
         .type = EditType::DELETE,
         .node = current_node,
     };
-    // TODO check whether node has degree 0 o.w. delete all edges
-    const T& last_graph = edit_path.edit_path_graphs.back();
+    // check whether node has degree 0 o.w. delete all incident edges first
+    T& last_graph = edit_path.edit_path_graphs.back();
     if (last_graph.degree(current_node) != 0) {
-        for (const auto neighbor : last_graph.get_neighbors(current_node)) {
-            if ( neighbor < current_node) {
-                const NodeId source_i = edit_path.node_mapping.second[neighbor];
-                const NodeId source_j = source_node;
-                // Check whether edge deletion is in remaining edge deletions
-                const EditOperation edge_deletion = {
-                    .operationObject = OperationObject::EDGE,
-                    .type = EditType::DELETE,
-                    .edge = {source_i, source_j},
-                };
-                if (edit_path.remaining_edge_deletions.find(edge_deletion) != edit_path.remaining_edge_deletions.end()) {
-                    remove_edge(edit_path, edge_deletion, remove_isolated_nodes);
-                }
-                else {
+        for (const auto neighbor : edit_path.source_graph.get_neighbors(source_node)) {
+            // check wheter last graph still has the edge
+            if (!last_graph.IsEdge(current_node, edit_path.source_to_current[neighbor])) {
+                continue;
+            }
+            INDEX min = std::min(neighbor, current_node);
+            INDEX max = std::max(neighbor, current_node);
+            const EditOperation edge_deletion = {
+                .operationObject = OperationObject::EDGE,
+                .type = EditType::DELETE,
+                .edge = {min, max},
+            };
 
-                    std::cerr << "Warning: Edge deletion " << edge_deletion << " not found in remaining edge deletions when removing node " << operation << std::endl;
-                }
-            } else {
-              const NodeId source_i = source_node;
-                const NodeId source_j = edit_path.node_mapping.second[neighbor];
-                // Check whether edge deletion is in remaining edge deletions
-                const EditOperation edge_deletion = {
-                    .operationObject = OperationObject::EDGE,
-                    .type = EditType::DELETE,
-                    .edge = {source_i, source_j},
-                };
-                if (edit_path.remaining_edge_deletions.find(edge_deletion) != edit_path.remaining_edge_deletions.end()) {
-                    remove_edge(edit_path, edge_deletion, remove_isolated_nodes);
-                }
-                else {
-                    std::cerr << "Warning: Edge deletion " << edge_deletion << " not found in remaining edge deletions when removing node " << operation << std::endl;
-                }
+            if (edit_path.remaining_edge_deletions.find(edge_deletion) != edit_path.remaining_edge_deletions.end()) {
+                remove_edge(edit_path, edge_deletion, remove_isolated_nodes);
+            }
+            else {
+
+                std::cerr << "Warning: Edge deletion " << edge_deletion << " not found in remaining edge deletions when removing node " << operation << std::endl;
             }
         }
-
+        if (edit_path.remaining_node_deletions.find(operation) == edit_path.remaining_node_deletions.end()) {
+            // it could be that the remove edge operations already removed the node. Thus, we check again if the node still exists in the remaining_node_deletions
+            return;
+        }
     }
+
+
+    // update the last graph
+    last_graph = edit_path.edit_path_graphs.back();
     // new graph
     T new_graph = last_graph;
     new_graph.RemoveNode(current_node);
