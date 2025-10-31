@@ -14,7 +14,7 @@
 
 // main function to run the examples
 template<typename T>
-inline EditPath<T> CreateEditPath(const GEDEvaluation<T>& result, bool connected_only=false)
+inline EditPath<T> CreateEditPath(const GEDEvaluation<T>& result, int seed = 42, bool connected_only=false, std::vector<EditPathStrategy> strategies={EditPathStrategy::Random})
 {
     std::cout << "Time: " << result.time << " seconds" << std::endl;
     // print node mapping
@@ -30,7 +30,7 @@ inline EditPath<T> CreateEditPath(const GEDEvaluation<T>& result, bool connected
     //std::cout << std::endl;
 
     EditPath<T> edit_path;
-    result.get_edit_path(edit_path, 0);
+    result.get_edit_path(edit_path, seed, connected_only, strategies);
     // print edit path length
     std::cout << "Edit Path Length: " << edit_path.edit_path_graphs.size() - 1 << std::endl;
     // print all the graphs
@@ -125,7 +125,7 @@ inline void ReadEditPathInfo(std::string& edit_path_info, std::vector<std::tuple
 }
 
 template<typename T>
-void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const GraphData<T> &graph_data, const std::string &edit_path_output = "../Data/EditPaths/", bool connected_only = false, EditPathStrategy strategy = EditPathStrategy::Random) {
+void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const GraphData<T> &graph_data, const std::string &edit_path_output = "../Data/EditPaths/", int seed = 42, bool connected_only = false, std::vector<EditPathStrategy> strategies = {EditPathStrategy::Random}) {
     // check whether file already exists
     if (std::filesystem::exists(edit_path_output + graph_data.GetName() + "_edit_paths.bgf")) {
         std::cout << "Edit paths for " << graph_data.GetName() << " already exist." << std::endl;
@@ -148,7 +148,7 @@ void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const Grap
         const double estimated_time_left = estimated_total_time - elapsed_seconds;
         std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
         ++counter;
-        auto edit_path = CreateEditPath<T>(result);
+        auto edit_path = CreateEditPath<T>(result, seed, connected_only, strategies);
         // add operations
         edit_operations.push_back(edit_path.sequence_of_operations);
         // throw an error if the edit path length does not match the rounded distance (to the next int)

@@ -21,13 +21,13 @@ struct GEDEvaluation {
     double time = std::numeric_limits<double>::max();
 
     void get_edit_operations(std::unordered_set<EditOperation, EditOperationHash>& edit_operations) const;
-    void get_edit_path(EditPath<T>& edit_path, int seed = 42, EditPathStrategy strategy = EditPathStrategy::Random) const;
+    void get_edit_path(EditPath<T>& edit_path, int seed = 42, bool connected_only = false, std::vector<EditPathStrategy> strategies = {EditPathStrategy::Random}) const;
 
     // edit path extension
-    void remove_edge(EditPath<T>& edit_path, const EditOperation& operation) const;
+    void remove_edge(EditPath<T>& edit_path, const EditOperation& operation, bool remove_isolated_nodes=false) const;
     static void add_edge(EditPath<T>& edit_path, const EditOperation& operation);
     static void relabel_edge(EditPath<T>& edit_path, const EditOperation& operation);
-    void remove_node(EditPath<T>& edit_path, const EditOperation& operation) const;
+    void remove_node(EditPath<T>& edit_path, const EditOperation& operation, bool remove_isolated_nodes=false) const;
     static void add_node(EditPath<T>& edit_path, const EditOperation& operation);
     static void relabel_node(EditPath<T>& edit_path, const EditOperation& operation);
 
@@ -189,7 +189,10 @@ inline void GEDEvaluation<T>::get_edit_operations(std::unordered_set<EditOperati
 }
 
 template <typename T>
-inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, EditPathStrategy strategy) const {
+inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, bool connected_only, std::vector<EditPathStrategy> strategies) const
+{
+    // TODO connected only not yet implemented
+    bool delete_isolated_nodes = false;
     edit_path.total_costs = distance;
     edit_path.edit_operations.clear();
     get_edit_operations(edit_path.edit_operations);
@@ -212,83 +215,171 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, Ed
     std::vector<EditOperation> operations_vector(edit_path.edit_operations.begin(), edit_path.edit_operations.end());
     std::mt19937_64 generator(seed);
     std::ranges::shuffle(operations_vector, generator);
-    for (const auto& op : operations_vector) {
-        edit_path.remaining_operations.push_back(op);
-    }
-
+    // store missing operations in corresponding vectors (using the order of operations_vector)
+    std::vector<EditOperation> missing_edge_deletions;;
+    std::vector<EditOperation> missing_edge_insertions;
+    std::vector<EditOperation> missing_node_deletions;
+    std::vector<EditOperation> missing_node_insertions;
+    std::vector<EditOperation> missing_edge_relabels;
+    std::vector<EditOperation> missing_node_relabels;
+    edit_path.remaining_operations.clear();
+    edit_path.remaining_edge_deletions.clear();
+    edit_path.remaining_edge_insertions.clear();
+    edit_path.remaining_node_deletions.clear();
+    edit_path.remaining_node_insertions.clear();
+    edit_path.remaining_edge_relabels.clear();
+    edit_path.remaining_node_relabels.clear();
 
     for (auto x : operations_vector) {
         if (x.operationObject == OperationObject::NODE) {
             if (x.type == EditType::DELETE) {
                 edit_path.remaining_node_deletions.insert(x);
+                missing_node_deletions.push_back(x);
             } else if (x.type == EditType::INSERT) {
                 edit_path.remaining_node_insertions.insert(x);
+                missing_node_insertions.push_back(x);
             } else if (x.type == EditType::RELABEL) {
                 edit_path.remaining_node_relabels.insert(x);
+                missing_node_relabels.push_back(x);
             }
         } else if (x.operationObject == OperationObject::EDGE) {
             if (x.type == EditType::DELETE) {
                 edit_path.remaining_edge_deletions.insert(x);
+                missing_edge_deletions.push_back(x);
             } else if (x.type == EditType::INSERT) {
                 edit_path.remaining_edge_insertions.insert(x);
+                missing_edge_insertions.push_back(x);
             } else if (x.type == EditType::RELABEL) {
                 edit_path.remaining_edge_relabels.insert(x);
+                missing_edge_relabels.push_back(x);
             }
         }
     }
 
 
 
-    // TODO different strategies to order the operations
-    switch (strategy) {
-        case EditPathStrategy::Random: {
-            // already random
-            break;
-        }
-        case EditPathStrategy::DeleteFirstEdgesNodes: {
-            // sort operations_vector to have deletions first, edges before nodes
-            std::sort(operations_vector.begin(), operations_vector.end(), [](const EditOperation& a, const EditOperation& b) {
-                if (a.type != b.type) {
-                    return a.type == EditType::DELETE;
-                } else {
-                    return a.operationObject == OperationObject::EDGE && b.operationObject == OperationObject::NODE;
+    // TODO apply strategies one by one to sort operations_vector
+    for (const auto& strategy : strategies) {
+        switch (strategy) {
+            case EditPathStrategy::Random:
+                for (const auto& op : operations_vector) {
+                    edit_path.remaining_operations.push_back(op);
                 }
-            });
-            break;
-        }
-        case EditPathStrategy::InsertFirstEdgesNodes: {
-            std::sort(operations_vector.begin(), operations_vector.end(), [](const EditOperation& a, const EditOperation& b) {
-                if (a.type != b.type) {
-                    return a.type == EditType::INSERT;
-                } else {
-                    return a.operationObject == OperationObject::EDGE && b.operationObject == OperationObject::NODE;
+                missing_edge_deletions.clear();
+                missing_edge_insertions.clear();
+                missing_node_deletions.clear();
+                missing_node_insertions.clear();
+                missing_edge_relabels.clear();
+                missing_node_relabels.clear();
+                break;
+            case EditPathStrategy::DeleteEdges: {
+                // next add all edge deletions to remaining operations that are not yet added
+                for (const auto& op : missing_edge_deletions) {
+                        edit_path.remaining_operations.push_back(op);
                 }
-            });
-            break;
-        }
-        case EditPathStrategy::DeleteFirstNodesEdges: {
-            std::sort(operations_vector.begin(), operations_vector.end(), [](const EditOperation& a, const EditOperation& b) {
-                if (a.type != b.type) {
-                    return a.type == EditType::DELETE;
-                } else {
-                    return a.operationObject == OperationObject::NODE && b.operationObject == OperationObject::EDGE;
+                missing_edge_deletions.clear();
+                break;
+            }
+            case EditPathStrategy::InsertEdges: {
+                // next add all edge insertions to remaining operations that are not yet added
+                for (const auto& op : missing_edge_insertions) {
+                        edit_path.remaining_operations.push_back(op);
                 }
-            });
-            break;
-        }
-        case EditPathStrategy::InsertFirstNodesEdges: {
-            std::sort(operations_vector.begin(), operations_vector.end(), [](const EditOperation& a, const EditOperation& b) {
-                if (a.type != b.type) {
-                    return a.type == EditType::INSERT;
-                } else {
-                    return a.operationObject == OperationObject::NODE && b.operationObject == OperationObject::EDGE;
+                missing_edge_insertions.clear();
+                break;
+            }
+            case EditPathStrategy::DeleteNodes: {
+                // next add all node deletions to remaining operations that are not yet added
+                for (const auto& op : missing_node_deletions) {
+                        edit_path.remaining_operations.push_back(op);
                 }
-            });
-            break;
+                missing_node_deletions.clear();
+                break;
+            }
+            case EditPathStrategy::InsertNodes: {
+                // next add all node insertions to remaining operations that are not yet added
+                for (const auto& op : missing_node_insertions) {
+                        edit_path.remaining_operations.push_back(op);
+                }
+                missing_node_insertions.clear();
+                break;
+            }
+            case EditPathStrategy::RelabelEdges: {
+                // next add all edge relabelings to remaining operations that are not yet added
+                for (const auto& op : missing_edge_relabels) {
+                        edit_path.remaining_operations.push_back(op);
+                }
+                missing_edge_relabels.clear();
+                break;
+            }
+            case EditPathStrategy::RelabelNodes: {
+                // next add all node relabelings to remaining operations that are not yet added
+                for (const auto& op : missing_node_relabels) {
+                        edit_path.remaining_operations.push_back(op);
+                }
+                missing_node_relabels.clear();
+                break;
+            }
+            case EditPathStrategy::RandomDeleteEdges: {
+                // next add all edge deletions to remaining operations that are not yet added in random order
+                for (const auto& op : missing_edge_deletions) {
+                    auto random_insert_pos = std::uniform_int_distribution<size_t>(0, edit_path.remaining_operations.size())(generator);
+                    edit_path.remaining_operations.insert(std::next(edit_path.remaining_operations.begin(), random_insert_pos), op);
+                }
+                break;
+            }
+            case EditPathStrategy::RandomInsertEdges: {
+                // next add all edge insertions to remaining operations that are not yet added in random order
+                for (const auto& op : missing_edge_insertions) {
+                    auto random_insert_pos = std::uniform_int_distribution<size_t>(0, edit_path.remaining_operations.size())(generator);
+                    edit_path.remaining_operations.insert(std::next(edit_path.remaining_operations.begin(), random_insert_pos), op);
+                }
+            }
+            case EditPathStrategy::RandomDeleteNodes: {
+                // next add all node deletions to remaining operations that are not yet added in random order
+                for (const auto& op : missing_node_deletions) {
+                    auto random_insert_pos = std::uniform_int_distribution<size_t>(0, edit_path.remaining_operations.size())(generator);
+                    edit_path.remaining_operations.insert(std::next(edit_path.remaining_operations.begin(), random_insert_pos), op);
+                }
+                break;
+            }
+            case EditPathStrategy::RandomInsertNodes: {
+                // next add all node insertions to remaining operations that are not yet added in random order
+                for (const auto& op : missing_node_insertions) {
+                    auto random_insert_pos = std::uniform_int_distribution<size_t>(0, edit_path.remaining_operations.size())(generator);
+                    edit_path.remaining_operations.insert(std::next(edit_path.remaining_operations.begin(), random_insert_pos), op);
+                }
+                break;
+            }
+            case EditPathStrategy::RandomRelabelEdges: {
+                // next add all edge relabelings to remaining operations that are not yet added in random order
+                for (const auto& op : missing_edge_relabels) {
+                    auto random_insert_pos = std::uniform_int_distribution<size_t>(0, edit_path.remaining_operations.size())(generator);
+                    edit_path.remaining_operations.insert(std::next(edit_path.remaining_operations.begin(), random_insert_pos), op);
+                }
+                break;
+            }
+            case EditPathStrategy::RandomRelabelNodes: {
+                // next add all node relabelings to remaining operations that are not yet added in random order
+                for (const auto& op : missing_node_relabels) {
+                    auto random_insert_pos = std::uniform_int_distribution<size_t>(0, edit_path.remaining_operations.size())(generator);
+                    edit_path.remaining_operations.insert(std::next(edit_path.remaining_operations.begin(), random_insert_pos), op);
+                }
+                break;
+            }
+            case EditPathStrategy::DeleteIsolatedNodes: {
+                // turn on a flag to delete only isolated nodes
+                delete_isolated_nodes = true;
+            }
         }
-        default: {
-            break;
-        }
+    }
+    // Check if all operations are added
+    if (!missing_edge_deletions.empty() || !missing_edge_insertions.empty() || !missing_node_deletions.empty() || !missing_node_insertions.empty() || !missing_edge_relabels.empty() || !missing_node_relabels.empty()) {
+        std::cerr << "Error: Not all edit operations have been added to edit_path.remaining_operations." << std::endl;
+    }
+    // Sizes of edit_path.remaining_operations and edit_path.edit_operations and operations_vector should be the same
+    if (edit_path.remaining_operations.size() != edit_path.edit_operations.size() || edit_path.remaining_operations.size() != operations_vector.size()) {
+        std::cerr << "Error: Sizes of edit_path.remaining_operations, edit_path.edit_operations and operations_vector do not match." << std::endl;
     }
 
 
@@ -296,43 +387,65 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, Ed
 
     // Get a meaningful sequence of edit_path operations
     while (!edit_path.remaining_operations.empty()) {
-        // first edge deletions
-        while (!edit_path.remaining_edge_deletions.empty()) {
-            auto it = edit_path.remaining_edge_deletions.begin();
-            remove_edge(edit_path, *it);
-        }
-        // Then edge insertions
-        while (!edit_path.remaining_edge_insertions.empty()) {
-            auto it = edit_path.remaining_edge_insertions.begin();
-            add_edge(edit_path, *it);
-        }
+        auto next_operation = edit_path.remaining_operations.front();
 
-        // Then remaining node deletions
-        while (!edit_path.remaining_node_deletions.empty()) {
-            auto it = edit_path.remaining_node_deletions.begin();
-            remove_node(edit_path, *it);
+        if (next_operation.operationObject == OperationObject::EDGE) {
+            if (next_operation.type == EditType::DELETE) {
+                remove_edge(edit_path, next_operation, delete_isolated_nodes);
+            } else if (next_operation.type == EditType::INSERT) {
+                add_edge(edit_path, next_operation);
+            } else if (next_operation.type == EditType::RELABEL) {
+                relabel_edge(edit_path, next_operation);
+            }
+        } else if (next_operation.operationObject == OperationObject::NODE) {
+            if (next_operation.type == EditType::DELETE) {
+                remove_node(edit_path, next_operation, delete_isolated_nodes);
+            }
+            else if (next_operation.type == EditType::INSERT) {
+                add_node(edit_path, next_operation);
+            } else if (next_operation.type == EditType::RELABEL) {
+                relabel_node(edit_path, next_operation);
+            }
         }
-
-        // Then remaining node insertions
-        while (!edit_path.remaining_node_insertions.empty()) {
-            auto it = edit_path.remaining_node_insertions.begin();
-            add_node(edit_path, *it);
-        }
-        // TODO relabellings
-        while (!edit_path.remaining_node_relabels.empty()) {
-            auto it = edit_path.remaining_node_relabels.begin();
-            relabel_node(edit_path, *it);
-        }
-        while (!edit_path.remaining_edge_relabels.empty()) {
-            auto it = edit_path.remaining_edge_relabels.begin();
-            relabel_edge(edit_path, *it);
-        }
-
     }
+
+    //     // first edge deletions
+    //     while (!edit_path.remaining_edge_deletions.empty()) {
+    //         auto it = edit_path.remaining_edge_deletions.begin();
+    //         remove_edge(edit_path, *it);
+    //     }
+    //     // Then edge insertions
+    //     while (!edit_path.remaining_edge_insertions.empty()) {
+    //         auto it = edit_path.remaining_edge_insertions.begin();
+    //         add_edge(edit_path, *it);
+    //     }
+    //
+    //     // Then remaining node deletions
+    //     while (!edit_path.remaining_node_deletions.empty()) {
+    //         auto it = edit_path.remaining_node_deletions.begin();
+    //         remove_node(edit_path, *it);
+    //     }
+    //
+    //     // Then remaining node insertions
+    //     while (!edit_path.remaining_node_insertions.empty()) {
+    //         auto it = edit_path.remaining_node_insertions.begin();
+    //         add_node(edit_path, *it);
+    //     }
+    //     // TODO relabellings
+    //     while (!edit_path.remaining_node_relabels.empty()) {
+    //         auto it = edit_path.remaining_node_relabels.begin();
+    //         relabel_node(edit_path, *it);
+    //     }
+    //     while (!edit_path.remaining_edge_relabels.empty()) {
+    //         auto it = edit_path.remaining_edge_relabels.begin();
+    //         relabel_edge(edit_path, *it);
+    //     }
+    //
+    // }
 }
 
 template <typename T>
-inline void GEDEvaluation<T>::remove_edge(EditPath<T> &edit_path, const EditOperation &operation) const {
+inline void GEDEvaluation<T>::remove_edge(EditPath<T> &edit_path, const EditOperation &operation, bool remove_isolated_nodes) const {
     const NodeId source_i = operation.edge.first;
     const NodeId source_j = operation.edge.second;
     const NodeId current_i = edit_path.source_to_current[source_i];
@@ -348,28 +461,31 @@ inline void GEDEvaluation<T>::remove_edge(EditPath<T> &edit_path, const EditOper
     new_graph.GetConnectivity();
 
     edit_path.Update(new_graph, operation, current_operation);
-    // check if node1 is isolated
-    if (new_graph.degree(current_i) == 0) {
-        for (const auto x : edit_path.remaining_node_deletions) {
-            if (x.node == source_i) {
-                remove_node(edit_path, x);
-                break;
+
+    if (remove_isolated_nodes) {
+        // check if node1 is isolated
+        if (new_graph.degree(current_i) == 0) {
+            for (const auto x : edit_path.remaining_node_deletions) {
+                if (x.node == source_i) {
+                    remove_node(edit_path, x);
+                    break;
+                }
             }
         }
-    }
-    // check if node2 is isolated
-    if (new_graph.degree(current_j) == 0) {
-        for (const auto x : edit_path.remaining_node_deletions) {
-            if (x.node == source_j) {
-                remove_node(edit_path, x);
-                break;
+        // check if node2 is isolated
+        if (new_graph.degree(current_j) == 0) {
+            for (const auto x : edit_path.remaining_node_deletions) {
+                if (x.node == source_j) {
+                    remove_node(edit_path, x);
+                    break;
+                }
             }
         }
     }
 }
 
 template <typename T>
-inline void GEDEvaluation<T>::remove_node(EditPath<T> &edit_path, const EditOperation &operation) const {
+inline void GEDEvaluation<T>::remove_node(EditPath<T> &edit_path, const EditOperation &operation, bool remove_isolated_nodes) const {
     const NodeId source_node = operation.node;
     const NodeId current_node = edit_path.source_to_current[source_node];
 
@@ -381,8 +497,40 @@ inline void GEDEvaluation<T>::remove_node(EditPath<T> &edit_path, const EditOper
     // TODO check whether node has degree 0 o.w. delete all edges
     const T& last_graph = edit_path.edit_path_graphs.back();
     if (last_graph.degree(current_node) != 0) {
-        // raise an error
-        std::cerr << "Error: Trying to delete a node that is not isolated. Node: " << source_node << " Current Target Node: " << current_node << std::endl;
+        for (const auto neighbor : last_graph.get_neighbors(current_node)) {
+            if ( neighbor < current_node) {
+                const NodeId source_i = edit_path.node_mapping.second[neighbor];
+                const NodeId source_j = source_node;
+                // Check whether edge deletion is in remaining edge deletions
+                const EditOperation edge_deletion = {
+                    .operationObject = OperationObject::EDGE,
+                    .type = EditType::DELETE,
+                    .edge = {source_i, source_j},
+                };
+                if (edit_path.remaining_edge_deletions.find(edge_deletion) != edit_path.remaining_edge_deletions.end()) {
+                    remove_edge(edit_path, edge_deletion, remove_isolated_nodes);
+                }
+                else {
+
+                    std::cerr << "Warning: Edge deletion " << edge_deletion << " not found in remaining edge deletions when removing node " << operation << std::endl;
+                }
+            } else {
+              const NodeId source_i = source_node;
+                const NodeId source_j = edit_path.node_mapping.second[neighbor];
+                // Check whether edge deletion is in remaining edge deletions
+                const EditOperation edge_deletion = {
+                    .operationObject = OperationObject::EDGE,
+                    .type = EditType::DELETE,
+                    .edge = {source_i, source_j},
+                };
+                if (edit_path.remaining_edge_deletions.find(edge_deletion) != edit_path.remaining_edge_deletions.end()) {
+                    remove_edge(edit_path, edge_deletion, remove_isolated_nodes);
+                }
+                else {
+                    std::cerr << "Warning: Edge deletion " << edge_deletion << " not found in remaining edge deletions when removing node " << operation << std::endl;
+                }
+            }
+        }
 
     }
     // new graph
@@ -470,11 +618,16 @@ inline void GEDEvaluation<T>::add_node(EditPath<T> &edit_path, const EditOperati
     const std::string name = edit_path.source_graph.GetName() + "_step_" + std::to_string(edit_path.edit_path_graphs.size()) + "_" + edit_path.target_graph.GetName();
     new_graph.SetName(name);
 
+    auto current_operation = EditOperation{
+        .operationObject = OperationObject::NODE,
+        .type = EditType::INSERT,
+        .node = last_graph.nodes(),
+    };
 
     //Update the maps
     edit_path.target_to_current[operation.node] = last_graph.nodes();
 
-    edit_path.Update(new_graph, operation, operation);
+    edit_path.Update(new_graph, operation, current_operation);
 }
 
 template <typename T>

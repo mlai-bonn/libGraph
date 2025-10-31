@@ -32,61 +32,460 @@ inline std::ostream& operator<<(std::ostream& os, const EditType& type) {
 
 enum class EditPathStrategy {
     Random,
-    DeleteFirstEdgesNodes,
-    InsertFirstEdgesNodes,
-    DeleteFirstNodesEdges,
-    InsertFirstNodesEdges,
+    DeleteEdges,
+    InsertEdges,
+    DeleteNodes,
+    InsertNodes,
+    RelabelEdges,
+    RelabelNodes,
+    RandomDeleteEdges,
+    RandomInsertEdges,
+    RandomDeleteNodes,
+    RandomInsertNodes,
+    RandomRelabelEdges,
+    RandomRelabelNodes,
+    DeleteIsolatedNodes,
   };
 
 inline std::string EditPathStrategyToString(const EditPathStrategy& strategy) {
     switch (strategy) {
         case EditPathStrategy::Random:
             return "Random";
-        case EditPathStrategy::DeleteFirstEdgesNodes:
-            return "DeleteFirstEdgesNodes";
-        case EditPathStrategy::InsertFirstEdgesNodes:
-            return "InsertFirstEdgesNodes";
-        case EditPathStrategy::DeleteFirstNodesEdges:
-            return "DeleteFirstNodesEdges";
-        case EditPathStrategy::InsertFirstNodesEdges:
-            return "InsertFirstNodesEdges";
+        case EditPathStrategy::DeleteEdges:
+            return "DeleteEdges";
+        case EditPathStrategy::InsertEdges:
+            return "InsertEdges";
+        case EditPathStrategy::DeleteNodes:
+            return "DeleteNodes";
+        case EditPathStrategy::InsertNodes:
+            return "InsertNodes";
+        case EditPathStrategy::RelabelEdges:
+            return "RelabelEdges";
+        case EditPathStrategy::RelabelNodes:
+            return "RelabelNodes";
+        case EditPathStrategy::RandomDeleteEdges:
+            return "RandomDeleteEdges";
+        case EditPathStrategy::RandomInsertEdges:
+            return "RandomInsertEdges";
+        case EditPathStrategy::RandomDeleteNodes:
+            return "RandomDeleteNodes";
+        case EditPathStrategy::RandomInsertNodes:
+            return "RandomInsertNodes";
+        case EditPathStrategy::RandomRelabelEdges:
+            return "RandomRelabelEdges";
+        case EditPathStrategy::RandomRelabelNodes:
+            return "RandomRelabelNodes";
+        case EditPathStrategy::DeleteIsolatedNodes:
+            return "DeleteIsolatedNodes";
         default:
-            return "Unknown";
+            return "Random";
     }
+}
+
+inline std::string EditPathStrategyToStringShort(const EditPathStrategy& strategy) {
+    switch (strategy) {
+        case EditPathStrategy::Random:
+            return "Rnd";
+        case EditPathStrategy::DeleteEdges:
+            return "d-E";
+        case EditPathStrategy::InsertEdges:
+            return "i-E";
+        case EditPathStrategy::DeleteNodes:
+            return "d-N";
+        case EditPathStrategy::InsertNodes:
+            return "i-N";
+        case EditPathStrategy::RelabelEdges:
+            return "r-E";
+        case EditPathStrategy::RelabelNodes:
+            return "r-N";
+        case EditPathStrategy::RandomDeleteEdges:
+            return "Rnd-d-E";
+        case EditPathStrategy::RandomInsertEdges:
+            return "Rnd-i-E";
+        case EditPathStrategy::RandomDeleteNodes:
+            return "Rnd-d-N";
+        case EditPathStrategy::RandomInsertNodes:
+            return "Rnd-i-N";
+        case EditPathStrategy::RandomRelabelEdges:
+            return "Rnd-r-E";
+        case EditPathStrategy::RandomRelabelNodes:
+            return "Rnd-r-N";
+        case EditPathStrategy::DeleteIsolatedNodes:
+            return "d-IsoN";
+        default:
+            return "Rnd";
+    }
+}
+
+inline std::string EditPathStrategiesToStringShort(const std::vector<EditPathStrategy>& strategies) {
+    // For naming output folders
+    std::string result;
+    // join strategies with _
+    for (size_t i = 0; i < strategies.size(); ++i) {
+        result += EditPathStrategyToStringShort(strategies[i]);
+        if (i < strategies.size() - 1) {
+            result += "_";
+        }
+    }
+    return result;
+}
+
+inline std::vector<std::string> EditPathStrategiesToString(const std::vector<EditPathStrategy>& strategies) {
+    std::vector<std::string> strategy_strings;
+    for (const auto& strategy : strategies) {
+        strategy_strings.push_back(EditPathStrategyToString(strategy));
+    }
+    return strategy_strings;
 }
 
 inline EditPathStrategy StringToEditPathStrategy(const std::string& strategy_str) {
     if (strategy_str == "Random") {
         return EditPathStrategy::Random;
-    } else if (strategy_str == "DeleteFirstEdgesNodes") {
-        return EditPathStrategy::DeleteFirstEdgesNodes;
-    } else if (strategy_str == "InsertFirstEdgesNodes") {
-        return EditPathStrategy::InsertFirstEdgesNodes;
-    } else if (strategy_str == "DeleteFirstNodesEdges") {
-        return EditPathStrategy::DeleteFirstNodesEdges;
-    } else if (strategy_str == "InsertFirstNodesEdges") {
-        return EditPathStrategy::InsertFirstNodesEdges;
+    } else if (strategy_str == "DeleteEdges") {
+        return EditPathStrategy::DeleteEdges;
+    } else if (strategy_str == "InsertEdges") {
+        return EditPathStrategy::InsertEdges;
+    } else if (strategy_str == "DeleteNodes") {
+        return EditPathStrategy::DeleteNodes;
+    } else if (strategy_str == "InsertNodes") {
+        return EditPathStrategy::InsertNodes;
+    } else if (strategy_str == "DeleteIsolatedNodes") {
+        return EditPathStrategy::DeleteIsolatedNodes;
+    } else if (strategy_str == "RelabelEdges") {
+        return EditPathStrategy::RelabelEdges;
+    } else if (strategy_str == "RelabelNodes") {
+        return EditPathStrategy::RelabelNodes;
+    } else if (strategy_str == "RandomDeleteEdges") {
+        return EditPathStrategy::RandomDeleteEdges;
+    } else if (strategy_str == "RandomInsertEdges") {
+        return EditPathStrategy::RandomInsertEdges;
+    } else if (strategy_str == "RandomDeleteNodes") {
+        return EditPathStrategy::RandomDeleteNodes;
+    } else if (strategy_str == "RandomInsertNodes") {
+        return EditPathStrategy::RandomInsertNodes;
+    } else if (strategy_str == "RandomRelabelEdges") {
+        return EditPathStrategy::RandomRelabelEdges;
+    } else if (strategy_str == "RandomRelabelNodes") {
+        return EditPathStrategy::RandomRelabelNodes;
     } else {
-        throw std::invalid_argument("Unknown EditPathStrategy string: " + strategy_str);
+        // print error and list valid strategies
+        std::cerr << "Error: Invalid edit path strategy: " << strategy_str << std::endl;
+        std::cerr << "Valid strategies are: Random, DeleteEdges, InsertEdges, DeleteNodes, InsertNodes, RelabelEdges, RelabelNodes, RandomDeleteEdges, RandomInsertEdges, RandomDeleteNodes, RandomInsertNodes, RandomRelabelEdges, RandomRelabelNodes, DeleteIsolatedNodes" << std::endl;
+        return EditPathStrategy::Random;
     }
 }
+
+inline std::vector<EditPathStrategy> StringsToEditPathStrategies(const std::vector<std::string>& strategy_strs) {
+    std::vector<EditPathStrategy> strategies;
+    for (const auto& strategy_str : strategy_strs) {
+        strategies.push_back(StringToEditPathStrategy(strategy_str));
+    }
+    return strategies;
+}
+
+inline std::vector<EditPathStrategy> StringToEditPathStrategies(const std::string& strategies_str) {
+    // split by space, comma or semicolon
+    std::vector<std::string> strategy_strs;
+    size_t start = 0;
+    size_t end = strategies_str.find_first_of(" ,;");
+    while (end != std::string::npos) {
+        strategy_strs.push_back(strategies_str.substr(start, end - start));
+        start = end + 1;
+        end = strategies_str.find_first_of(" ,;", start);
+    }
+    strategy_strs.push_back(strategies_str.substr(start));
+    return StringsToEditPathStrategies(strategy_strs);
+}
+
+
+
+inline bool GetValidStrategy(std::vector<EditPathStrategy>& strategies) {
+    // must contain only Random (Random with DeleteIsolatedNodes) or some combination of the six operations (each at most once) if an operation is missing add Random at the end
+    bool has_random = false;
+    bool has_delete_isolated_nodes = false;
+
+    bool has_delete_edges = false;
+    bool has_insert_edges = false;
+    bool has_delete_nodes = false;
+    bool has_insert_nodes = false;
+    bool has_relabel_edges = false;
+    bool has_relabel_nodes = false;
+    bool has_random_delete_edges = false;
+    bool has_random_insert_edges = false;
+    bool has_random_delete_nodes = false;
+    bool has_random_insert_nodes = false;
+    bool has_random_relabel_edges = false;
+    bool has_random_relabel_nodes = false;
+
+    int counter = 0;
+    while (counter < strategies.size()) {
+        auto strategy = strategies[counter];
+        ++counter;
+        switch (strategy) {
+            case EditPathStrategy::Random:
+                if (has_random) {
+                    // remove duplicate Random strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                has_random = true;
+                if (strategies.size() == 2) {
+                    if (strategies[0] != EditPathStrategy::DeleteIsolatedNodes && strategies[1] != EditPathStrategy::DeleteIsolatedNodes && strategies[0] != EditPathStrategy::Random && strategies[1] != EditPathStrategy::Random) {
+                        std::cerr << "Error: Random strategy can only be combined with DeleteIsolatedNodes." << std::endl;
+                        return false;
+                    }
+                }
+                if (strategies.size() > 2) {
+                    std::cerr << "Error: Random strategy can only be combined with DeleteIsolatedNodes." << std::endl;
+                    return false;
+                }
+                break;
+            case EditPathStrategy::DeleteEdges:
+                if (has_delete_edges) {
+                    // remove duplicate DeleteEdges strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                if (has_random_delete_edges) {
+                    std::cerr << "Error: DeleteEdges strategy cannot be combined with RandomDeleteEdges." << std::endl;
+                    return false;
+                }
+                has_delete_edges = true;
+                break;
+            case EditPathStrategy::InsertEdges:
+                if (has_insert_edges) {
+                    // remove duplicate InsertEdges strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                if (has_random_insert_edges) {
+                    std::cerr << "Error: InsertEdges strategy cannot be combined with RandomInsertEdges." << std::endl;
+                    return false;
+                }
+                has_insert_edges = true;
+                break;
+            case EditPathStrategy::DeleteNodes:
+                if (has_delete_nodes) {
+                    // remove duplicate DeleteNodes strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                if (has_random_delete_nodes) {
+                    std::cerr << "Error: DeleteNodes strategy cannot be combined with RandomDeleteNodes." << std::endl;
+                    return false;
+                }
+                has_delete_nodes = true;
+                break;
+            case EditPathStrategy::InsertNodes:
+                if (has_insert_nodes) {
+                    // remove duplicate InsertNodes strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                if (has_random_insert_nodes) {
+                    std::cerr << "Error: InsertNodes strategy cannot be combined with RandomInsertNodes." << std::endl;
+                    return false;
+                }
+                has_insert_nodes = true;
+                break;
+            case EditPathStrategy::RelabelEdges:
+                if (has_relabel_edges) {
+                    // remove duplicate RelabelEdges strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                if (has_random_relabel_edges) {
+                    std::cerr << "Error: RelabelEdges strategy cannot be combined with RandomRelabelEdges." << std::endl;
+                    return false;
+                }
+                has_relabel_edges = true;
+                break;
+            case EditPathStrategy::RelabelNodes:
+                if (has_relabel_nodes) {
+                    // remove duplicate RelabelNodes strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                if (has_random_relabel_nodes) {
+                    std::cerr << "Error: RelabelNodes strategy cannot be combined with RandomRelabelNodes." << std::endl;
+                    return false;
+                }
+                has_relabel_nodes = true;
+                break;
+            case EditPathStrategy::RandomDeleteEdges:
+                if (has_random_delete_edges) {
+                    // remove duplicate RandomDeleteEdges strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                if (has_delete_edges) {
+                    std::cerr << "Error: RandomDeleteEdges strategy cannot be combined with DeleteEdges." << std::endl;
+                    return false;
+                }
+                has_random_delete_edges = true;
+                break;
+            case EditPathStrategy::RandomInsertEdges:
+                if (has_random_insert_edges) {
+                    // remove duplicate RandomInsertEdges strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                if (has_insert_edges) {
+                    std::cerr << "Error: RandomInsertEdges strategy cannot be combined with InsertEdges." << std::endl;
+                    return false;
+                }
+                has_random_insert_edges = true;
+                break;
+            case EditPathStrategy::RandomDeleteNodes:
+                if (has_random_delete_nodes) {
+                    // remove duplicate RandomDeleteNodes strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                if (has_delete_nodes) {
+                    std::cerr << "Error: RandomDeleteNodes strategy cannot be combined with DeleteNodes." << std::endl;
+                    return false;
+                }
+                has_random_delete_nodes = true;
+                break;
+            case EditPathStrategy::RandomInsertNodes:
+                if (has_random_insert_nodes) {
+                   // remove duplicate RandomInsertNodes strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                if (has_insert_nodes) {
+                    std::cerr << "Error: RandomInsertNodes strategy cannot be combined with InsertNodes." << std::endl;
+                    return false;
+                }
+                has_random_insert_nodes = true;
+                break;
+            case EditPathStrategy::RandomRelabelEdges:
+                if (has_random_relabel_edges) {
+                    // remove duplicate RandomRelabelEdges strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                if (has_relabel_edges) {
+                    std::cerr << "Error: RandomRelabelEdges strategy cannot be combined with RelabelEdges." << std::endl;
+                    return false;
+                }
+                has_random_relabel_edges = true;
+                break;
+            case EditPathStrategy::RandomRelabelNodes:
+                if (has_random_relabel_nodes) {
+                    // remove duplicate RandomRelabelNodes strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                if (has_relabel_nodes) {
+                    std::cerr << "Error: RandomRelabelNodes strategy cannot be combined with RelabelNodes." << std::endl;
+                    return false;
+                }
+                has_random_relabel_nodes = true;
+                break;
+            case EditPathStrategy::DeleteIsolatedNodes:
+                if (has_delete_isolated_nodes) {
+                    // remove duplicate DeleteIsolatedNodes strategies
+                    strategies.erase(strategies.begin() + counter - 1);
+                    --counter;
+                    continue;
+                }
+                has_delete_isolated_nodes = true;
+                break;
+        }
+    }
+    // If empty add Random
+    if (strategies.empty()) {
+        strategies.push_back(EditPathStrategy::Random);
+        return true;
+    }
+    if (has_random) {
+            return  true;
+    }
+     // If some strategies are not present the default is their random version
+    if (!has_delete_edges) {
+        strategies.push_back(EditPathStrategy::RandomDeleteEdges);
+    }
+    if (!has_insert_edges) {
+        strategies.push_back(EditPathStrategy::RandomInsertEdges);
+    }
+    if (!has_delete_nodes) {
+        strategies.push_back(EditPathStrategy::RandomDeleteNodes);
+    }
+    if (!has_insert_nodes) {
+        strategies.push_back(EditPathStrategy::RandomInsertNodes);
+    }
+    if (!has_relabel_edges) {
+        strategies.push_back(EditPathStrategy::RandomRelabelEdges);
+    }
+    if (!has_relabel_nodes) {
+        strategies.push_back(EditPathStrategy::RandomRelabelNodes);
+    }
+    return true;
+}
+
+
 
 inline std::ostream& operator<<(std::ostream& os, const EditPathStrategy& strategy) {
     switch (strategy) {
         case EditPathStrategy::Random:
             return os << "Random";
-        case EditPathStrategy::DeleteFirstEdgesNodes:
-            return os << "DeleteFirstEdgesNodes";
-        case EditPathStrategy::InsertFirstEdgesNodes:
-            return os << "InsertFirstEdgesNodes";
-        case EditPathStrategy::DeleteFirstNodesEdges:
-            return os << "DeleteFirstNodesEdges";
-        case EditPathStrategy::InsertFirstNodesEdges:
-            return os << "InsertFirstNodesEdges";
+        case EditPathStrategy::DeleteEdges:
+            return os << "DeleteEdges";
+        case EditPathStrategy::InsertEdges:
+            return os << "InsertEdges";
+        case EditPathStrategy::DeleteNodes:
+            return os << "DeleteNodes";
+        case EditPathStrategy::InsertNodes:
+            return os << "InsertNodes";
+        case EditPathStrategy::RelabelEdges:
+            return os << "RelabelEdges";
+        case EditPathStrategy::RelabelNodes:
+            return os << "RelabelNodes";
+        case EditPathStrategy::RandomDeleteEdges:
+            return os << "RandomDeleteEdges";
+        case EditPathStrategy::RandomInsertEdges:
+            return os << "RandomInsertEdges";
+        case EditPathStrategy::RandomDeleteNodes:
+            return os << "RandomDeleteNodes";
+        case EditPathStrategy::RandomInsertNodes:
+            return os << "RandomInsertNodes";
+        case EditPathStrategy::RandomRelabelEdges:
+            return os << "RandomRelabelEdges";
+        case EditPathStrategy::RandomRelabelNodes:
+            return os << "RandomRelabelNodes";
+        case EditPathStrategy::DeleteIsolatedNodes:
+            return os << "DeleteIsolatedNodes";
         default:
-            return os;
+            return os << "Random";
     }
 }
+
+inline std::ostream& operator<<(std::ostream& os, const std::vector<EditPathStrategy>& strategies) {
+    for (size_t i = 0; i < strategies.size(); ++i) {
+        os << strategies[i];
+        if (i < strategies.size() - 1) {
+            os << ", ";
+        }
+    }
+    return os;
+}
+
+
 
 
 enum class OperationObject {
