@@ -98,22 +98,10 @@ inline std::string EditPathStrategyToStringShort(const EditPathStrategy& strateg
             return "r-E";
         case EditPathStrategy::RelabelNodes:
             return "r-N";
-        case EditPathStrategy::RandomDeleteEdges:
-            return "Rnd-d-E";
-        case EditPathStrategy::RandomInsertEdges:
-            return "Rnd-i-E";
-        case EditPathStrategy::RandomDeleteNodes:
-            return "Rnd-d-N";
-        case EditPathStrategy::RandomInsertNodes:
-            return "Rnd-i-N";
-        case EditPathStrategy::RandomRelabelEdges:
-            return "Rnd-r-E";
-        case EditPathStrategy::RandomRelabelNodes:
-            return "Rnd-r-N";
         case EditPathStrategy::DeleteIsolatedNodes:
             return "d-IsoN";
         default:
-            return "Rnd";
+            return "";
     }
 }
 
@@ -122,8 +110,9 @@ inline std::string EditPathStrategiesToStringShort(const std::vector<EditPathStr
     std::string result;
     // join strategies with _
     for (size_t i = 0; i < strategies.size(); ++i) {
-        result += EditPathStrategyToStringShort(strategies[i]);
-        if (i < strategies.size() - 1) {
+        auto strategy_string = EditPathStrategyToStringShort(strategies[i]);
+        result += strategy_string;
+        if (strategy_string != "" && i < strategies.size() - 1) {
             result += "_";
         }
     }

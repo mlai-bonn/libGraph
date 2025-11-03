@@ -5,6 +5,8 @@
 #ifndef GED_EVALUATION_H
 #define GED_EVALUATION_H
 #include <utility>
+#include <boost/graph/filtered_graph.hpp>
+
 #include "GEDStructs.h"
 #include "typedefs.h"
 #include "GraphDataStructures/GraphBase.h"
@@ -259,6 +261,7 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, bo
 
 
     // TODO apply strategies one by one to sort operations_vector
+    unsigned long fixed_operations = 0;
     for (const auto& strategy : strategies) {
         switch (strategy) {
             case EditPathStrategy::Random:
@@ -275,6 +278,7 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, bo
             case EditPathStrategy::DeleteEdges: {
                 // next add all edge deletions to remaining operations that are not yet added
                 for (const auto& op : missing_edge_deletions) {
+                    ++fixed_operations;
                         edit_path.remaining_operations.push_back(op);
                 }
                 missing_edge_deletions.clear();
@@ -283,6 +287,7 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, bo
             case EditPathStrategy::InsertEdges: {
                 // next add all edge insertions to remaining operations that are not yet added
                 for (const auto& op : missing_edge_insertions) {
+                    ++fixed_operations;
                         edit_path.remaining_operations.push_back(op);
                 }
                 missing_edge_insertions.clear();
@@ -291,6 +296,7 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, bo
             case EditPathStrategy::DeleteNodes: {
                 // next add all node deletions to remaining operations that are not yet added
                 for (const auto& op : missing_node_deletions) {
+                    ++fixed_operations;
                         edit_path.remaining_operations.push_back(op);
                 }
                 missing_node_deletions.clear();
@@ -299,6 +305,7 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, bo
             case EditPathStrategy::InsertNodes: {
                 // next add all node insertions to remaining operations that are not yet added
                 for (const auto& op : missing_node_insertions) {
+                    ++fixed_operations;
                         edit_path.remaining_operations.push_back(op);
                 }
                 missing_node_insertions.clear();
@@ -323,32 +330,36 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, bo
             case EditPathStrategy::RandomDeleteEdges: {
                 // next add all edge deletions to remaining operations that are not yet added in random order
                 for (const auto& op : missing_edge_deletions) {
-                    auto random_insert_pos = std::uniform_int_distribution<size_t>(0, edit_path.remaining_operations.size())(generator);
+                    auto random_insert_pos = std::uniform_int_distribution<size_t>(fixed_operations, edit_path.remaining_operations.size())(generator);
                     edit_path.remaining_operations.insert(std::next(edit_path.remaining_operations.begin(), random_insert_pos), op);
                 }
+                missing_edge_deletions.clear();
                 break;
             }
             case EditPathStrategy::RandomInsertEdges: {
                 // next add all edge insertions to remaining operations that are not yet added in random order
                 for (const auto& op : missing_edge_insertions) {
-                    auto random_insert_pos = std::uniform_int_distribution<size_t>(0, edit_path.remaining_operations.size())(generator);
+                    auto random_insert_pos = std::uniform_int_distribution<size_t>(fixed_operations, edit_path.remaining_operations.size())(generator);
                     edit_path.remaining_operations.insert(std::next(edit_path.remaining_operations.begin(), random_insert_pos), op);
                 }
+                missing_edge_insertions.clear();
             }
             case EditPathStrategy::RandomDeleteNodes: {
                 // next add all node deletions to remaining operations that are not yet added in random order
                 for (const auto& op : missing_node_deletions) {
-                    auto random_insert_pos = std::uniform_int_distribution<size_t>(0, edit_path.remaining_operations.size())(generator);
+                    auto random_insert_pos = std::uniform_int_distribution<size_t>(fixed_operations, edit_path.remaining_operations.size())(generator);
                     edit_path.remaining_operations.insert(std::next(edit_path.remaining_operations.begin(), random_insert_pos), op);
                 }
+                missing_node_deletions.clear();
                 break;
             }
             case EditPathStrategy::RandomInsertNodes: {
                 // next add all node insertions to remaining operations that are not yet added in random order
                 for (const auto& op : missing_node_insertions) {
-                    auto random_insert_pos = std::uniform_int_distribution<size_t>(0, edit_path.remaining_operations.size())(generator);
+                    auto random_insert_pos = std::uniform_int_distribution<size_t>(fixed_operations, edit_path.remaining_operations.size())(generator);
                     edit_path.remaining_operations.insert(std::next(edit_path.remaining_operations.begin(), random_insert_pos), op);
                 }
+                missing_node_insertions.clear();
                 break;
             }
             case EditPathStrategy::RandomRelabelEdges: {
@@ -357,6 +368,7 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, bo
                     auto random_insert_pos = std::uniform_int_distribution<size_t>(0, edit_path.remaining_operations.size())(generator);
                     edit_path.remaining_operations.insert(std::next(edit_path.remaining_operations.begin(), random_insert_pos), op);
                 }
+                missing_edge_relabels.clear();
                 break;
             }
             case EditPathStrategy::RandomRelabelNodes: {
@@ -365,6 +377,7 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, bo
                     auto random_insert_pos = std::uniform_int_distribution<size_t>(0, edit_path.remaining_operations.size())(generator);
                     edit_path.remaining_operations.insert(std::next(edit_path.remaining_operations.begin(), random_insert_pos), op);
                 }
+                missing_node_relabels.clear();
                 break;
             }
             case EditPathStrategy::DeleteIsolatedNodes: {
@@ -385,9 +398,16 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, bo
 
 
 
-    // Get a meaningful sequence of edit_path operations
+    // Go through the edit operations and apply them one by one
     while (!edit_path.remaining_operations.empty()) {
+        auto last_operation = EditOperation{};
         auto next_operation = edit_path.remaining_operations.front();
+
+        if (last_operation == next_operation) {
+            std::cerr << "Error: Same edit operation applied twice in a row!" << std::endl;
+            std::cout << next_operation << "was not applied correctly!" << std::endl;
+            return;
+        }
 
         if (next_operation.operationObject == OperationObject::EDGE) {
             if (next_operation.type == EditType::DELETE) {
@@ -407,6 +427,7 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, bo
                 relabel_node(edit_path, next_operation);
             }
         }
+        last_operation = next_operation;
     }
 
     //     // first edge deletions
@@ -465,20 +486,26 @@ inline void GEDEvaluation<T>::remove_edge(EditPath<T> &edit_path, const EditOper
     if (remove_isolated_nodes) {
         // check if node1 is isolated
         if (new_graph.degree(current_i) == 0) {
-            for (const auto x : edit_path.remaining_node_deletions) {
-                if (x.node == source_i) {
-                    remove_node(edit_path, x);
-                    break;
-                }
+            EditOperation isolated_node_deletion = {
+                .operationObject = OperationObject::NODE,
+                .type = EditType::DELETE,
+                .node = source_i,
+            };
+            if (edit_path.remaining_node_deletions.contains(isolated_node_deletion)) {
+                remove_node(edit_path, isolated_node_deletion);
+                return;
             }
         }
         // check if node2 is isolated
         if (new_graph.degree(current_j) == 0) {
-            for (const auto x : edit_path.remaining_node_deletions) {
-                if (x.node == source_j) {
-                    remove_node(edit_path, x);
-                    break;
-                }
+            EditOperation isolated_node_deletion = {
+                .operationObject = OperationObject::NODE,
+                .type = EditType::DELETE,
+                .node = source_j,
+            };
+            if (edit_path.remaining_node_deletions.contains(isolated_node_deletion)) {
+                remove_node(edit_path, isolated_node_deletion);
+                return;
             }
         }
     }
@@ -487,7 +514,7 @@ inline void GEDEvaluation<T>::remove_edge(EditPath<T> &edit_path, const EditOper
 template <typename T>
 inline void GEDEvaluation<T>::remove_node(EditPath<T> &edit_path, const EditOperation &operation, bool remove_isolated_nodes) const {
     const NodeId source_node = operation.node;
-    const NodeId current_node = edit_path.source_to_current[source_node];
+    NodeId current_node = edit_path.source_to_current[source_node];
 
     const EditOperation current_operation = {
         .operationObject = OperationObject::NODE,
@@ -498,19 +525,22 @@ inline void GEDEvaluation<T>::remove_node(EditPath<T> &edit_path, const EditOper
     T& last_graph = edit_path.edit_path_graphs.back();
     if (last_graph.degree(current_node) != 0) {
         for (const auto neighbor : edit_path.source_graph.get_neighbors(source_node)) {
+            //update last_graph and current node
+            T& last_path_graph = edit_path.edit_path_graphs.back();
+            current_node = edit_path.source_to_current[source_node];
             // check wheter last graph still has the edge
-            if (!last_graph.IsEdge(current_node, edit_path.source_to_current[neighbor])) {
+            if (!last_path_graph.IsEdge(current_node, edit_path.source_to_current[neighbor])) {
                 continue;
             }
-            INDEX min = std::min(neighbor, current_node);
-            INDEX max = std::max(neighbor, current_node);
+            INDEX min = std::min(neighbor, source_node);
+            INDEX max = std::max(neighbor, source_node);
             const EditOperation edge_deletion = {
                 .operationObject = OperationObject::EDGE,
                 .type = EditType::DELETE,
                 .edge = {min, max},
             };
 
-            if (edit_path.remaining_edge_deletions.find(edge_deletion) != edit_path.remaining_edge_deletions.end()) {
+            if (edit_path.remaining_edge_deletions.contains(edge_deletion)) {
                 remove_edge(edit_path, edge_deletion, remove_isolated_nodes);
             }
             else {
@@ -518,17 +548,13 @@ inline void GEDEvaluation<T>::remove_node(EditPath<T> &edit_path, const EditOper
                 std::cerr << "Warning: Edge deletion " << edge_deletion << " not found in remaining edge deletions when removing node " << operation << std::endl;
             }
         }
-        if (edit_path.remaining_node_deletions.find(operation) == edit_path.remaining_node_deletions.end()) {
+        if (!edit_path.remaining_node_deletions.contains(operation)) {
             // it could be that the remove edge operations already removed the node. Thus, we check again if the node still exists in the remaining_node_deletions
             return;
         }
     }
-
-
-    // update the last graph
-    last_graph = edit_path.edit_path_graphs.back();
     // new graph
-    T new_graph = last_graph;
+    T new_graph = edit_path.edit_path_graphs.back();
     new_graph.RemoveNode(current_node);
     const std::string name = edit_path.source_graph.GetName() + "_step_" + std::to_string(edit_path.edit_path_graphs.size()) + "_" + edit_path.target_graph.GetName();
     new_graph.SetName(name);
@@ -666,7 +692,8 @@ inline void GEDEvaluation<T>::relabel_node(EditPath<T> &edit_path, const EditOpe
     const T& last_graph = edit_path.edit_path_graphs.back();
     T new_graph = last_graph;
     Label target_label = edit_path.target_graph.label(target_i);
-    new_graph.RelabelNode(current_i, target_label);
+    std::vector<double> target_node_data = edit_path.target_graph.GetNodeData(target_i);
+    new_graph.RelabelNode(current_i, target_label, target_node_data);
 
     const std::string name = edit_path.source_graph.GetName() + "_step_" + std::to_string(edit_path.edit_path_graphs.size()) + "_" + edit_path.target_graph.GetName();
     new_graph.SetName(name);
