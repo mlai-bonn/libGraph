@@ -73,7 +73,6 @@ inline void WriteEditPathInfo(const std::vector<GEDEvaluation<T>>& results, cons
         INDEX source_id = result.graph_ids.first;
         INDEX target_id = result.graph_ids.second;
         for (INDEX step_id = 0; step_id < edit_operations[counter].size(); ++step_id) {
-            std::cout << "Writing step " << step_id << " of edit path." << std::endl;
             // write source_id, step_id, target_id
             ofs.write(reinterpret_cast<const char *>(&source_id), sizeof(source_id));
             ofs.write(reinterpret_cast<const char *>(&step_id), sizeof(step_id));
@@ -459,10 +458,32 @@ inline void CSVFromGEDResults(const std::string &results_path, const std::vector
 template<typename T>
 void MergeGEDResults(const std::string &tmp_path, const std::string &results_path, const std::string& search_string, const GraphData<T>& graph_data) {
     // Merge all mappings in tmp folder
-    std::vector<GEDEvaluation<T>> merged_results;
-    MergeBinaries(tmp_path, search_string, graph_data, merged_results);
+    std::vector<GEDEvaluation<T>> tmp_results;
+    MergeBinaries(tmp_path, search_string, graph_data, tmp_results);
+    // Load existing results from the results_path
+    std::vector<GEDEvaluation<T>> existing_results;
+    if (std::filesystem::exists(results_path + graph_data.GetName() + "_ged_mapping.bin")) {
+        BinaryToGEDResult(results_path + graph_data.GetName() + "_ged_mapping.bin", graph_data, existing_results);
+    }
+    // append tmp_results to existing results if not already present
+    for (const auto& tmp_result : tmp_results) {
+        auto it = std::ranges::find_if(existing_results, [&tmp_result](const GEDEvaluation<T>& res) {
+            return res.graph_ids == tmp_result.graph_ids;
+        });
+        if (it == existing_results.end()) {
+            existing_results.push_back(tmp_result);
+        }
+    }
+    // sort final results by graph ids (first, second)
+    std::ranges::sort(existing_results, [](const GEDEvaluation<T>& a, const GEDEvaluation<T>& b) {
+        if (a.graph_ids.first != b.graph_ids.first) {
+            return a.graph_ids.first < b.graph_ids.first;
+        }
+        return a.graph_ids.second < b.graph_ids.second;
+    });
+
     // Save final result
-    GEDResultToBinary(results_path, merged_results);
+    GEDResultToBinary(results_path, existing_results);
     // remove all databasename related files in tmp folder
     for (const auto& entry : std::filesystem::directory_iterator(tmp_path)) {
         if (entry.path().string().find(graph_data.GetName() + "_") != std::string::npos) {

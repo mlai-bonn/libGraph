@@ -116,6 +116,10 @@ inline std::string EditPathStrategiesToStringShort(const std::vector<EditPathStr
             result += "_";
         }
     }
+    // remove last char if it is _
+    if (result.back() == '_') {
+        result.pop_back();
+    }
     return result;
 }
 
