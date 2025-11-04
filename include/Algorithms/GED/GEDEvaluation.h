@@ -215,7 +215,7 @@ inline void GEDEvaluation<T>::get_edit_path(EditPath<T>& edit_path, int seed, bo
 
     // get a random order of the edit_path.edit_operations and store it in edit_path.remaining_operations
     std::vector<EditOperation> operations_vector(edit_path.edit_operations.begin(), edit_path.edit_operations.end());
-    std::mt19937_64 generator(seed);
+    std::mt19937 generator(seed);
     std::ranges::shuffle(operations_vector, generator);
     // store missing operations in corresponding vectors (using the order of operations_vector)
     std::vector<EditOperation> missing_edge_deletions;;
@@ -492,8 +492,9 @@ inline void GEDEvaluation<T>::remove_edge(EditPath<T> &edit_path, const EditOper
                 .node = source_i,
             };
             if (edit_path.remaining_node_deletions.contains(isolated_node_deletion)) {
-                remove_node(edit_path, isolated_node_deletion);
-                return;
+                // swap to the front of the remaining operations
+                edit_path.remaining_operations.remove(isolated_node_deletion);
+                edit_path.remaining_operations.push_front(isolated_node_deletion);
             }
         }
         // check if node2 is isolated
@@ -504,7 +505,9 @@ inline void GEDEvaluation<T>::remove_edge(EditPath<T> &edit_path, const EditOper
                 .node = source_j,
             };
             if (edit_path.remaining_node_deletions.contains(isolated_node_deletion)) {
-                remove_node(edit_path, isolated_node_deletion);
+                // swap to the front of the remaining operations
+                edit_path.remaining_operations.remove(isolated_node_deletion);
+                edit_path.remaining_operations.push_front(isolated_node_deletion);
                 return;
             }
         }

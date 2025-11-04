@@ -447,7 +447,7 @@ void GraphData<T>::Load(const std::string &graphPath) {
                             ++added_edges;
                         }
                     }
-                    std::cout << "Graph " << graph.GetName() << " with id " << i << " with " << added_edges << " edges loaded." << std::endl;
+                    //std::cout << "Graph " << graph.GetName() << " with id " << i << " with " << added_edges << " edges loaded." << std::endl;
                     graph.set_edge_num(added_edges);
                     graph.InitLabels();
                 }
