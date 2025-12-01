@@ -53,7 +53,9 @@ template<typename T>
 void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
                                    const GraphData<T> &graph_data,
                                    const std::vector<std::pair<INDEX,INDEX>> &graph_ids,
-                                   const std::string &results_path, ged::Options::GEDMethod method, const std::string& method_options);
+                                   size_t missing_pairs,
+                                   const std::string &results_path, ged::Options::GEDMethod method,
+                                   const std::string& method_options);
 
 
 
@@ -132,7 +134,9 @@ template<typename T>
 void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
                                    const GraphData<T> &graph_data,
                                    const std::vector<std::pair<INDEX,INDEX>> &graph_ids,
-                                   const std::string &results_path, ged::Options::GEDMethod method, const std::string& method_options) {
+                                   size_t missing_pairs,
+                                   const std::string &results_path, ged::Options::GEDMethod method,
+                                   const std::string& method_options) {
     // check whether the output path exists
     if (!std::filesystem::exists(results_path)) {
         std::cout << "The output path " << results_path << " does not exist." << std::endl;
@@ -152,13 +156,16 @@ void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &en
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     for (const auto& [i,j] : graph_ids) {
+        if (missing_pairs == 0) {
+            std::cout << "All pairs have been computed." << std::endl;
+            return;
+        }
         if (j > i) {
-            // Check if mapping already exists in the tmp folder
-            if (std::filesystem::exists(results_path + graph_data.GetName() + "_" + std::to_string(i) + "_" + std::to_string(j) + "_ged_mapping.bin")) {
-                //std::cout << "Mapping between graph " << i << " and graph " << j << " already exists. Skipping." << std::endl;
-                ++counter;
-                continue;
+            // every 100 pairs print progress
+            if (missing_pairs % 100 == 0) {
+                std::cout << "Progress: " << (counter * 100) / (graph_data.size() * (graph_data.size() - 1) / 2) << "%" << std::endl;
             }
+
             //std::cout << "Computing mapping between graph " << i << " and graph " << j << std::endl;
             // print percentage
             //std::cout << "Progress: " << (counter * 100) / (graph_data.size() * (graph_data.size() - 1) / 2) << "%" << std::endl;
@@ -170,6 +177,12 @@ void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &en
             //std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
             env.run_method(i, j);
             GEDEvaluation<T> result = ComputeGEDResult(env, graph_data, i, j);
+            // print if time limit was reached and continue
+            if (result.lower_bound != result.upper_bound) {
+                std::cout << "Time limit reached for graphs " << i << " and " << j << ". Skipping." << std::endl;
+                continue;
+            }
+            --missing_pairs;
             // print calculated (approximated Distance)
             //std::cout << "Approximated Distance " << i << " to " << j << " : " << result.distance << std::endl;
             // save result to binary

@@ -296,6 +296,10 @@ inline void UDataGraph::Save(const SaveParams& saveParams) {
 /// \param type
 /// \return
 inline double UDataGraph::GetEdgeData(const EDGE & edge, const std::string& type) const {
+    // ad a check if type exists o.w. return 0
+    if (_edge_data_names.find(type) == _edge_data_names.end()) {
+        return 0;
+    }
     const int index = _edge_data_names.at(type);
     if (index == -1) {
         return 0;
