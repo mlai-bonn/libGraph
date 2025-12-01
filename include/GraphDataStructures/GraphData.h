@@ -21,6 +21,7 @@ public:
 
     void LoadBGF(std::vector<T>& graphs, const std::string &graphPath, GraphFormat graphFormat);
     void LoadAIDS(std::vector<T>& graphs, const std::string &graphPath);
+    void LoadGRAPHLIST(std::vector<T>& graphs, const std::string &graphPath);
     void Save(const SaveParams& saveParams = SaveParams());
 
     void add_graph(const std::string& graphPath, bool withLabels = false);
@@ -114,6 +115,11 @@ void GraphData<T>::LoadBGF(std::vector<T> &graphs, const std::string &graphPath,
     }
     In.close();
 
+}
+
+template<typename T>
+void GraphData<T>::LoadGRAPHLIST(std::vector<T> &graphs, const std::string &graphPath) {
+    // To be implemented
 }
 
 template<typename T>
@@ -475,6 +481,9 @@ void GraphData<T>::Load(std::vector<T>& graphs, const std::string &graphPath, Gr
         case GraphFormat::PEREGRINE_SMALL:
             break;
         case GraphFormat::DIMACS:
+            break;
+        case GraphFormat::GRAPHLIST:
+            LoadGRAPHLIST(graphs, graphPath);
             break;
         case GraphFormat::AIDS:
             LoadAIDS(graphs, graphPath);

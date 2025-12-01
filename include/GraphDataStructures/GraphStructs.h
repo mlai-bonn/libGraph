@@ -45,6 +45,7 @@ enum class GraphFormat{
     PEREGRINE_SMALL,
     DIMACS,
     AIDS,
+    GRAPHLIST,
 };
 
 inline std::ostream& operator<<(std::ostream& os, const GraphFormat& graphFormat) {
