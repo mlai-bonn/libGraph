@@ -17,11 +17,11 @@ public:
     explicit GraphData(GraphFormat graphFormat, const std::string& graphPath, const std::string& search_name = "", bool sort = true);
 
     void Load(const std::string &graphPath);
-    void Load(std::vector<T>& graphs, const std::string &graphPath, GraphFormat graphFormat = GraphFormat::BGFS);
+    void Load(std::vector<T>& graphs, const std::string &graphPath, GraphFormat graphFormat = GraphFormat::BGFS, const std::string& datasetName = "");
 
     void LoadBGF(std::vector<T>& graphs, const std::string &graphPath, GraphFormat graphFormat);
     void LoadAIDS(std::vector<T>& graphs, const std::string &graphPath);
-    void LoadGRAPHLIST(std::vector<T>& graphs, const std::string &graphPath);
+    void LoadGRAPHLIST(std::vector<T>& graphs, const std::string &graphPath, const std::string& datasetName = "");
     void Save(const SaveParams& saveParams = SaveParams());
 
     void add_graph(const std::string& graphPath, bool withLabels = false);
@@ -57,69 +57,167 @@ void GraphData<T>::LoadBGF(std::vector<T> &graphs, const std::string &graphPath,
         extension = ".bgfs";
     }
 
-    if (LoadSave::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes,
-                             graphsNodeFeatureNames, graphsEdges, graphsEdgeFeatureNames)) {
-        for (int i = 0; i < graphNumber; ++i) {
-            graphs.emplace_back();
-            T& graph = graphs.back();
-            //Create _graph
-            graph.Init(graphsNames[i], (int) graphsSizes[i], (int) graphsEdges[i],
-                       (int) graphsNodeFeatureNames[i].size(), (int) graphsEdgeFeatureNames[i].size(),
-                       graphsNodeFeatureNames[i], graphsEdgeFeatureNames[i]);
-            //Read the nodes
-            for (int j = 0; j < graphsSizes[i]; ++j) {
-                for (int k = 0; k < graphsNodeFeatureNames[i].size(); ++k) {
-                    double val = 0;
-                    if (extension == ".bgf") {
-                        In.read((char *) (&val), sizeof(double));
-                    } else if (extension == ".bgfs") {
-                        unsigned int int_val;
-                        In.read((char *) (&int_val), sizeof(unsigned int));
-                        val = int_val;
+            if (LoadSave::ReadBGF(extension, In, saveVersion, graphNumber, graphsNames, graphsTypes, graphsSizes,
+                                     graphsNodeFeatureNames, graphsEdges, graphsEdgeFeatureNames)) {
+                for (int i = 0; i < graphNumber; ++i) {
+                    graphs.emplace_back();
+                    T& graph = graphs.back();
+                    //Create _graph
+                    graph.Init(graphsNames[i], (int) graphsSizes[i], (int) graphsEdges[i],
+                                   (int) graphsNodeFeatureNames[i].size(), (int) graphsEdgeFeatureNames[i].size(),
+                                   graphsNodeFeatureNames[i], graphsEdgeFeatureNames[i]);
+                    graph.SetPath(graphPath);
+                    //Read the nodes
+                    for (int j = 0; j < graphsSizes[i]; ++j) {
+                        //std::cout << "Reading node " << j << " of graph " << i << std::endl;
+                        for (int k = 0; k < graphsNodeFeatureNames[i].size(); ++k) {
+                            double val = 0;
+                            if (extension == ".bgf") {
+                                In.read((char *) (&val), sizeof(double));
+                            } else if (extension == ".bgfs") {
+                                unsigned int int_val;
+                                In.read((char *) (&int_val), sizeof(unsigned int));
+                                val = int_val;
+                            }
+                            graph.ReadNodeFeatures(val, j, graphsNodeFeatureNames[i][k]);
+                            //std::cout << "Feature values: " << val;
+                        }
+                        //std::cout << std::endl;
                     }
-                    graph.ReadNodeFeatures(val, j, graphsNodeFeatureNames[i][k]);
-
+                    // print nodes loaded for graph i
+                    //std::cout << "Loaded " << graphsSizes[i] << " nodes for graph " << i << std::endl;
+                    //std::cout << "Reading edges for graph " << i << std::endl;
+                    //Read the edges
+                    INDEX added_edges = 0;
+                    INDEX original_edges = graph.edges();
+                    for (INDEX j = 0; j < original_edges; ++j) {
+                        INDEX Src = 0;
+                        INDEX Dst = 0;
+                        if (extension == ".bgf") {
+                            In.read(reinterpret_cast<char *>(&Src), sizeof(INDEX));
+                            In.read(reinterpret_cast<char *>(&Dst), sizeof(INDEX));
+                            // Check for errors
+                        } else if (extension == ".bgfs") {
+                            unsigned int int_Src;
+                            unsigned int int_Dst;
+                            In.read(reinterpret_cast<char *>(&int_Src), sizeof(unsigned int));
+                            In.read(reinterpret_cast<char *>(&int_Dst), sizeof(unsigned int));
+                            Src = (INDEX) int_Src;
+                            Dst = (INDEX) int_Dst;
+                        }
+                        //std::cout << Src << " " << Dst;
+                        //if (graphsEdgeFeatureNames.size() > 0) {
+                        //    std::cout << " with features: ";
+                        //}
+                        std::vector<double> edgeData;
+                        for (int k = 0; k < graphsEdgeFeatureNames[i].size(); ++k) {
+                            double val;
+                            In.read((char *) (&val), sizeof(val));
+                            edgeData.emplace_back(val);
+                            //std::cout << val << " ";
+                        }
+                        //std::cout << std::endl;
+                        if (graph.AddEdge(Src, Dst, edgeData)) {
+                            ++added_edges;
+                        }
+                    }
+                    //std::cout << "Graph " << graph.GetName() << " with id " << i << " with " << added_edges << " edges loaded." << std::endl;
+                    graph.set_edge_num(added_edges);
+                    graph.InitLabels();
                 }
             }
-            //Read the edges
-            INDEX added_edges = 0;
-            INDEX original_edges = graph.edges();
-            for (INDEX j = 0; j < original_edges; ++j) {
-                INDEX Src = 0;
-                INDEX Dst = 0;
-                if (extension == ".bgf") {
-                    In.read((char *) (&Src), sizeof(INDEX));
-                    In.read((char *) (&Dst), sizeof(INDEX));
-                } else if (extension == ".bgfs") {
-                    unsigned int int_Src;
-                    unsigned int int_Dst;
-                    In.read((char *) (&int_Src), sizeof(unsigned int));
-                    In.read((char *) (&int_Dst), sizeof(unsigned int));
-                    Src = int_Src;
-                    Dst = int_Dst;
-                }
-
-                std::vector<double> edgeData;
-                for (int k = 0; k < graphsEdgeFeatureNames[i].size(); ++k) {
-                    double val;
-                    In.read((char *) (&val), sizeof(double));
-                    edgeData.emplace_back(val);
-                }
-                if (graph.ReadEdges(Src, Dst, edgeData)) {
-                    ++added_edges;
-                }
-            }
-            graph.set_edge_num(added_edges);
-            graph.InitLabels();
-        }
-    }
     In.close();
 
 }
 
 template<typename T>
-void GraphData<T>::LoadGRAPHLIST(std::vector<T> &graphs, const std::string &graphPath) {
-    // To be implemented
+void GraphData<T>::LoadGRAPHLIST(std::vector<T> &graphs, const std::string &graphPath, const std::string& datasetName) {
+    // Format: First line: number of graphs
+    // For each graph:
+    // Line with number of nodes
+    // Line with node labels (space separated)
+    // Lines with edges: nodeA nodeB edgeLabel (space separated)
+    NodeId src;
+    NodeId dest;
+    std::string a, b, c;
+    std::string line;
+    std::ifstream infile(graphPath);
+    std::vector<std::pair<INDEX, INDEX>> graphEdges;
+    Labels edgeLabels;
+    std::set<INDEX> graphNodeIds;
+    std::unordered_map<INDEX, INDEX> originalIdsToNodeIds;
+    Labels nodeLabels;
+    unsigned int num_nodes = 0;
+    unsigned int num_edges = 0;
+    int graph_counter = 0;
+    std::getline(infile, line);
+    int total_graphs = std::stoi(line);
+    graphs.reserve(total_graphs);
+    while (graphs.size() < total_graphs) {
+        // show progress every 10 graphs
+        if (graph_counter % 100 == 0) {
+            std::cout << "Loading graph " << graph_counter + 1 << " / " << total_graphs << std::endl;
+        }
+        graphEdges.clear();
+        nodeLabels.clear();
+        edgeLabels.clear();
+        graphNodeIds.clear();
+        originalIdsToNodeIds.clear();
+        graphs.emplace_back();
+        T& graph = graphs.back();
+        if (num_nodes == 0) {
+            // Read number of nodes
+            std::getline(infile, line);
+            num_nodes = std::stoi(line);
+        }
+        // Read node labels
+        std::getline(infile, line);
+        std::istringstream iss_labels(line);
+        for (unsigned int i = 0; i < num_nodes; ++i) {
+            iss_labels >> a;
+            nodeLabels.emplace_back(std::stoi(a));
+        }
+        graph.Init(datasetName + "_" + std::to_string(graph_counter), 0, 0, 1, 1, {"label"}, {"label"});
+        std::vector<std::vector<double>> nodeData;
+        for (unsigned int i = 0; i < num_nodes; ++i) {
+            nodeData.emplace_back(std::vector<double>{static_cast<double>(nodeLabels[i])});
+        }
+        graph.AddNodes(num_nodes, nodeLabels, nodeData);
+        graph.SetPath(graphPath);
+        // Read edges until the line has only one entry or is empty
+        num_edges = 0;
+        while (std::getline(infile, line) && !line.empty()) {
+            std::istringstream iss(line);
+            std::vector<std::string> tokens;
+            while (iss >> a) {
+                tokens.emplace_back(a);
+            }
+            if (tokens.size() == 1) {
+                // Next graph starts, create current graph
+                // add edges
+                int edgeCounter = 0;
+                unsigned int added_edges = 0;
+                for (const auto & edge: graphEdges) {
+                    if (graph.AddEdge(edge.first, edge.second, {edgeLabels[edgeCounter]})){
+                        ++added_edges;
+                    }
+                    ++edgeCounter;
+                }
+                graph.set_edge_num(added_edges);
+                graph.InitLabels();
+                num_nodes = std::stoi(tokens[0]);
+                ++graph_counter;
+                break;
+            }
+            graphEdges.emplace_back(std::stoi(tokens[0]), std::stoi(tokens[1]));
+            graphNodeIds.emplace(std::stoi(tokens[0]));
+            graphNodeIds.emplace(std::stoi(tokens[1]));
+            edgeLabels.emplace_back(std::stoi(tokens[2]));
+            ++num_edges;
+        }
+
+        // add edges
+    }
 }
 
 template<typename T>
@@ -165,7 +263,7 @@ void GraphData<T>::LoadAIDS(std::vector<T> &graphs, const std::string &graphPath
             }
             unsigned int num_edges_duplicates = 0;
             for (auto edge: graphEdges) {
-                if (!graph.add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
+                if (!graph.AddEdge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second], {})) {
                     std::cout << "Edge: " << originalIdsToNodeIds[edge.first] << " "
                               << originalIdsToNodeIds[edge.second] << " has not been added because: " << std::endl;
                     if (graph.IsEdge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
@@ -181,7 +279,7 @@ void GraphData<T>::LoadAIDS(std::vector<T> &graphs, const std::string &graphPath
             }
 
             int max_label = *std::max(nodeLabels.begin(), nodeLabels.end());
-            graph.set_labels(&nodeLabels);
+            graph.SetLabels(&nodeLabels);
             graph.InitLabels();
 
             graphEdges.clear();
@@ -217,75 +315,12 @@ void GraphData<T>::LoadAIDS(std::vector<T> &graphs, const std::string &graphPath
         // num_nodes
         // node_idA node_idB
         // ...
-            src = std::stoull(a);
-            dest = std::stoull(b);
-            graphEdges.emplace_back(src, dest);
-            graphNodeIds.emplace(src);
-            graphNodeIds.emplace(dest);
+        src = std::stoull(a);
+        dest = std::stoull(b);
+        graphEdges.emplace_back(src, dest);
+        graphNodeIds.emplace(src);
+        graphNodeIds.emplace(dest);
     }
-//    _graph.nodes() = graphNodeIds.size();
-//    NodeId num_edges = graphEdges.size();
-//    this->_degrees.resize(_graph.nodes());
-//    this->_graph.resize(_graph.nodes());
-//    INDEX nodeCounter = 0;
-//    for (auto x: graphNodeIds) {
-//        originalIdsToNodeIds.insert({x, nodeCounter});
-//        ++nodeCounter;
-//    }
-//    unsigned int num_edges_duplicates = 0;
-//    for (auto edge: graphEdges) {
-//        if (!GraphStruct::add_edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
-//            std::cout << "Edge: " << originalIdsToNodeIds[edge.first] << " "
-//                      << originalIdsToNodeIds[edge.second] << " has not been added because: " << std::endl;
-//            if (this->edge(originalIdsToNodeIds[edge.first], originalIdsToNodeIds[edge.second])) {
-//                std::cout << "It already exists!" << std::endl;
-//                ++num_edges_duplicates;
-//            }
-//        }
-//    }
-//    std::cout << num_edges_duplicates << " edges are not added because of duplicates (directed base _graph)!"
-//              << std::endl;
-//    std::cout << graphEdges.size() - num_edges_duplicates << " edges are remaining" << std::endl;
-//    if (!labelPath.empty() && withLabels) {
-//        std::string label_extension = std::filesystem::path(labelPath).extension().string();
-//        std::ifstream label_file(labelPath);
-//        if (label_extension == ".vertexids") {
-//            std::string label_line;
-//            _labels = Labels(nodes(), 0);
-//            Label label = 0;
-//            while (std::getline(label_file, label_line)) {
-//                std::istringstream iss(label_line);
-//                std::string token;
-//                while (std::getline(iss, token, ' ')) {
-//                    _labels[originalIdsToNodeIds[std::stoi(token)]] = label;
-//                }
-//                ++label;
-//            }
-//        } else {
-//            try {
-//                NodeId id;
-//                Label label;
-//                while (label_file >> id >> label) {
-//                    _labels.push_back(label);
-//                }
-//            }
-//            catch (...) {
-//            }
-//        }
-//        if (this->_labels.size() == this->_graph.size()) {
-//            labelMap = GraphFunctions::GetGraphLabelMap(_labels);
-//            labelFrequencyMap = GraphFunctions::GetLabelFrequency(labelMap);
-//            this->_numLabels = (this->_numLabels == -1) ? static_cast<int>(labelMap.size()) : this->_numLabels;
-//            if (this->_numLabels >= 10) {
-//                labelType = LABEL_TYPE::LABELED_DENSE;
-//            } else {
-//                labelType = LABEL_TYPE::LABELED_SPARSE;
-//            }
-//            UpdateGraphLabels(labelType);
-//        } else {
-//            //TODO throw exception
-//        }
-//    }
 }
 
 template<typename T>
@@ -464,7 +499,7 @@ void GraphData<T>::Load(const std::string &graphPath) {
 }
 
 template<typename T>
-void GraphData<T>::Load(std::vector<T>& graphs, const std::string &graphPath, GraphFormat graphFormat) {
+void GraphData<T>::Load(std::vector<T>& graphs, const std::string &graphPath, GraphFormat graphFormat, const std::string& datasetName) {
     switch (graphFormat) {
         case GraphFormat::BGF:
             LoadBGF(graphs, graphPath, graphFormat);
@@ -483,7 +518,7 @@ void GraphData<T>::Load(std::vector<T>& graphs, const std::string &graphPath, Gr
         case GraphFormat::DIMACS:
             break;
         case GraphFormat::GRAPHLIST:
-            LoadGRAPHLIST(graphs, graphPath);
+            LoadGRAPHLIST(graphs, graphPath, datasetName);
             break;
         case GraphFormat::AIDS:
             LoadAIDS(graphs, graphPath);
