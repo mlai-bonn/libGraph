@@ -592,8 +592,8 @@ struct EditPath {
     std::vector<EditOperation> sequence_of_operations_current;
     std::vector<T> edit_path_graphs;
 
-    T source_graph;
-    T target_graph;
+    T* source_graph;
+    T* target_graph;
 
     // tmp variables
     std::vector<NodeId> source_to_current = std::vector<NodeId>();

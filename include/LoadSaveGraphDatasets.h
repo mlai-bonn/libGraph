@@ -32,7 +32,7 @@ public:
         bool use_node_attributes=false);
     static bool PreprocessTUDortmundGraphData(const std::string& dataset_name, const std::string &input_path, const std::string &output_path, bool use_node_attributes=false);
     template <typename T>
-    static void LoadPreprocessedTUDortmundGraphData(const std::string& dataset_name , const std::string &output_path, GraphData<T>& graph_data, bool print=false);
+    static void LoadPreprocessedGraphData(const std::string& dataset_name , const std::string &output_path, GraphData<T>& graph_data, bool print=false);
 };
 
 
@@ -335,7 +335,7 @@ inline bool LoadSaveGraphDatasets::PreprocessTUDortmundGraphData(const std::stri
 }
 
 template <typename T>
-void LoadSaveGraphDatasets::LoadPreprocessedTUDortmundGraphData(const std::string& dataset_name , const std::string &output_path, GraphData<T>& graph_data, bool print) {
+void LoadSaveGraphDatasets::LoadPreprocessedGraphData(const std::string& dataset_name , const std::string &output_path, GraphData<T>& graph_data, bool print) {
     // base class should be GraphStruct
     static_assert(std::is_base_of_v<GraphStruct, T>, "T must derive from GraphStruct");
     // Load the graph from the bgfs format
@@ -352,7 +352,7 @@ void LoadSaveGraphDatasets::LoadPreprocessedTUDortmundGraphData(const std::strin
                 std::cout << x << std::endl;
             }
         }
-        std::cout << "Successfully loaded the " << dataset_name << " graphs from TUDataset" << std::endl;
+        std::cout << "Successfully loaded " << graph_data.size() << " graphs from: " << dataset_name << std::endl;
     }
     graph_data.SetName(dataset_name);
 }

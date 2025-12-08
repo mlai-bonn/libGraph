@@ -37,7 +37,7 @@ inline EditPath<T> CreateEditPath(const GEDEvaluation<T>& result, int seed = 42,
     //for (const auto& g : edit_path_graphs.graphData) {
     //    std::cout << g << std::endl;
     //}
-    edit_path.edit_path_graphs.back().SetName(edit_path.target_graph.GetName());
+    edit_path.edit_path_graphs.back().SetName(edit_path.target_graph->GetName());
     return edit_path;
 }
 
@@ -335,7 +335,7 @@ inline void GEDResultToBinary(const std::string &output_path, std::vector<GEDEva
 
 
 template<typename T>
-inline void BinaryToGEDResult(const std::string &input_path, const GraphData<T>& graph_data, GEDEvaluation<T> &result) {
+inline void BinaryToGEDResult(const std::string &input_path, GraphData<T>& graph_data, GEDEvaluation<T> &result) {
     // open binary file
     std::ifstream ifs(input_path, std::ios::binary);
     if (!ifs) {
@@ -371,11 +371,12 @@ inline void BinaryToGEDResult(const std::string &input_path, const GraphData<T>&
     // read upper bound
     ifs.read(reinterpret_cast<char *>(&result.upper_bound), sizeof(double));
     // set graphs
-    result.graphs = {graph_data.graphData[result.graph_ids.first], graph_data.graphData[result.graph_ids.second]};
+    result.graphs.first = &(graph_data.graphData[result.graph_ids.first]);
+    result.graphs.second = &(graph_data.graphData[result.graph_ids.second]);
 }
 
 template<typename T>
-void BinaryToGEDResult(const std::string &input_path, const GraphData<T>& graph_data, std::vector<GEDEvaluation<T>> &results) {
+void BinaryToGEDResult(const std::string &input_path, GraphData<T>& graph_data, std::vector<GEDEvaluation<T>> &results) {
     // open binary file
     std::ifstream ifs(input_path, std::ios::binary);
     if (!ifs) {
@@ -413,7 +414,8 @@ void BinaryToGEDResult(const std::string &input_path, const GraphData<T>& graph_
         // read upper bound
         ifs.read(reinterpret_cast<char *>(&result.upper_bound), sizeof(result.upper_bound));
         // set graphs
-        result.graphs = {graph_data.graphData[result.graph_ids.first], graph_data.graphData[result.graph_ids.second]};
+        result.graphs.first = &(graph_data.graphData[result.graph_ids.first]);
+        result.graphs.second = &(graph_data.graphData[result.graph_ids.second]);
         // push back result
         results.push_back(result);
     }
