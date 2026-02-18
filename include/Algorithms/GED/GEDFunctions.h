@@ -7,6 +7,9 @@
 #include "GEDEvaluation.h"
 #include "typedefs.h"
 #include "GraphDataStructures/GraphData.h"
+#include <cstdio>
+#include <fstream>
+#include <utility>
 
 
 // for approximated GED computation we use the gedlib library see https://github.com/dbblumenthal/gedlib
@@ -160,6 +163,77 @@ inline void ReadEditPathInfo(std::string& edit_path_info, std::vector<std::tuple
     }
 }
 
+template <typename T>
+class BGFStreamingWriter {
+public:
+    BGFStreamingWriter(const std::string& output_dir, const std::string& base_name, bool labeled)
+        : _output_dir(output_dir),
+          _base_name(base_name),
+          _final_file(_output_dir + _base_name + ".bgf"),
+          _meta_tmp_file(_output_dir + _base_name + ".bgf.meta.tmp"),
+          _payload_tmp_file(_output_dir + _base_name + ".bgf.payload.tmp"),
+          _params(SaveParams{.graphPath = "", .Name = "", .Format = GraphFormat::BGF, .Labeled = labeled}) {
+        _meta_out.open(_meta_tmp_file, std::ios::binary | std::ios::trunc);
+        _payload_out.open(_payload_tmp_file, std::ios::binary | std::ios::trunc);
+        if (!_meta_out || !_payload_out) {
+            throw std::runtime_error("Could not open temporary files for streaming BGF output.");
+        }
+    }
+
+    ~BGFStreamingWriter() {
+        _meta_out.close();
+        _payload_out.close();
+    }
+
+    void AddGraph(T& graph) {
+        graph.WriteGraph(_meta_out, _params);
+        graph.WriteNodeFeatures(_payload_out, _params);
+        graph.WriteEdges(_payload_out, _params);
+        ++_graph_count;
+    }
+
+    void Finalize() {
+        _meta_out.close();
+        _payload_out.close();
+
+        std::ofstream out(_final_file, std::ios::binary | std::ios::trunc);
+        if (!out) {
+            throw std::runtime_error("Could not open final BGF output file for writing: " + _final_file);
+        }
+
+        int save_version = 1;
+        out.write(reinterpret_cast<const char*>(&save_version), sizeof(save_version));
+        out.write(reinterpret_cast<const char*>(&_graph_count), sizeof(_graph_count));
+
+        std::ifstream meta_in(_meta_tmp_file, std::ios::binary);
+        std::ifstream payload_in(_payload_tmp_file, std::ios::binary);
+        if (!meta_in || !payload_in) {
+            throw std::runtime_error("Could not open temporary BGF chunks during finalization.");
+        }
+        out << meta_in.rdbuf();
+        out << payload_in.rdbuf();
+        out.close();
+        meta_in.close();
+        payload_in.close();
+
+        std::filesystem::remove(_meta_tmp_file);
+        std::filesystem::remove(_payload_tmp_file);
+    }
+
+    [[nodiscard]] int GraphCount() const { return _graph_count; }
+
+private:
+    std::string _output_dir;
+    std::string _base_name;
+    std::string _final_file;
+    std::string _meta_tmp_file;
+    std::string _payload_tmp_file;
+    SaveParams _params;
+    std::ofstream _meta_out;
+    std::ofstream _payload_out;
+    int _graph_count = 0;
+};
+
 template<typename T>
 void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const GraphData<T> &graph_data, const std::string &edit_path_output = "../Data/EditPaths/", int seed = 42, bool connected_only = false, std::vector<EditPathStrategy> strategies = {EditPathStrategy::Random}) {
     // check whether file already exists
@@ -167,7 +241,7 @@ void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const Grap
         std::cout << "Edit paths for " << graph_data.GetName() << " already exist." << std::endl;
         return;
     }
-    GraphData<T> all_path_graphs;
+    BGFStreamingWriter<T> writer(edit_path_output, graph_data.GetName() + "_edit_paths", true);
     // counter for number of computed paths
    int counter = 0;
     std::vector<std::vector<EditOperation>> edit_operations;
@@ -205,20 +279,13 @@ void CreateAllEditPaths(const std::vector<GEDEvaluation<T>> &results, const Grap
                 continue;
             }
             g.SetName(graph_data.GetName() + "_" + std::to_string(result.graph_ids.first) + "_" + std::to_string(result.graph_ids.second) + "_" + std::to_string(path_counter));
-            all_path_graphs.add(g);
+            writer.AddGraph(g);
             ++path_counter;
         }
         ++results_counter;
     }
-    // save the final result in the tmp folder under datasetname_i.bgfs
-    SaveParams params = {
-        edit_path_output,
-        graph_data.GetName() + "_edit_paths",
-        GraphFormat::BGF,
-        true,
-    };
-    all_path_graphs.Save(params);
-    INDEX number_of_path_graphs = all_path_graphs.size();
+    writer.Finalize();
+    INDEX number_of_path_graphs = static_cast<INDEX>(writer.GraphCount());
     std::cout << "Saved " << number_of_path_graphs << " edit path graphs to " << edit_path_output + graph_data.GetName() + "_edit_paths.bgf" << std::endl;
     INDEX number_of_results = 0;
     for (const auto& result : results) {
@@ -335,7 +402,7 @@ inline void GEDResultToBinary(const std::string &output_path, std::vector<GEDEva
 
 
 template<typename T>
-inline void BinaryToGEDResult(const std::string &input_path, GraphData<T>& graph_data, GEDEvaluation<T> &result) {
+inline void BinaryToGEDResult(const std::string &input_path, const GraphData<T>& graph_data, GEDEvaluation<T> &result) {
     // open binary file
     std::ifstream ifs(input_path, std::ios::binary);
     if (!ifs) {
@@ -371,12 +438,12 @@ inline void BinaryToGEDResult(const std::string &input_path, GraphData<T>& graph
     // read upper bound
     ifs.read(reinterpret_cast<char *>(&result.upper_bound), sizeof(double));
     // set graphs
-    result.graphs.first = &(graph_data.graphData[result.graph_ids.first]);
-    result.graphs.second = &(graph_data.graphData[result.graph_ids.second]);
+    result.graphs.first = const_cast<T*>(&(graph_data.graphData[result.graph_ids.first]));
+    result.graphs.second = const_cast<T*>(&(graph_data.graphData[result.graph_ids.second]));
 }
 
 template<typename T>
-void BinaryToGEDResult(const std::string &input_path, GraphData<T>& graph_data, std::vector<GEDEvaluation<T>> &results) {
+void BinaryToGEDResult(const std::string &input_path, const GraphData<T>& graph_data, std::vector<GEDEvaluation<T>> &results) {
     // open binary file
     std::ifstream ifs(input_path, std::ios::binary);
     if (!ifs) {
@@ -414,8 +481,8 @@ void BinaryToGEDResult(const std::string &input_path, GraphData<T>& graph_data, 
         // read upper bound
         ifs.read(reinterpret_cast<char *>(&result.upper_bound), sizeof(result.upper_bound));
         // set graphs
-        result.graphs.first = &(graph_data.graphData[result.graph_ids.first]);
-        result.graphs.second = &(graph_data.graphData[result.graph_ids.second]);
+        result.graphs.first = const_cast<T*>(&(graph_data.graphData[result.graph_ids.first]));
+        result.graphs.second = const_cast<T*>(&(graph_data.graphData[result.graph_ids.second]));
         // push back result
         results.push_back(result);
     }
@@ -465,7 +532,8 @@ void MergeGEDResults(const std::string &tmp_path, const std::string &results_pat
     // Load existing results from the results_path
     std::vector<GEDEvaluation<T>> existing_results;
     if (std::filesystem::exists(results_path + graph_data.GetName() + "_ged_mapping.bin")) {
-        BinaryToGEDResult(results_path + graph_data.GetName() + "_ged_mapping.bin", graph_data, existing_results);
+        const std::string path = results_path + graph_data.GetName() + "_ged_mapping.bin";
+        BinaryToGEDResult(path, graph_data, existing_results);
     }
     // append tmp_results to existing results if not already present
     for (const auto& tmp_result : tmp_results) {

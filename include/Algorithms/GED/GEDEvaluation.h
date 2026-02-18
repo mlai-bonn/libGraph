@@ -481,7 +481,7 @@ inline void GEDEvaluation<T>::remove_edge(EditPath<T> &edit_path, const EditOper
     new_graph.RemoveEdge(current_i, current_j);
     new_graph.GetConnectivity();
 
-    edit_path.Update(new_graph, operation, current_operation);
+    edit_path.Update(std::move(new_graph), operation, current_operation);
 
     if (remove_isolated_nodes) {
         // check if node1 is isolated
@@ -573,7 +573,7 @@ inline void GEDEvaluation<T>::remove_node(EditPath<T> &edit_path, const EditOper
     }
     edit_path.source_to_current[source_node] = -1;
 
-    edit_path.Update(new_graph, operation, current_operation);
+    edit_path.Update(std::move(new_graph), operation, current_operation);
 }
 
 template <typename T>
@@ -625,7 +625,7 @@ inline void GEDEvaluation<T>::add_edge(EditPath<T> &edit_path, const EditOperati
     std::vector<double> edge_features = edit_path.target_graph->GetEdgeData(EDGE(target_i, target_j));
     new_graph.AddEdge(current_i, current_j, edge_features, true);
     new_graph.GetConnectivity();
-    edit_path.Update(new_graph, operation, current_operation);
+    edit_path.Update(std::move(new_graph), operation, current_operation);
 }
 
 template <typename T>
@@ -650,7 +650,7 @@ inline void GEDEvaluation<T>::add_node(EditPath<T> &edit_path, const EditOperati
     //Update the maps
     edit_path.target_to_current[operation.node] = last_graph.nodes();
 
-    edit_path.Update(new_graph, operation, current_operation);
+    edit_path.Update(std::move(new_graph), operation, current_operation);
 }
 
 template <typename T>
@@ -677,7 +677,7 @@ inline void GEDEvaluation<T>::relabel_edge(EditPath<T> &edit_path, const EditOpe
     const std::string name = edit_path.source_graph->GetName() + "_step_" + std::to_string(edit_path.edit_path_graphs.size()) + "_" + edit_path.target_graph->GetName();
     new_graph.SetName(name);
 
-    edit_path.Update(new_graph, operation, current_operation);
+    edit_path.Update(std::move(new_graph), operation, current_operation);
 }
 
 template <typename T>
@@ -701,7 +701,7 @@ inline void GEDEvaluation<T>::relabel_node(EditPath<T> &edit_path, const EditOpe
     const std::string name = edit_path.source_graph->GetName() + "_step_" + std::to_string(edit_path.edit_path_graphs.size()) + "_" + edit_path.target_graph->GetName();
     new_graph.SetName(name);
 
-    edit_path.Update(new_graph, operation, current_operation);
+    edit_path.Update(std::move(new_graph), operation, current_operation);
 }
 
 template<typename T>
@@ -726,4 +726,3 @@ inline std::vector<int> CheckResultsValidity(const std::vector<GEDEvaluation<T>>
 }
 
 #endif //GED_EVALUATION_H
-

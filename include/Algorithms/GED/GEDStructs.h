@@ -609,7 +609,7 @@ struct EditPath {
     std::unordered_set<EditOperation, EditOperationHash> remaining_edge_relabels;
     std::unordered_set<EditOperation, EditOperationHash> remaining_node_relabels;
 
-    void Update(T& graph, const EditOperation& operation, const EditOperation& operation_current);
+    void Update(T graph, const EditOperation& operation, const EditOperation& operation_current);
 };
 
 // print Edit Path using the sequence of operations
@@ -624,8 +624,8 @@ inline std::ostream& operator<<(std::ostream& os, const EditPath<T>& edit_path) 
 }
 
 template<typename T>
-void EditPath<T>::Update(T& graph, const EditOperation& operation, const EditOperation& operation_current) {
-    this->edit_path_graphs.emplace_back(graph);
+void EditPath<T>::Update(T graph, const EditOperation& operation, const EditOperation& operation_current) {
+    this->edit_path_graphs.emplace_back(std::move(graph));
     this->sequence_of_operations.push_back(operation);
     this->sequence_of_operations_current.push_back(operation_current);
     this->remaining_operations.remove(operation);

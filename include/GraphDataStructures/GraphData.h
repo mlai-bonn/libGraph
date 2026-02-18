@@ -26,6 +26,7 @@ public:
 
     void add_graph(const std::string& graphPath, bool withLabels = false);
     void add(const T& graph);
+    void add(T&& graph);
     void add(const std::vector<T>& graphs);
     void add(const std::string& graphPath, const std::string& labelPath = "", const std::string& searchName = "", const std::string& extension = ".edges", bool sort = true, std::set<int>* graphSizes = nullptr, int patternNum = -1);
 
@@ -214,6 +215,21 @@ void GraphData<T>::LoadGRAPHLIST(std::vector<T> &graphs, const std::string &grap
             graphNodeIds.emplace(std::stoi(tokens[1]));
             edgeLabels.emplace_back(std::stoi(tokens[2]));
             ++num_edges;
+        }
+        // if end of file reached, add last graph
+        if (infile.eof()) {
+            // Create last graph
+            // add edges
+            int edgeCounter = 0;
+            unsigned int added_edges = 0;
+            for (const auto & edge: graphEdges) {
+                if (graph.AddEdge(edge.first, edge.second, {edgeLabels[edgeCounter]})){
+                    ++added_edges;
+                }
+                ++edgeCounter;
+            }
+            graph.set_edge_num(added_edges);
+            graph.InitLabels();
         }
 
         // add edges
@@ -631,6 +647,13 @@ inline GraphData<T>::GraphData(GraphFormat graphFormat, const std::string& graph
 template<typename T>
 inline void GraphData<T>::add(const T& graph) {
     graphData.push_back(graph);
+}
+
+/// Add a _graph to a _graph database by moving ownership
+/// \param graph
+template<typename T>
+inline void GraphData<T>::add(T&& graph) {
+    graphData.emplace_back(std::move(graph));
 }
 
 /// Add graphs from path to a _graph database, optionally with labels
