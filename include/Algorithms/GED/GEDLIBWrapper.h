@@ -50,10 +50,9 @@ GEDEvaluation<T> ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, 
  * @param mapping_path_output The path to the file where the mappings should be saved
  */
 template<typename T>
-void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
+size_t ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
                                    const GraphData<T> &graph_data,
                                    const std::vector<std::pair<INDEX,INDEX>> &graph_ids,
-                                   size_t missing_pairs,
                                    const std::string &results_path, ged::Options::GEDMethod method,
                                    const std::string& method_options);
 
@@ -115,13 +114,16 @@ GEDEvaluation<T> ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, 
     for (const auto x : node_map.get_backward_map()) {
         mapping.second.push_back(x);
     }
+    T* gp = const_cast<T*>(&graphs.graphData[source_graph_id]);
+    T* gq = const_cast<T*>(&graphs.graphData[target_graph_id]);
+
     ged::GEDGraph::GraphID i = source_graph_id;
     ged::GEDGraph::GraphID j = target_graph_id;
     GEDEvaluation<T> result = {
         env.get_node_map(i,j).induced_cost(),
         env.get_lower_bound(i,j),
         env.get_upper_bound(i,j),
-        {graphs.graphData[source_graph_id], graphs.graphData[target_graph_id]},
+        std::pair<T*, T*>{gp, gq},
         {source_graph_id, target_graph_id},
         mapping,
         graphs.GetName(),
@@ -131,22 +133,21 @@ GEDEvaluation<T> ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, 
 }
 
 template<typename T>
-void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
+size_t ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
                                    const GraphData<T> &graph_data,
                                    const std::vector<std::pair<INDEX,INDEX>> &graph_ids,
-                                   size_t missing_pairs,
                                    const std::string &results_path, ged::Options::GEDMethod method,
                                    const std::string& method_options) {
     // check whether the output path exists
     if (!std::filesystem::exists(results_path)) {
         std::cout << "The output path " << results_path << " does not exist." << std::endl;
-        return;
+        return 0;
     }
     // check whether the file already exists in the output_path
     if (std::filesystem::exists(results_path + graph_data.GetName() + "_ged_mapping.bin")) {
         std::cout << "The mapping file for " << graph_data.GetName() << " already exist." << std::endl;
         std::cout << "Skipping computation." << std::endl;
-        return;
+        return 0;
     }
     // create tmp directory
     std::filesystem::create_directory(results_path);
@@ -156,41 +157,32 @@ void ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &en
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     for (const auto& [i,j] : graph_ids) {
-        if (missing_pairs == 0) {
-            std::cout << "All pairs have been computed." << std::endl;
-            return;
-        }
-        if (j > i) {
-            // every 100 pairs print progress
-            if (missing_pairs % 100 == 0) {
-                std::cout << "Progress: " << (counter * 100) / (graph_data.size() * (graph_data.size() - 1) / 2) << "%" << std::endl;
-            }
-
-            //std::cout << "Computing mapping between graph " << i << " and graph " << j << std::endl;
-            // print percentage
-            //std::cout << "Progress: " << (counter * 100) / (graph_data.size() * (graph_data.size() - 1) / 2) << "%" << std::endl;
-            // estimated time in minutes
-            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-            const double elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-            const double estimated_total_time = (elapsed_seconds / (counter + 1)) * (graph_data.size() * (graph_data.size() - 1) / 2);
-            const double estimated_time_left = estimated_total_time - elapsed_seconds;
-            //std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
-            env.run_method(i, j);
-            GEDEvaluation<T> result = ComputeGEDResult(env, graph_data, i, j);
-            // print if time limit was reached and continue
-            if (result.lower_bound != result.upper_bound) {
-                std::cout << "Time limit reached for graphs " << i << " and " << j << ". Skipping." << std::endl;
-                continue;
-            }
-            --missing_pairs;
-            // print calculated (approximated Distance)
-            //std::cout << "Approximated Distance " << i << " to " << j << " : " << result.distance << std::endl;
-            // save result to binary
+        //std::cout << "Computing mapping between graph " << i << " and graph " << j << std::endl;
+        // print percentage
+        //std::cout << "Progress: " << (counter * 100) / (graph_data.size() * (graph_data.size() - 1) / 2) << "%" << std::endl;
+        // estimated time in minutes
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        const double elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
+        const double estimated_total_time = (elapsed_seconds / (counter + 1)) * (graph_data.size() * (graph_data.size() - 1) / 2);
+        const double estimated_time_left = estimated_total_time - elapsed_seconds;
+        //std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
+        env.run_method(i, j);
+        GEDEvaluation<T> result = ComputeGEDResult(env, graph_data, i, j);
+        // print if time limit was reached and continue
+        if (result.lower_bound != result.upper_bound) {
+            std::cout << "Time limit reached for graphs " << i << " and " << j << ". Skipping." << std::endl;
+            result.time = -1;
             GEDResultToBinary(results_path, result);
-            //std::cout << "Saved intermediate result for graphs " << i << " and " << j << std::endl;
-            ++counter;
+            continue;
         }
+        // print calculated (approximated Distance)
+        //std::cout << "Approximated Distance " << i << " to " << j << " : " << result.distance << std::endl;
+        // save result to binary
+        GEDResultToBinary(results_path, result);
+        //std::cout << "Saved intermediate result for graphs " << i << " and " << j << std::endl;
+        ++counter;
     }
+    return counter;
 }
 
 std::string GEDMethodToString(const ged::Options::GEDMethod method) {
