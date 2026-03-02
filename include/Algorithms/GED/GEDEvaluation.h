@@ -711,11 +711,13 @@ inline std::vector<int> CheckResultsValidity(const std::vector<GEDEvaluation<T>>
         const auto& result = results[i];
         const auto& fst = result.node_mapping.first;
         const auto& snd = result.node_mapping.second;
+        const int fst_deleted_nodes = std::count_if(fst.begin(), fst.end(), [&](NodeId x){ return x > result.graphs.second->nodes(); });
+        const int snd_deleted_nodes = std::count_if(snd.begin(), snd.end(), [&](NodeId x){ return x > result.graphs.first->nodes(); });
         auto first_set = std::set<std::decay_t<decltype(fst[0])>>{};
         for (const auto& v : fst) first_set.insert(v);
         auto second_set = std::set<std::decay_t<decltype(snd[0])>>{};
         for (const auto& v : snd) second_set.insert(v);
-        bool has_duplicate = (first_set.size() != fst.size() && second_set.size() != snd.size());
+        bool has_duplicate = fst.size() - std::max(0, fst_deleted_nodes-1) != first_set.size() || snd.size() - std::max(0, snd_deleted_nodes-1) != second_set.size();
         bool distance_not_integer = false;
         //(std::abs(result.distance - std::round(result.distance)) > 1e-6);
         if (has_duplicate || distance_not_integer) {
