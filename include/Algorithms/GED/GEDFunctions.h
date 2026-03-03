@@ -343,6 +343,8 @@ inline void GEDResultToBinary(const std::string &target_path, GEDEvaluation<T> &
     ofs.write(reinterpret_cast<const char *>(&result.lower_bound), sizeof(double));
     // write upper bound
     ofs.write(reinterpret_cast<const char *>(&result.upper_bound), sizeof(double));
+    // valid flag
+    ofs.write(reinterpret_cast<const char *>(&result.valid), sizeof(bool));
     ofs.close();
 }
 
@@ -396,6 +398,8 @@ inline void GEDResultToBinary(const std::string &output_path, std::vector<GEDEva
         ofs.write(reinterpret_cast<const char *>(&result.lower_bound), sizeof(double));
         // write upper bound
         ofs.write(reinterpret_cast<const char *>(&result.upper_bound), sizeof(double));
+        // valid flag
+        ofs.write(reinterpret_cast<const char *>(&result.valid), sizeof(bool));
     }
     ofs.close();
 }
@@ -440,6 +444,9 @@ inline void BinaryToGEDResult(const std::string &input_path, const GraphData<T>&
     // set graphs
     result.graphs.first = const_cast<T*>(&(graph_data.graphData[result.graph_ids.first]));
     result.graphs.second = const_cast<T*>(&(graph_data.graphData[result.graph_ids.second]));
+    // read valid flag
+    ifs.read(reinterpret_cast<char *>(&result.valid), sizeof(bool));
+    ifs.close();
 }
 
 template<typename T>
@@ -483,6 +490,9 @@ void BinaryToGEDResult(const std::string &input_path, const GraphData<T>& graph_
         // set graphs
         result.graphs.first = const_cast<T*>(&(graph_data.graphData[result.graph_ids.first]));
         result.graphs.second = const_cast<T*>(&(graph_data.graphData[result.graph_ids.second]));
+        // read valid flag
+        ifs.read(reinterpret_cast<char *>(&result.valid), sizeof(result.valid));
+
         // push back result
         results.push_back(result);
     }

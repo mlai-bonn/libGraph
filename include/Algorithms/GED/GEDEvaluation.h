@@ -21,6 +21,7 @@ struct GEDEvaluation {
     std::pair<Nodes, Nodes> node_mapping = {std::vector<NodeId>(), std::vector<NodeId>()};
     std::string graph_data_name;
     double time = std::numeric_limits<double>::max();
+    bool valid = false;
 
     void get_edit_operations(std::unordered_set<EditOperation, EditOperationHash>& edit_operations) const;
     void get_edit_path(EditPath<T>& edit_path, int seed = 42, bool connected_only = false, std::vector<EditPathStrategy> strategies = {EditPathStrategy::Random}) const;

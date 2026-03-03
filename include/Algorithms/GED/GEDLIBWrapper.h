@@ -133,6 +133,36 @@ GEDEvaluation<T> ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, 
 }
 
 template<typename T>
+bool CheckResultValidity(const GEDEvaluation<T>& result) {
+    // if exact method F1 or F2 is used and the lower bound is not equal to the upper bound, then the time limit was reached and the result is invalid
+    if (method == ged::Options::GEDMethod::F1 || method == ged::Options::GEDMethod::F2) {
+        if (result.lower_bound != result.upper_bound) {
+            //std::cout << "Time limit reached for graphs " << i << " and " << j << ". Skipping." << std::endl;
+            result.valid = false;
+            GEDResultToBinary(results_path, result);
+            return false;
+        }
+    }
+    // Check valid mappings: due to parallelization issues in F1 and F2, some mappings can be invalid (i.e., some nodes are mapped to the same node, which should not happen in a valid mapping). In this case, we also set the result to invalid and save it to binary.
+    const auto& fst = result.node_mapping.first;
+    const auto& snd = result.node_mapping.second;
+    const int fst_deleted_nodes = std::count_if(fst.begin(), fst.end(), [&](NodeId x){ return x > result.graphs.second->nodes(); });
+    const int snd_deleted_nodes = std::count_if(snd.begin(), snd.end(), [&](NodeId x){ return x > result.graphs.first->nodes(); });
+    auto first_set = std::set<std::decay_t<decltype(fst[0])>>{};
+    for (const auto& v : fst) first_set.insert(v);
+    auto second_set = std::set<std::decay_t<decltype(snd[0])>>{};
+    for (const auto& v : snd) second_set.insert(v);
+    bool has_duplicate = fst.size() - std::max(0, fst_deleted_nodes-1) != first_set.size() || snd.size() - std::max(0, snd_deleted_nodes-1) != second_set.size();
+    if (has_duplicate) {
+        //std::cout << "Invalid mapping for graphs " << i << " and " << j << ". Skipping." << std::endl;
+        result.valid = false;
+        GEDResultToBinary(results_path, result);
+        return false;
+    }
+    return true;
+}
+
+template<typename T>
 size_t ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &env,
                                    const GraphData<T> &graph_data,
                                    const std::vector<std::pair<INDEX,INDEX>> &graph_ids,
@@ -168,13 +198,11 @@ size_t ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &
         //std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
         env.run_method(i, j);
         GEDEvaluation<T> result = ComputeGEDResult(env, graph_data, i, j);
-        // print if time limit was reached and continue
-        if (result.lower_bound != result.upper_bound) {
-            std::cout << "Time limit reached for graphs " << i << " and " << j << ". Skipping." << std::endl;
-            result.time = -1;
+        if (!CheckResultValidity(result)) {
             GEDResultToBinary(results_path, result);
             continue;
         }
+        // Check validity of result
         // print calculated (approximated Distance)
         //std::cout << "Approximated Distance " << i << " to " << j << " : " << result.distance << std::endl;
         // save result to binary
