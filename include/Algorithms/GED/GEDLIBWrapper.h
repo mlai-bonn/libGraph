@@ -133,7 +133,7 @@ GEDEvaluation<T> ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, 
 }
 
 template<typename T>
-bool CheckResultValidity(const GEDEvaluation<T>& result) {
+bool CheckResultValidity(const GEDEvaluation<T>& result, ged::Options::GEDMethod method) {
     // if exact method F1 or F2 is used and the lower bound is not equal to the upper bound, then the time limit was reached and the result is invalid
     if (method == ged::Options::GEDMethod::F1 || method == ged::Options::GEDMethod::F2) {
         if (result.lower_bound != result.upper_bound) {
@@ -198,7 +198,7 @@ size_t ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &
         //std::cout << "Estimated time left: " << estimated_time_left / 60 << " minutes" << std::endl;
         env.run_method(i, j);
         GEDEvaluation<T> result = ComputeGEDResult(env, graph_data, i, j);
-        if (!CheckResultValidity(result)) {
+        if (!CheckResultValidity(result, method)) {
             GEDResultToBinary(results_path, result);
             continue;
         }
