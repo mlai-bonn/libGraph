@@ -133,13 +133,12 @@ GEDEvaluation<T> ComputeGEDResult(const ged::GEDEnv<ged::LabelID, ged::LabelID, 
 }
 
 template<typename T>
-bool CheckResultValidity(const GEDEvaluation<T>& result, ged::Options::GEDMethod method) {
+bool CheckResultValidity(GEDEvaluation<T>& result, ged::Options::GEDMethod method) {
     // if exact method F1 or F2 is used and the lower bound is not equal to the upper bound, then the time limit was reached and the result is invalid
     if (method == ged::Options::GEDMethod::F1 || method == ged::Options::GEDMethod::F2) {
         if (result.lower_bound != result.upper_bound) {
             //std::cout << "Time limit reached for graphs " << i << " and " << j << ". Skipping." << std::endl;
             result.valid = false;
-            GEDResultToBinary(results_path, result);
             return false;
         }
     }
@@ -156,7 +155,6 @@ bool CheckResultValidity(const GEDEvaluation<T>& result, ged::Options::GEDMethod
     if (has_duplicate) {
         //std::cout << "Invalid mapping for graphs " << i << " and " << j << ". Skipping." << std::endl;
         result.valid = false;
-        GEDResultToBinary(results_path, result);
         return false;
     }
     return true;
