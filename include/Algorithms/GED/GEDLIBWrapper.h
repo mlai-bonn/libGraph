@@ -200,6 +200,9 @@ size_t ComputeGEDResults(ged::GEDEnv<ged::LabelID, ged::LabelID, ged::LabelID> &
             GEDResultToBinary(results_path, result);
             continue;
         }
+        else {
+            result.valid = true;
+        }
         // Check validity of result
         // print calculated (approximated Distance)
         //std::cout << "Approximated Distance " << i << " to " << j << " : " << result.distance << std::endl;

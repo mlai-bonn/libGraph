@@ -1,18 +1,27 @@
-/cmake-build-debug/
-/cmake-build-release/
-/executables/test/cmake-build-debug/
-/executables/test/cmake-build-release/
-**/Google_tests/data/*
-/Google_tests/cmake-build-debug/
-/Google_tests/cmake-build-release/
-/Google_tests/cmake-build-relwithdebinfo/
-/executables/geodesic_core/cmake-build-debug/
-/executables/geodesic_core/cmake-build-release/
-/executables/geodesic_core/cmake-build-relwithdebinfo/
+# CMake build directories
+cmake-build-*/
+**/cmake-build-debug/
+**/cmake-build-release/
+**/cmake-build-relwithdebinfo/
+/build/
+**/build/
+
+# IDE
+.idea/
+
+# Test results and artifacts
+**/Results/
 **/Google_tests/tests/out/*
-**/Google_tests/lib/*
+
+# Data and external
+**/Google_tests/data/*
 /examples/tu_datasets/Data/
 /examples/algorithms/ged/data/
 /Google_tests/lib/
 /external/*
 !/external/.gitignore
+
+# Development environment
+.claude/
+.eldrun/
+project.json

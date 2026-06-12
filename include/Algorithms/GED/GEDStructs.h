@@ -5,6 +5,7 @@
 #ifndef GED_STRUCTS_H
 #define GED_STRUCTS_H
 #include <iosfwd>
+#include <stdexcept>
 #include <unordered_set>
 
 #include "typedefs.h"
@@ -161,10 +162,9 @@ inline EditPathStrategy StringToEditPathStrategy(const std::string& strategy_str
     } else if (strategy_str == "RandomRelabelNodes") {
         return EditPathStrategy::RandomRelabelNodes;
     } else {
-        // print error and list valid strategies
-        std::cerr << "Error: Invalid edit path strategy: " << strategy_str << std::endl;
-        std::cerr << "Valid strategies are: Random, DeleteEdges, InsertEdges, DeleteNodes, InsertNodes, RelabelEdges, RelabelNodes, RandomDeleteEdges, RandomInsertEdges, RandomDeleteNodes, RandomInsertNodes, RandomRelabelEdges, RandomRelabelNodes, DeleteIsolatedNodes" << std::endl;
-        return EditPathStrategy::Random;
+        throw std::invalid_argument(
+            "Invalid edit path strategy: " + strategy_str +
+            ". Valid strategies are: Random, DeleteEdges, InsertEdges, DeleteNodes, InsertNodes, RelabelEdges, RelabelNodes, RandomDeleteEdges, RandomInsertEdges, RandomDeleteNodes, RandomInsertNodes, RandomRelabelEdges, RandomRelabelNodes, DeleteIsolatedNodes");
     }
 }
 
